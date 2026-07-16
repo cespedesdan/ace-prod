@@ -1,7 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import adminConfig from './admin-config.json'
 import { prisma } from './prisma'
 
 const configuredSecret = process.env.JWT_SECRET
@@ -10,7 +9,12 @@ if (configuredSecret && configuredSecret.length < 32) {
 }
 const authGlobal = globalThis as typeof globalThis & { aceDevJwtSecret?: string }
 const DUMMY_PASSWORD_HASH = '$2b$12$kRoaF5CyoRIsWytSV88FBe4MuuGy2dfnojsCYnqxH1Hy3hIEC7LMi'
-export const ADMIN_EMAIL = adminConfig.email
+
+function getAdminEmail() {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase()
+  if (!email) throw new Error('ADMIN_EMAIL é obrigatório.')
+  return email
+}
 
 function getJwtSecret() {
   if (configuredSecret) return configuredSecret
@@ -49,7 +53,7 @@ export function verifyToken(token: string): UserPayload | null {
       audience: 'ace-admin',
       issuer: 'ace-produtora',
     }) as UserPayload
-    if (payload.role === 'ADMIN' && payload.email.toLowerCase() !== ADMIN_EMAIL) return null
+    if (payload.role === 'ADMIN' && payload.email.toLowerCase() !== getAdminEmail()) return null
     return payload
   } catch {
     return null

@@ -1,12 +1,15 @@
 import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
-import adminConfig from '../src/lib/admin-config.json' with { type: 'json' }
 
 const prisma = new PrismaClient()
-const ADMIN_EMAIL = adminConfig.email
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim().toLowerCase()
 
 async function main() {
   console.log('Iniciando configuração do administrador...')
+
+  if (!ADMIN_EMAIL) {
+    throw new Error('Defina ADMIN_EMAIL para criar ou atualizar o administrador.')
+  }
 
   const existingAdmin = await prisma.user.findFirst({ where: { role: 'ADMIN' } })
   const adminPassword = process.env.ADMIN_PASSWORD

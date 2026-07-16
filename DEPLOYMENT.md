@@ -18,7 +18,6 @@ O Next.js nunca deve ser publicado diretamente nas portas 80 ou 443. O script `n
 - Caddy 2.10 ou superior disponível no `PATH`.
 - DNS dos domínios raiz e `www` apontando para o IP público do local.
 - Registros DNS atualmente publicados pelo proxy da Cloudflare.
-- IP local fixo `192.168.1.50` no computador que executa o Caddy.
 - Portas TCP 80 e 443 encaminhadas pelo roteador para o computador e liberadas no Firewall do Windows.
 - Acesso de escrita a `prisma/` e `storage/registrations/`.
 
@@ -43,6 +42,7 @@ Copie o valor gerado para `JWT_SECRET` e configure o arquivo assim:
 
 ```dotenv
 JWT_SECRET=CHAVE_ALEATORIA_GERADA
+ADMIN_EMAIL=admin@exemplo.com
 ADMIN_PASSWORD=
 TRUST_PROXY=true
 ```
@@ -81,7 +81,7 @@ Não execute `migrate resolve` em um banco vazio; use `npm run db:migrate`.
 $env:ADMIN_PASSWORD="SUA_SENHA_FORTE"; npm run db:seed; Remove-Item Env:ADMIN_PASSWORD
 ```
 
-- Login: `financeiro@aceprodutora.com.br`
+- Login: valor privado definido em `ADMIN_EMAIL`.
 - A senha não fica armazenada em texto puro; o banco recebe um hash bcrypt com custo 12.
 - Não mantenha `ADMIN_PASSWORD` preenchida em `.env.local` depois do seed.
 
@@ -109,7 +109,6 @@ O arquivo [deploy/Caddyfile](./deploy/Caddyfile) já contém:
 - `X-Real-IP` sobrescrito e `X-Forwarded-For` normalizado pelo proxy.
 - Faixas oficiais IPv4 e IPv6 da Cloudflare configuradas como proxies confiáveis.
 - HSTS, compressão e remoção do cabeçalho `Server`.
-- Bind explícito em `192.168.1.50`, evitando conflito com outras interfaces virtuais do Windows.
 
 Valide antes de iniciar:
 

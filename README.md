@@ -43,16 +43,15 @@ npm run dev
 O servidor de desenvolvimento escuta em todas as interfaces na porta `8001`:
 
 - `http://localhost:8001`
-- `http://192.168.1.50:8001`, quando esse for o IP do computador.
 
 Em desenvolvimento, `TRUST_PROXY` deve permanecer `false`.
 
 ## Primeiro administrador
 
-O e-mail administrativo é `admin@aceprodutora.com.br`. Para criar o administrador ou redefinir sua senha no PowerShell:
+Defina `ADMIN_EMAIL` no `.env.local`. Para criar o administrador ou redefinir sua senha no PowerShell:
 
 ```powershell
-$env:ADMIN_PASSWORD="SUA_SENHA_FORTE"; npm run db:seed; Remove-Item Env:ADMIN_PASSWORD
+$env:ADMIN_EMAIL="admin@exemplo.com"; $env:ADMIN_PASSWORD="SUA_SENHA_FORTE"; npm run db:seed; Remove-Item Env:ADMIN_EMAIL, ADMIN_PASSWORD
 ```
 
 O seed configura somente o administrador. Ele não cria times, partidas, notícias ou campeonatos fictícios.
