@@ -49,7 +49,7 @@ Em desenvolvimento, `TRUST_PROXY` deve permanecer `false`.
 
 ## Primeiro administrador
 
-O e-mail administrativo é `financeiro@aceprodutora.com.br`. Para criar o administrador ou redefinir sua senha no PowerShell:
+O e-mail administrativo é `admin@aceprodutora.com.br`. Para criar o administrador ou redefinir sua senha no PowerShell:
 
 ```powershell
 $env:ADMIN_PASSWORD="SUA_SENHA_FORTE"; npm run db:seed; Remove-Item Env:ADMIN_PASSWORD
