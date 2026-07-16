@@ -1,15 +1,31 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Poppins } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
 
-const inter = Inter({ subsets: ['latin'] })
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-poppins',
+  display: 'swap',
+})
+
+const nippo = localFont({
+  src: './fonts/Nippo-Variable.ttf',
+  variable: '--font-nippo',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'Copa Ace - Torneios de Counter-Strike 2',
-  description: 'Acompanhe os melhores torneios de Counter-Strike 2. Classificações, agendas, notícias e muito mais.',
-  keywords: 'counter-strike, cs2, esports, torneios, copa ace',
+  title: 'Ace Produtora',
+  description: 'Produção audiovisual e campeonatos de eSports com padrão profissional.',
+  keywords: 'counter-strike, cs2, esports, torneios, ace produtora',
+}
+
+export const viewport: Viewport = {
+  themeColor: '#1C1124',
 }
 
 export default function RootLayout({
@@ -19,7 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.className} bg-gray-900 text-white min-h-screen`}>
+      <body className={`${poppins.variable} ${nippo.variable} min-h-screen bg-gray-900 text-white`}>
         <div className="flex flex-col min-h-screen">
           <Navbar />
           <main className="flex-1">

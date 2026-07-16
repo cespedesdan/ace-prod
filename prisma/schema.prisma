@@ -83,17 +83,6 @@ model News {
   @@map("news")
 }
 
-model Sponsor {
-  id         String   @id @default(cuid())
-  name       String   @unique
-  logoUrl    String
-  websiteUrl String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("sponsors")
-}
-
 model HallOfFame {
   id           String @id @default(cuid())
   year         Int
@@ -108,6 +97,44 @@ model HallOfFame {
   @@map("hall_of_fame")
 }
 
+model Registration {
+  id                       String             @id @default(cuid())
+  protocol                 String             @unique
+  tournament               String             @default("Copa Ace 10")
+  teamFaceitUrl            String
+  teamName                 String
+  teamNameNormalized       String
+  teamTag                  String
+  representativeName       String
+  representativeEmail      String
+  representativePhone      String
+  teamInstagram            String?
+  discoverySource          String
+  scheduleRestrictions     String?
+  rulesAccepted            Boolean            @default(true)
+  logoPath                 String
+  logoOriginalName         String
+  paymentProofPath         String
+  paymentProofOriginalName String
+  status                   RegistrationStatus @default(PENDING)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  @@unique([tournament, teamNameNormalized])
+  @@index([tournament, status])
+  @@map("registrations")
+}
+
+model RateLimit {
+  key             String    @id
+  count           Int       @default(0)
+  windowStartedAt DateTime
+  blockedUntil    DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  @@map("rate_limits")
+}
+
 enum Role {
   USER
   ADMIN
@@ -118,4 +145,10 @@ enum MatchStatus {
   LIVE
   FINISHED
   CANCELLED
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

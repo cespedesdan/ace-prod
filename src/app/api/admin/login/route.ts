@@ -1,11 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateUser, generateToken } from '@/lib/auth'
+import { consumeRateLimit, getClientIp, resetRateLimit } from '@/lib/rate-limit'
+import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
+
+const ADMIN_RATE_LIMIT = { limit: 3, windowMs: 15 * 60_000, blockMs: 60 * 60_000 }
+
+function rateLimitResponse(retryAfterSeconds: number) {
+  return NextResponse.json(
+    { error: 'Muitas tentativas. Tente novamente mais tarde.' },
+    { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } },
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    let body: { email?: unknown; password?: unknown } | null = null
+    try {
+      body = await readJsonWithLimit(request, 4096)
+    } catch (error) {
+      if (error instanceof RequestBodyTooLargeError) {
+        return NextResponse.json({ error: 'Requisição inválida' }, { status: 413 })
+      }
+    }
+    const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
+    const password = typeof body?.password === 'string' ? body.password : ''
+    const ip = getClientIp(request)
+    const emailKey = email || 'invalid-email'
 
-    if (!email || !password) {
+    const [ipLimit, emailLimit] = await Promise.all([
+      ip
+        ? consumeRateLimit({ scope: 'admin-login-ip', identifier: ip, ...ADMIN_RATE_LIMIT })
+        : Promise.resolve({ allowed: true, remaining: ADMIN_RATE_LIMIT.limit, retryAfterSeconds: 0 }),
+      consumeRateLimit({ scope: 'admin-login-email', identifier: emailKey, ...ADMIN_RATE_LIMIT }),
+    ])
+    if (!ipLimit.allowed || !emailLimit.allowed) {
+      return rateLimitResponse(Math.max(ipLimit.retryAfterSeconds, emailLimit.retryAfterSeconds))
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !password || password.length > 200) {
       return NextResponse.json(
         { error: 'Email e senha são obrigatórios' },
         { status: 400 }
@@ -29,13 +61,18 @@ export async function POST(request: NextRequest) {
     }
 
     const token = generateToken(user)
+    await Promise.all([
+      ...(ip ? [resetRateLimit('admin-login-ip', ip)] : []),
+      resetRateLimit('admin-login-email', emailKey),
+    ])
 
-    const response = NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
     response.cookies.set('admin-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 // 7 days
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 8 * 60 * 60,
     })
 
     return response

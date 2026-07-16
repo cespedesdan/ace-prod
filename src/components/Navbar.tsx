@@ -1,42 +1,48 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Logo } from './Logo'
+import { Logotipo } from './Logotipo'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'Classificação', href: '/' },
+  { name: 'Home', href: '/' },
+  { name: 'Copa Ace 10', href: '/copa-ace-10', edition: true },
   { name: 'Agenda', href: '/schedule' },
   { name: 'Notícias', href: '/news' },
-  { name: 'Patrocinadores', href: '/sponsors' },
   { name: 'Hall da Fama', href: '/hall-of-fame' },
+  { name: 'Inscreva-se', href: '/inscreva-se', highlight: true },
 ]
 
 export function Navbar() {
   const pathname = usePathname()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <nav className="bg-black border-b border-cyan-500/20">
+    <nav className="sticky top-0 z-50 border-b border-ace-cyan/20 bg-smoke/95 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
-            <Logo size="md" />
-            <span className="text-2xl font-bold text-cyan-400">Copa Ace</span>
+            <Logotipo size="md" variant="neutral" />
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden md:flex items-center space-x-5">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
                 className={cn(
                   'px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                  pathname === item.href
-                    ? 'text-cyan-400 bg-cyan-500/10'
-                    : 'text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/5'
+                  item.edition
+                    ? cn('copa10-nav-button', pathname === item.href && 'is-active')
+                    : pathname === item.href
+                    ? 'bg-copa-cyan/10 text-copa-cyan'
+                    : item.highlight
+                      ? 'bg-copa-cyan text-smoke hover:bg-cyan-300'
+                    : 'text-gray-300 hover:bg-copa-cyan/5 hover:text-copa-cyan'
                 )}
               >
                 {item.name}
@@ -48,7 +54,9 @@ export function Navbar() {
           <div className="md:hidden">
             <button
               type="button"
-              className="text-gray-300 hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((open) => !open)}
+              className="text-gray-300 hover:text-copa-cyan focus:outline-none"
             >
               <span className="sr-only">Abrir menu principal</span>
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,6 +65,30 @@ export function Navbar() {
             </button>
           </div>
         </div>
+
+        {mobileOpen && (
+          <div className="space-y-1 border-t border-white/10 pb-4 pt-3 md:hidden">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  'block rounded-md px-3 py-2.5 text-sm font-semibold transition-colors',
+                  item.edition
+                    ? cn('copa10-nav-button', pathname === item.href && 'is-active')
+                    : pathname === item.href
+                    ? 'bg-copa-cyan/10 text-copa-cyan'
+                    : item.highlight
+                      ? 'bg-copa-cyan text-smoke'
+                      : 'text-gray-300 hover:bg-copa-cyan/5 hover:text-copa-cyan'
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </nav>
   )

@@ -44,13 +44,13 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <Logo size="lg" />
+            <Logo size="lg" variant="neutral" />
           </div>
           <h2 className="text-3xl font-bold text-cyan-400 mb-2">Admin - Copa Ace</h2>
           <p className="text-gray-400">Faça login para acessar o painel administrativo</p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="brand-card mt-8 space-y-6 p-6 sm:p-8" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">

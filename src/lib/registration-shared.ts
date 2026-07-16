@@ -1,0 +1,1 @@
+export const MAX_REGISTRATION_FILE_SIZE = 10 * 1024 * 1024

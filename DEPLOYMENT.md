@@ -1,245 +1,193 @@
-# 🚀 Guia de Deploy - Copa Ace
+# Publicação da Ace Produtora 1.0.0
 
-Este guia te ajudará a fazer o deploy da aplicação Copa Ace no Vercel (frontend) e Railway (banco de dados).
+Este guia descreve a publicação no computador Windows que hospeda o projeto. A configuração incluída assume os domínios `aceprodutora.com.br` e `www.aceprodutora.com.br`.
 
-## 📋 Pré-requisitos
+## Arquitetura
 
-- Conta no [Vercel](https://vercel.com)
-- Conta no [Railway](https://railway.app)
-- Repositório no GitHub/GitLab/Bitbucket
-
-## 🗄️ 1. Configuração do Banco de Dados (Railway)
-
-### Passo 1: Criar Projeto no Railway
-
-1. Acesse [Railway](https://railway.app) e faça login
-2. Clique em "New Project"
-3. Selecione "Provision PostgreSQL"
-4. Aguarde a criação do banco
-
-### Passo 2: Obter String de Conexão
-
-1. Clique no serviço PostgreSQL criado
-2. Vá para a aba "Connect"
-3. Copie a "Connection String" (começa com `postgresql://`)
-
-### Passo 3: Configurar Variáveis de Ambiente
-
-1. No painel do Railway, vá para "Variables"
-2. Adicione as seguintes variáveis:
-   ```
-   DATABASE_URL=postgresql://username:password@host:port/database?schema=public
-   ```
-
-## 🌐 2. Deploy do Frontend (Vercel)
-
-### Passo 1: Conectar Repositório
-
-1. Acesse [Vercel](https://vercel.com) e faça login
-2. Clique em "New Project"
-3. Conecte seu repositório GitHub/GitLab/Bitbucket
-4. Selecione o repositório `copa-ace`
-
-### Passo 2: Configurar Build
-
-O Vercel detectará automaticamente que é um projeto Next.js. As configurações padrão são:
-
-- **Framework Preset**: Next.js
-- **Build Command**: `npm run build`
-- **Output Directory**: `.next`
-- **Install Command**: `npm install`
-
-### Passo 3: Configurar Variáveis de Ambiente
-
-No painel do Vercel, vá para "Settings" > "Environment Variables" e adicione:
-
-```
-DATABASE_URL=postgresql://username:password@host:port/database?schema=public
-JWT_SECRET=seu-jwt-secret-super-seguro-aqui
-NEXTAUTH_URL=https://seu-dominio.vercel.app
-NEXTAUTH_SECRET=seu-nextauth-secret-aqui
+```text
+Internet
+  ├─ TCP 80  ── Caddy ── redirecionamento HTTPS
+  └─ TCP 443 ── Caddy ── 127.0.0.1:8001 ── Next.js ── SQLite + storage
 ```
 
-**Importante**: Substitua `seu-dominio.vercel.app` pelo domínio real do seu projeto.
+O Next.js nunca deve ser publicado diretamente nas portas 80 ou 443. O script `npm run start` aceita conexões apenas em `127.0.0.1:8001`; o Caddy termina o TLS e encaminha as requisições.
 
-### Passo 4: Deploy
+## Requisitos
 
-1. Clique em "Deploy"
-2. Aguarde o processo de build e deploy
-3. Anote a URL do projeto (ex: `https://copa-ace.vercel.app`)
+- Node.js 24 LTS.
+- Caddy 2.10 ou superior disponível no `PATH`.
+- DNS dos domínios raiz e `www` apontando para o IP público do local.
+- Registros DNS atualmente publicados pelo proxy da Cloudflare.
+- IP local fixo `192.168.1.50` no computador que executa o Caddy.
+- Portas TCP 80 e 443 encaminhadas pelo roteador para o computador e liberadas no Firewall do Windows.
+- Acesso de escrita a `prisma/` e `storage/registrations/`.
 
-## 🔧 3. Configuração Pós-Deploy
+No Windows, o Caddy pode ser instalado pelo Chocolatey ou Scoop:
 
-### Passo 1: Executar Migrações
-
-Após o deploy, você precisa executar as migrações do banco:
-
-1. Acesse o terminal do Railway ou use o CLI do Vercel
-2. Execute os comandos:
-
-```bash
-# Gerar cliente Prisma
-npx prisma generate
-
-# Aplicar migrações
-npx prisma migrate deploy
-
-# Popular com dados de exemplo
-npx prisma db seed
+```powershell
+choco install caddy
+# ou
+scoop install caddy
 ```
 
-### Passo 2: Verificar Deploy
+Para produção contínua, execute Node e Caddy como serviços do Windows com reinício automático. Não dependa de terminais abertos.
 
-1. Acesse a URL do seu projeto
-2. Verifique se todas as páginas estão funcionando:
-   - `/` - Página inicial (classificação)
-   - `/schedule` - Agenda de jogos
-   - `/news` - Notícias
-   - `/sponsors` - Patrocinadores
-   - `/hall-of-fame` - Hall da Fama
-   - `/admin/login` - Login administrativo
+## 1. Preparar variáveis privadas
 
-### Passo 3: Testar Admin
-
-1. Acesse `/admin/login`
-2. Use as credenciais:
-   - **Email**: `admin@copaace.com`
-   - **Senha**: `admin123`
-
-## 🔄 4. Deploy Automático
-
-### Configuração do Git
-
-Após a configuração inicial, cada push para a branch principal (`main` ou `master`) irá:
-
-1. **Vercel**: Fazer deploy automático do frontend
-2. **Railway**: Manter o banco de dados ativo
-
-### Workflow Recomendado
-
-```bash
-# 1. Fazer mudanças no código
-git add .
-git commit -m "feat: nova funcionalidade"
-
-# 2. Push para trigger do deploy
-git push origin main
-
-# 3. Aguardar deploy automático
-# 4. Verificar se tudo está funcionando
+```powershell
+Copy-Item .env.example .env.local
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-## 🛠️ 5. Comandos Úteis
+Copie o valor gerado para `JWT_SECRET` e configure o arquivo assim:
 
-### Desenvolvimento Local
-
-```bash
-# Instalar dependências
-npm install
-
-# Executar em desenvolvimento
-npm run dev
-
-# Build local
-npm run build
-
-# Lint
-npm run lint
+```dotenv
+JWT_SECRET=CHAVE_ALEATORIA_GERADA
+ADMIN_PASSWORD=
+TRUST_PROXY=true
 ```
 
-### Banco de Dados
+`TRUST_PROXY=true` só é seguro porque o Next escuta no loopback e o Caddy sobrescreve os cabeçalhos de IP. Em acesso direto ou desenvolvimento, use `false`.
 
-```bash
-# Gerar cliente Prisma
+## 2. Instalar, migrar e construir
+
+```powershell
+npm ci
 npm run db:generate
-
-# Aplicar mudanças no schema
-npm run db:push
-
-# Executar migrações
 npm run db:migrate
-
-# Popular com dados de exemplo
-npm run db:seed
+npm run build
 ```
 
-## 🔍 6. Troubleshooting
+Em uma instalação nova, `db:migrate` cria todas as tabelas pela migration-base `20260716160000_v1_baseline`.
 
-### Problemas Comuns
+### Banco existente anterior à migration-base
 
-#### Erro de Conexão com Banco
+Esta cópia local já foi marcada como atualizada. Se outra máquina possuir um `prisma/dev.db` criado antes da migration-base:
 
-```
-Can't reach database server at localhost:5432
-```
+1. Faça backup do banco e dos uploads.
+2. Confirme que o schema já corresponde à versão 1.0.0.
+3. Execute uma única vez:
 
-**Solução**: Verifique se a `DATABASE_URL` está correta no Vercel.
-
-#### Erro de Build
-
-```
-Module not found: Can't resolve '@prisma/client'
+```powershell
+npx prisma migrate resolve --applied 20260716160000_v1_baseline
+npm run db:migrate:status
 ```
 
-**Solução**: Execute `npm run db:generate` antes do build.
+Não execute `migrate resolve` em um banco vazio; use `npm run db:migrate`.
 
-#### Páginas em Branco
+## 3. Criar ou redefinir o administrador
 
-**Solução**: Verifique se as migrações foram executadas e se há dados no banco.
+```powershell
+$env:ADMIN_PASSWORD="SUA_SENHA_FORTE"; npm run db:seed; Remove-Item Env:ADMIN_PASSWORD
+```
 
-### Logs e Debug
+- Login: `financeiro@aceprodutora.com.br`
+- A senha não fica armazenada em texto puro; o banco recebe um hash bcrypt com custo 12.
+- Não mantenha `ADMIN_PASSWORD` preenchida em `.env.local` depois do seed.
 
-1. **Vercel**: Vá para "Functions" > "View Function Logs"
-2. **Railway**: Vá para "Deployments" > "View Logs"
+## 4. Validar e iniciar o Next.js
 
-## 📊 7. Monitoramento
+```powershell
+npm run lint
+npx tsc --noEmit
+npm run test:security
+npm audit
+npm run build
+npm run start
+```
 
-### Vercel Analytics
+O processo ficará disponível somente em `http://127.0.0.1:8001`.
 
-1. Ative o Vercel Analytics no painel
-2. Monitore performance e erros
-3. Configure alertas se necessário
+## 5. Ativar HTTPS nas portas 80 e 443
 
-### Railway Monitoring
+O arquivo [deploy/Caddyfile](./deploy/Caddyfile) já contém:
 
-1. Monitore uso do banco de dados
-2. Configure alertas de uso de recursos
-3. Faça backup regular dos dados
+- Certificado automático para o domínio raiz e `www`.
+- Redirecionamento automático de HTTP para HTTPS.
+- Proxy para `127.0.0.1:8001`.
+- Limite externo de corpo em 23 MiB.
+- `X-Real-IP` sobrescrito e `X-Forwarded-For` normalizado pelo proxy.
+- Faixas oficiais IPv4 e IPv6 da Cloudflare configuradas como proxies confiáveis.
+- HSTS, compressão e remoção do cabeçalho `Server`.
+- Bind explícito em `192.168.1.50`, evitando conflito com outras interfaces virtuais do Windows.
 
-## 🔐 8. Segurança
+Valide antes de iniciar:
 
-### Variáveis Sensíveis
+```powershell
+caddy validate --config .\deploy\Caddyfile
+caddy run --config .\deploy\Caddyfile
+```
 
-- Nunca commite arquivos `.env`
-- Use variáveis de ambiente no Vercel
-- Rotacione secrets regularmente
+O primeiro certificado só será emitido se o DNS estiver correto e as portas 80/443 estiverem acessíveis pela internet. Para recarregar uma configuração ativa sem interromper conexões:
 
-### Banco de Dados
+```powershell
+caddy reload --config .\deploy\Caddyfile
+```
 
-- Use conexões SSL
-- Configure firewall se necessário
-- Monitore acessos
+Se o domínio definitivo ou o IP local forem diferentes, altere os endereços e a diretiva `bind` no Caddyfile antes de executar.
 
-## 📈 9. Escalabilidade
+Como o domínio usa a Cloudflare, mantenha o modo SSL/TLS em `Full (strict)` depois que o certificado do Caddy estiver ativo. Revise as faixas confiáveis do Caddyfile caso a Cloudflare publique uma atualização em suas listas oficiais.
 
-### Vercel
+### Firewall do Windows
 
-- Upgrade para Pro se necessário
-- Configure CDN global
-- Use Edge Functions para performance
+Em um PowerShell executado como administrador:
 
-### Railway
+```powershell
+New-NetFirewallRule -DisplayName "Ace Produtora HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
+New-NetFirewallRule -DisplayName "Ace Produtora HTTP Redirect" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
+```
 
-- Upgrade para planos pagos
-- Configure réplicas de leitura
-- Monitore performance
+Não crie uma regra pública para a porta 8001 em produção.
 
-## 🆘 10. Suporte
+## 6. Testar a publicação
 
-- **Vercel**: [docs.vercel.com](https://docs.vercel.com)
-- **Railway**: [docs.railway.app](https://docs.railway.app)
-- **Prisma**: [prisma.io/docs](https://prisma.io/docs)
+```powershell
+curl.exe -I http://aceprodutora.com.br
+curl.exe -I https://aceprodutora.com.br
+curl.exe -I https://www.aceprodutora.com.br
+```
 
----
+O primeiro comando deve redirecionar para HTTPS. Os demais devem responder pela porta 443 com certificado válido.
 
-🎉 **Parabéns!** Sua aplicação Copa Ace está no ar e pronta para receber usuários!
+## Proteções ativas
+
+- Prisma sem SQL bruto nas rotas de inscrição e administração.
+- Leitura limitada do fluxo: 22 MiB para inscrições e 4 KiB para login, inclusive sem `Content-Length`.
+- Caddy rejeita requisições acima de 23 MiB antes de chegarem ao Node.
+- Arquivos individuais limitados a 10 MiB e validados por MIME e assinatura binária.
+- Comprovantes disponíveis somente para administrador autenticado.
+- Caminhos de arquivo protegidos contra saída da pasta de armazenamento.
+- Inscrições limitadas a três tentativas em 24 horas por e-mail e IP.
+- Login limitado por e-mail e IP, com bloqueio após tentativas inválidas.
+- Identificadores do rate limit armazenados apenas como SHA-256.
+- Registros expirados de rate limit removidos automaticamente após sete dias.
+- JWT assinado, cookie `httpOnly`, `Secure` em produção e `SameSite=Strict`.
+
+## Backup
+
+O conjunto persistente é formado por:
+
+- `prisma/dev.db`
+- `storage/registrations/`
+
+Faça backup dos dois locais juntos e proteja a cópia como dado pessoal. Para uma cópia consistente, pare temporariamente o processo Node ou use a função de backup do SQLite:
+
+```powershell
+New-Item -ItemType Directory -Force backups | Out-Null
+sqlite3 prisma/dev.db ".backup 'backups/ace-prod.db'"
+Copy-Item storage/registrations backups/registrations -Recurse -Force
+```
+
+Teste periodicamente a restauração em outra pasta. Nunca force a inclusão de `prisma/dev.db`, `.env.local` ou `storage/registrations/` no Git.
+
+## Atualização da aplicação
+
+```powershell
+git pull
+npm ci
+npm run db:generate
+npm run db:migrate
+npm run build
+```
+
+Depois, reinicie apenas o serviço Node. O Caddy pode permanecer ativo e continuará atendendo HTTPS; durante a reinicialização curta ele poderá responder `502` até o Next voltar.

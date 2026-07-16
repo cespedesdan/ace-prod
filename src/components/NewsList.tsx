@@ -26,7 +26,7 @@ export function NewsList({ news }: NewsListProps) {
         news.map((article) => (
           <article
             key={article.id}
-            className="bg-gray-800/50 rounded-lg border border-cyan-500/20 p-6 hover:bg-gray-800/70 transition-colors"
+            className="brand-card p-6 transition hover:border-copa-cyan/50"
           >
             <div className="mb-4">
               <h2 className="text-2xl font-bold text-white mb-2 hover:text-cyan-400 transition-colors">
@@ -42,19 +42,13 @@ export function NewsList({ news }: NewsListProps) {
               </div>
             </div>
 
-            <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300 leading-relaxed">
-                {article.content.length > 200
-                  ? `${article.content.substring(0, 200)}...`
-                  : article.content
-                }
-              </p>
-            </div>
-
-            {article.content.length > 200 && (
-              <button className="mt-4 text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
-                Ler mais
-              </button>
+            {article.content.length > 200 ? (
+              <details className="group">
+                <summary className="cursor-pointer text-cyan-400 transition hover:text-cyan-300">Ler notícia completa</summary>
+                <p className="mt-4 whitespace-pre-line text-gray-300 leading-relaxed">{article.content}</p>
+              </details>
+            ) : (
+              <p className="whitespace-pre-line text-gray-300 leading-relaxed">{article.content}</p>
             )}
           </article>
         ))

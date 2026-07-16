@@ -1,141 +1,103 @@
-# Copa Ace - Plataforma de Torneios de Counter-Strike 2
+# Ace Produtora 1.0.0
 
-Uma plataforma moderna para acompanhar torneios de Counter-Strike 2, desenvolvida com Next.js, TypeScript, TailwindCSS e PostgreSQL.
+Site oficial da Ace Produtora e da Copa ACE 10, desenvolvido com Next.js 15, React 19, TypeScript, Tailwind CSS, Prisma e SQLite.
 
-## 🚀 Funcionalidades
+## Funcionalidades
 
-- **Classificação**: Tabela de classificação com times, pontos, vitórias e derrotas
-- **Agenda**: Lista de jogos agendados e resultados
-- **Notícias**: Blog com notícias e anúncios
-- **Patrocinadores**: Seção para exibir logos e links dos patrocinadores
-- **Hall da Fama**: Lista de campeões dos torneios anteriores
-- **Painel Admin**: Interface administrativa para gerenciar conteúdo
+- Home, agenda, notícias e Hall da Fama das edições anteriores.
+- Página oficial da Copa ACE 10 com 16 vagas e equipes confirmadas.
+- Inscrição de equipes com PIX, logo e comprovante de pagamento privado.
+- Painel administrativo para notícias e aprovação de inscrições.
+- Publicação automática das equipes aprovadas na página da Copa ACE 10.
+- Autenticação administrativa com bcrypt e JWT em cookie `httpOnly`.
+- Rate limit persistente por e-mail e, atrás do proxy confiável, também por IP.
+- Validação de campos, arquivos, assinaturas binárias e caminhos de armazenamento.
 
-## 🛠️ Tecnologias
+## Rotas
 
-- **Frontend**: Next.js 15, React 19, TypeScript, TailwindCSS
-- **Backend**: Next.js API Routes
-- **Database**: PostgreSQL com Prisma ORM
-- **Autenticação**: JWT
-- **Deploy**: Vercel + Railway
+| Rota | Finalidade |
+| --- | --- |
+| `/` | Home e prévia da classificação |
+| `/copa-ace-10` | Página oficial da Copa ACE 10 |
+| `/inscreva-se` | Formulário de inscrição |
+| `/schedule` | Agenda da primeira rodada |
+| `/news` | Notícias publicadas |
+| `/hall-of-fame` | Histórico dos campeonatos |
+| `/admin/login` | Login administrativo |
+| `/admin` | Painel administrativo |
+| `/admin/inscricoes` | Aprovação e rejeição de inscrições |
+| `/admin/noticias` | Criação, edição e exclusão de notícias |
 
-## 📦 Instalação
+## Desenvolvimento local
 
-1. Clone o repositório:
-```bash
-git clone <repository-url>
-cd copa-ace
-```
+Requisitos recomendados: Node.js 24 LTS e npm.
 
-2. Instale as dependências:
-```bash
-npm install
-```
-
-3. Configure as variáveis de ambiente:
-```bash
-cp .env.local .env.local
-```
-
-Edite o arquivo `.env.local` com suas configurações:
-```env
-DATABASE_URL="postgresql://username:password@localhost:5432/copa_ace?schema=public"
-JWT_SECRET="your-super-secret-jwt-key-here"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-nextauth-secret-here"
-```
-
-4. Configure o banco de dados:
-```bash
-# Gerar o cliente Prisma
+```powershell
+npm ci
+Copy-Item .env.example .env.local
 npm run db:generate
-
-# Aplicar migrações
-npm run db:push
-
-# Popular com dados de exemplo
-npm run db:seed
-```
-
-5. Execute o projeto:
-```bash
+npm run db:migrate
 npm run dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000) para ver a aplicação.
+O servidor de desenvolvimento escuta em todas as interfaces na porta `8001`:
 
-## 🔐 Acesso Admin
+- `http://localhost:8001`
+- `http://192.168.1.50:8001`, quando esse for o IP do computador.
 
-- **URL**: `/admin/login`
-- **Email**: `admin@copaace.com`
-- **Senha**: `admin123`
+Em desenvolvimento, `TRUST_PROXY` deve permanecer `false`.
 
-## 🚀 Deploy
+## Primeiro administrador
 
-### Vercel (Frontend)
+O e-mail administrativo é `financeiro@aceprodutora.com.br`. Para criar o administrador ou redefinir sua senha no PowerShell:
 
-1. Conecte seu repositório ao Vercel
-2. Configure as variáveis de ambiente no painel do Vercel
-3. Deploy automático será feito a cada push
-
-### Railway (Database)
-
-1. Crie uma conta no [Railway](https://railway.app)
-2. Crie um novo projeto PostgreSQL
-3. Copie a string de conexão e configure como `DATABASE_URL`
-4. Execute as migrações no Railway:
-```bash
-npx prisma migrate deploy
+```powershell
+$env:ADMIN_PASSWORD="SUA_SENHA_FORTE"; npm run db:seed; Remove-Item Env:ADMIN_PASSWORD
 ```
 
-### Variáveis de Ambiente para Produção
+O seed configura somente o administrador. Ele não cria times, partidas, notícias ou campeonatos fictícios.
 
-```env
-DATABASE_URL="postgresql://username:password@host:port/database?schema=public"
-JWT_SECRET="your-production-jwt-secret"
-NEXTAUTH_URL="https://your-domain.vercel.app"
-NEXTAUTH_SECRET="your-production-nextauth-secret"
+## Dados persistentes
+
+- Banco: `prisma/dev.db`
+- Logos e comprovantes: `storage/registrations/`
+- Estrutura versionada do banco: `prisma/migrations/`
+
+O banco e os uploads são privados e estão ignorados pelo Git. Os dois precisam entrar no plano de backup.
+
+## Scripts
+
+| Comando | Ação |
+| --- | --- |
+| `npm run dev` | Desenvolvimento em `0.0.0.0:8001` |
+| `npm run build` | Build otimizado de produção |
+| `npm run start` | Produção interna em `127.0.0.1:8001` |
+| `npm run db:generate` | Gera o Prisma Client |
+| `npm run db:migrate` | Aplica migrations pendentes |
+| `npm run db:migrate:status` | Verifica o estado das migrations |
+| `npm run db:seed` | Cria ou atualiza somente o administrador |
+| `npm run lint` | Executa ESLint |
+| `npm run test:security` | Testa rate limit e consultas parametrizadas |
+
+## Produção HTTPS
+
+O Node não deve ficar exposto diretamente na internet nem executar TLS. Em produção:
+
+1. Next.js escuta somente em `127.0.0.1:8001`.
+2. Caddy escuta nas portas públicas 80 e 443.
+3. HTTP é redirecionado automaticamente para HTTPS.
+4. Caddy gerencia o certificado TLS e envia o IP validado ao Next.js.
+
+O arquivo pronto está em `deploy/Caddyfile`. Consulte [DEPLOYMENT.md](./DEPLOYMENT.md) para instalação, DNS, migrations, firewall e backup.
+
+## Verificação da versão
+
+```powershell
+npm run lint
+npx tsc --noEmit
+npm run test:security
+npm audit
+npm run build
 ```
 
-## 📁 Estrutura do Projeto
-
-```
-src/
-├── app/                    # App Router do Next.js
-│   ├── admin/             # Painel administrativo
-│   ├── api/               # API Routes
-│   ├── schedule/          # Página de agenda
-│   ├── news/              # Página de notícias
-│   ├── sponsors/          # Página de patrocinadores
-│   └── hall-of-fame/      # Página do hall da fama
-├── components/            # Componentes React
-├── lib/                   # Utilitários e configurações
-└── prisma/               # Schema e seed do banco
-```
-
-## 🎨 Design
-
-O design é inspirado no logo da Copa Ace, utilizando uma paleta de cores ciano e preto com elementos geométricos e angulares. A interface é responsiva e otimizada para mobile-first.
-
-## 📝 Scripts Disponíveis
-
-- `npm run dev` - Executa o servidor de desenvolvimento
-- `npm run build` - Gera build de produção
-- `npm run start` - Executa o servidor de produção
-- `npm run lint` - Executa o linter
-- `npm run db:generate` - Gera o cliente Prisma
-- `npm run db:push` - Aplica mudanças no banco
-- `npm run db:migrate` - Executa migrações
-- `npm run db:seed` - Popula o banco com dados de exemplo
-
-## 🤝 Contribuição
-
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+As consultas da aplicação usam Prisma e são parametrizadas. Não introduza `$queryRawUnsafe` ou `$executeRawUnsafe`.

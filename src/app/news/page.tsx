@@ -22,9 +22,10 @@ export default async function NewsPage() {
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-cyan-400 mb-2">Notícias</h1>
-          <p className="text-gray-400">Fique por dentro das últimas novidades do mundo do Counter-Strike 2</p>
+        <div className="mb-8 border-l-4 border-copa-cyan pl-5">
+          <p className="brand-kicker mb-2">Central de conteúdo</p>
+          <h1 className="text-3xl font-bold uppercase text-white">Notícias</h1>
+          <p className="mt-2 text-gray-400">Fique por dentro das últimas novidades do mundo do Counter-Strike 2</p>
         </div>
 
         <NewsList news={news} />

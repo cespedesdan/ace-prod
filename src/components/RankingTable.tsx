@@ -1,154 +1,39 @@
-'use client'
+import { Clock3 } from 'lucide-react'
 
-import { useState } from 'react'
-import { ChevronUpIcon, ChevronDownIcon } from 'lucide-react'
-
-interface Team {
-  id: string
-  name: string
-  logoUrl?: string | null
-  region: string
-  wins: number
-  losses: number
-  points: number
-  matchesPlayed: number
-}
-
-interface RankingTableProps {
-  teams: Team[]
-}
-
-type SortField = 'points' | 'wins' | 'losses' | 'matchesPlayed'
-type SortDirection = 'asc' | 'desc'
-
-export function RankingTable({ teams }: RankingTableProps) {
-  const [sortField, setSortField] = useState<SortField>('points')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('desc')
-    }
-  }
-
-  const sortedTeams = [...teams].sort((a, b) => {
-    const aValue = a[sortField]
-    const bValue = b[sortField]
-
-    if (sortDirection === 'asc') {
-      return aValue - bValue
-    } else {
-      return bValue - aValue
-    }
-  })
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return null
-
-    return sortDirection === 'asc' ? (
-      <ChevronUpIcon className="w-4 h-4" />
-    ) : (
-      <ChevronDownIcon className="w-4 h-4" />
-    )
-  }
-
+export function RankingTable() {
   return (
-    <div className="bg-gray-800/50 rounded-lg overflow-hidden border border-cyan-500/20">
+    <div className="brand-card overflow-hidden">
+      <div className="flex flex-col justify-between gap-2 border-b border-copa-cyan/15 bg-copa-cyan/5 px-6 py-4 sm:flex-row sm:items-center">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-copa-cyan">Copa Ace 10</p>
+          <h3 className="mt-1 text-lg font-black uppercase text-white">Classificação da fase de grupos Sisema Suiço</h3>
+        </div>
+        <span className="text-xs font-bold uppercase tracking-wider text-gray-500">16 equipes</span>
+      </div>
+
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-cyan-500/10">
-            <tr>
-              <th className="px-6 py-4 text-left text-cyan-400 font-semibold">
-                Posição
-              </th>
-              <th className="px-6 py-4 text-left text-cyan-400 font-semibold">
-                Equipe
-              </th>
-              <th className="px-6 py-4 text-left text-cyan-400 font-semibold">
-                Região
-              </th>
-              <th
-                className="px-6 py-4 text-left text-cyan-400 font-semibold cursor-pointer hover:bg-cyan-500/5 transition-colors"
-                onClick={() => handleSort('points')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Pontos</span>
-                  {getSortIcon('points')}
-                </div>
-              </th>
-              <th
-                className="px-6 py-4 text-left text-cyan-400 font-semibold cursor-pointer hover:bg-cyan-500/5 transition-colors"
-                onClick={() => handleSort('wins')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Vitórias</span>
-                  {getSortIcon('wins')}
-                </div>
-              </th>
-              <th
-                className="px-6 py-4 text-left text-cyan-400 font-semibold cursor-pointer hover:bg-cyan-500/5 transition-colors"
-                onClick={() => handleSort('losses')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Derrotas</span>
-                  {getSortIcon('losses')}
-                </div>
-              </th>
-              <th
-                className="px-6 py-4 text-left text-cyan-400 font-semibold cursor-pointer hover:bg-cyan-500/5 transition-colors"
-                onClick={() => handleSort('matchesPlayed')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Jogos</span>
-                  {getSortIcon('matchesPlayed')}
-                </div>
-              </th>
+        <table className="w-full min-w-[760px]">
+          <thead className="bg-smoke/70">
+            <tr className="text-left text-xs font-black uppercase tracking-wider text-copa-cyan">
+              <th className="px-6 py-4">Posição</th>
+              <th className="px-6 py-4">Equipe</th>
+              <th className="px-6 py-4">Campanha</th>
+              <th className="px-6 py-4">Vitórias</th>
+              <th className="px-6 py-4">Derrotas</th>
+              <th className="px-6 py-4">Saldo</th>
+              <th className="px-6 py-4">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-cyan-500/10">
-            {sortedTeams.map((team, index) => (
-              <tr key={team.id} className="hover:bg-cyan-500/5 transition-colors">
-                <td className="px-6 py-4 text-gray-300 font-medium">
-                  {index + 1}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center space-x-3">
-                    {team.logoUrl ? (
-                      <img
-                        src={team.logoUrl}
-                        alt={`Logo da ${team.name}`}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                        <span className="text-cyan-400 font-bold text-sm">
-                          {team.name.charAt(0)}
-                        </span>
-                      </div>
-                    )}
-                    <span className="text-white font-medium">{team.name}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-300">
-                  {team.region}
-                </td>
-                <td className="px-6 py-4 text-cyan-400 font-semibold">
-                  {team.points}
-                </td>
-                <td className="px-6 py-4 text-green-400">
-                  {team.wins}
-                </td>
-                <td className="px-6 py-4 text-red-400">
-                  {team.losses}
-                </td>
-                <td className="px-6 py-4 text-gray-300">
-                  {team.matchesPlayed}
-                </td>
-              </tr>
-            ))}
+          <tbody>
+            <tr>
+              <td colSpan={7} className="px-6 py-16 text-center">
+                <Clock3 className="mx-auto text-copa-cyan" size={32} />
+                <p className="mt-4 text-3xl font-black uppercase tracking-[0.12em] text-white">ASAP</p>
+                <p className="mx-auto mt-2 max-w-lg text-sm text-gray-400">
+                  A classificação será publicada assim que começarem os jogos da Copa ACE 10.
+                </p>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

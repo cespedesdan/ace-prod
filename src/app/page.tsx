@@ -1,78 +1,24 @@
-import { prisma } from '@/lib/prisma'
-import { RankingTable } from '@/components/RankingTable'
+import type { Metadata } from 'next'
 import { Hero } from '@/components/Hero'
+import { RankingTable } from '@/components/RankingTable'
 
-async function getTeams() {
-  try {
-    const teams = await prisma.team.findMany({
-      include: {
-        matchesAsTeamA: {
-          where: {
-            status: 'FINISHED'
-          }
-        },
-        matchesAsTeamB: {
-          where: {
-            status: 'FINISHED'
-          }
-        }
-      }
-    })
-
-    // Calculate points, wins, and losses for each team
-    const teamsWithStats = teams.map(team => {
-      const allMatches = [...team.matchesAsTeamA, ...team.matchesAsTeamB]
-      const wins = allMatches.filter(match => {
-        if (match.teamAId === team.id) {
-          return match.scoreA && match.scoreB && match.scoreA > match.scoreB
-        } else {
-          return match.scoreA && match.scoreB && match.scoreB > match.scoreA
-        }
-      }).length
-
-      const losses = allMatches.filter(match => {
-        if (match.teamAId === team.id) {
-          return match.scoreA && match.scoreB && match.scoreA < match.scoreB
-        } else {
-          return match.scoreA && match.scoreB && match.scoreB < match.scoreA
-        }
-      }).length
-
-      const points = wins * 3 // 3 points per win
-
-      return {
-        ...team,
-        wins,
-        losses,
-        points,
-        matchesPlayed: allMatches.length
-      }
-    })
-
-    // Sort by points (descending), then by wins (descending)
-    return teamsWithStats.sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points
-      return b.wins - a.wins
-    })
-  } catch (error) {
-    console.error('Error fetching teams:', error)
-    return []
-  }
+export const metadata: Metadata = {
+  title: 'Home | Ace Produtora',
+  description: 'Página inicial da Ace Produtora e preview da classificação da Copa ACE 10.',
 }
 
-export default async function HomePage() {
-  const teams = await getTeams()
-
+export default function HomePage() {
   return (
     <div className="min-h-screen">
       <Hero />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-cyan-400 mb-2">Classificação</h1>
-          <p className="text-gray-400">Acompanhe o ranking das equipes no torneio atual</p>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8 border-l-4 border-copa-cyan pl-5">
+          <p className="brand-kicker mb-2">Competição atual</p>
+          <h2 className="text-3xl font-bold uppercase text-white">Classificação Copa ACE 10</h2>
+          <p className="mt-2 text-gray-400">Preview da tabela oficial das 16 equipes no formato suíço.</p>
         </div>
 
-        <RankingTable teams={teams} />
+        <RankingTable />
       </div>
     </div>
   )
