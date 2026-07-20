@@ -23,9 +23,9 @@ O Next.js permanece acessível apenas pelo loopback. Caddy gerencia HTTPS e enca
 ## 1. Preparar o projeto
 
 ```bash
-cd /home/ubuntu
-git clone https://github.com/cespedesdan/ace-prod.git
-cd ace-prod
+sudo install -d -o ubuntu -g ubuntu /srv/ace-prod
+git clone https://github.com/cespedesdan/ace-prod.git /srv/ace-prod
+cd /srv/ace-prod
 cp .env.example .env.local
 chmod 600 .env.local
 ```
@@ -90,7 +90,7 @@ npm run build
 
 ## 5. Instalar o serviço Next.js
 
-O arquivo `deploy/ace-prod.service` assume o usuário `ubuntu` e o projeto em `/home/ubuntu/ace-prod`. Ajuste-o se o caminho for diferente.
+O arquivo `deploy/ace-prod.service` assume o usuário `ubuntu` e o projeto em `/srv/ace-prod`.
 
 ```bash
 sudo cp deploy/ace-prod.service /etc/systemd/system/ace-prod.service
@@ -146,7 +146,7 @@ curl -I https://www.aceprodutora.com.br
 Os dados persistentes são `prisma/dev.db` e `storage/registrations/`. Faça backup dos dois juntos:
 
 ```bash
-cd /home/ubuntu/ace-prod
+cd /srv/ace-prod
 mkdir -p backups
 sqlite3 prisma/dev.db ".backup 'backups/ace-prod.db'"
 cp -a storage/registrations backups/registrations
@@ -157,7 +157,7 @@ Proteja a cópia como dado pessoal e teste periodicamente a restauração. Nunca
 ## Atualizar a aplicação
 
 ```bash
-cd /home/ubuntu/ace-prod
+cd /srv/ace-prod
 sudo systemctl stop ace-prod
 git pull --ff-only
 npm ci
@@ -214,7 +214,7 @@ chmod 600 ~/.ssh/authorized_keys
 Confirme também que a produção está na branch `main`, sem alterações versionadas, e que o usuário pode controlar o serviço sem senha interativa:
 
 ```bash
-cd /home/ubuntu/ace-prod
+cd /srv/ace-prod
 git branch --show-current
 git status --short
 sudo -n systemctl status ace-prod --no-pager

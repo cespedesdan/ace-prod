@@ -3,7 +3,7 @@ set -Eeuo pipefail
 umask 077
 
 TARGET_SHA="${1:-}"
-APP_DIR="${APP_DIR:-/home/ubuntu/ace-prod}"
+APP_DIR="${APP_DIR:-/srv/ace-prod}"
 BACKUP_ROOT="${BACKUP_ROOT:-/home/ubuntu/backups/ace-prod}"
 SERVICE_NAME="${SERVICE_NAME:-ace-prod}"
 

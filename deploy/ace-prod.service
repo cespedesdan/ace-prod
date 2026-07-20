@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 User=ubuntu
 Group=ubuntu
-WorkingDirectory=/home/ubuntu/ace-prod
+WorkingDirectory=/srv/ace-prod
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/npm run start
 Restart=on-failure

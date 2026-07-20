@@ -89,7 +89,7 @@ jobs:
           ssh -o BatchMode=yes -o IdentitiesOnly=yes \
             -i ~/.ssh/ace-prod "$EC2_USER@$EC2_HOST" \
             "set -Eeuo pipefail; \
-             cd /home/ubuntu/ace-prod; \
+             cd /srv/ace-prod; \
              git fetch --prune origin main; \
              git show '$TARGET_SHA:scripts/deploy-production.sh' > /tmp/ace-prod-deploy.sh; \
              chmod 700 /tmp/ace-prod-deploy.sh; \
