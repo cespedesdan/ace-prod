@@ -1,13 +1,22 @@
-# Ace Produtora 1.0.0
+# Ace Produtora 1.1.0
 
 Site oficial da Ace Produtora e da Copa ACE 10, desenvolvido com Next.js 15, React 19, TypeScript, Tailwind CSS, Prisma e SQLite.
+
+**Versão atual: 1.1.0 — Integração simples FACEIT.**
+
+Nesta versão, o formulário consulta o time na FACEIT, preenche o nome oficial e salva um snapshot do elenco. A administração pode atualizar esse elenco manualmente e vincular campeonatos para armazenar times, partidas, horários e resultados sem consultas contínuas à API.
 
 ## Funcionalidades
 
 - Home, agenda, notícias e Hall da Fama das edições anteriores.
+- Páginas históricas orientadas a dados, com componentes reutilizáveis por formato de campeonato.
 - Página oficial da Copa ACE 10 com 16 vagas e equipes confirmadas.
 - Inscrição de equipes com PIX, logo e comprovante de pagamento privado.
+- Consulta do time na FACEIT, preenchimento automático do nome e snapshot do elenco.
 - Painel administrativo para notícias e aprovação de inscrições.
+- Sincronização manual do elenco FACEIT pelo painel administrativo.
+- Gerenciamento de campeonatos FACEIT com vínculos, snapshots e sincronização independente por edição.
+- Publicação automática do snapshot em páginas integradas, atualmente na Copa ACE 10.
 - Publicação automática das equipes aprovadas na página da Copa ACE 10.
 - Autenticação administrativa com bcrypt e JWT em cookie `httpOnly`.
 - Rate limit persistente por e-mail e, atrás do proxy confiável, também por IP.
@@ -26,6 +35,7 @@ Site oficial da Ace Produtora e da Copa ACE 10, desenvolvido com Next.js 15, Rea
 | `/admin/login` | Login administrativo |
 | `/admin` | Painel administrativo |
 | `/admin/inscricoes` | Aprovação e rejeição de inscrições |
+| `/admin/faceit` | Vínculo, sincronização e desvinculação de campeonatos FACEIT |
 | `/admin/noticias` | Criação, edição e exclusão de notícias |
 
 ## Desenvolvimento local
@@ -45,6 +55,8 @@ O servidor de desenvolvimento escuta em todas as interfaces na porta `8001`:
 - `http://localhost:8001`
 
 Em desenvolvimento, `TRUST_PROXY` deve permanecer `false`.
+
+Defina `FACEIT_API_KEY` no `.env.local` para habilitar a consulta de times. A chave é usada somente pelo servidor: não use prefixo `NEXT_PUBLIC_` e nunca a envie ao Git.
 
 ## Primeiro administrador
 
@@ -76,7 +88,9 @@ O banco e os uploads são privados e estão ignorados pelo Git. Os dois precisam
 | `npm run db:migrate:status` | Verifica o estado das migrations |
 | `npm run db:seed` | Cria ou atualiza somente o administrador |
 | `npm run lint` | Executa ESLint |
+| `npm run check` | Executa lint, TypeScript e todos os testes locais |
 | `npm run test:security` | Testa rate limit e consultas parametrizadas |
+| `npm run test:tournaments` | Verifica formatos e regras MD1/MD3 das páginas históricas |
 
 ## Produção HTTPS
 
@@ -89,12 +103,12 @@ O Node não deve ficar exposto diretamente na internet nem executar TLS. Em prod
 
 O arquivo pronto está em `deploy/Caddyfile`. Consulte [DEPLOYMENT.md](./DEPLOYMENT.md) para instalação, DNS, migrations, firewall e backup.
 
+O repositório também inclui CI e deploy automático pela GitHub Actions, com backup de banco e uploads, rollback e teste de saúde. A configuração dos segredos está no mesmo guia de publicação.
+
 ## Verificação da versão
 
 ```powershell
-npm run lint
-npx tsc --noEmit
-npm run test:security
+npm run check
 npm audit
 npm run build
 ```

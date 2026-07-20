@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
 
   const registrations = await prisma.registration.findMany({
     orderBy: { createdAt: 'desc' },
+    include: { players: { orderBy: { nickname: 'asc' } } },
   })
 
   return NextResponse.json({

@@ -1,10 +1,14 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { hallOfFameEditions } from '@/data/hallOfFame'
-import CopaAce9Page from '@/components/CopaAce9Page'
+import { tournamentArchives } from '@/data/tournamentArchives'
 import CopaAce10Page from '@/components/CopaAce10Page'
-import AceClutch2Page from '@/components/AceClutch2Page'
-import AceClutch1Page from '@/components/AceClutch1Page'
+import {
+  DoubleEliminationTournamentPage,
+  GroupDoubleEliminationTournamentPage,
+  GroupRoundRobinTournamentPage,
+  SingleEliminationTournamentPage,
+} from '@/components/TournamentFormatPage'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,20 +24,22 @@ export default async function HallOfFameEditionPage({ params }: EditionPageProps
     notFound()
   }
 
-  if (edition.slug === 'copa-ace-9') {
-    return <CopaAce9Page />
-  }
-
-  if (edition.slug === 'ace-clutch-2') {
-    return <AceClutch2Page />
-  }
-
-  if (edition.slug === 'ace-clutch') {
-    return <AceClutch1Page />
-  }
-
   if (edition.slug === 'copa-ace-10') {
     return <CopaAce10Page />
+  }
+
+  const archive = tournamentArchives[edition.slug]
+  if (archive?.format === 'GROUP_DOUBLE_ELIMINATION_SINGLE_ELIMINATION') {
+    return <GroupDoubleEliminationTournamentPage data={archive} />
+  }
+  if (archive?.format === 'GROUP_ROUND_ROBIN_SINGLE_ELIMINATION') {
+    return <GroupRoundRobinTournamentPage data={archive} />
+  }
+  if (archive?.format === 'SINGLE_ELIMINATION') {
+    return <SingleEliminationTournamentPage data={archive} />
+  }
+  if (archive?.format === 'DOUBLE_ELIMINATION') {
+    return <DoubleEliminationTournamentPage data={archive} />
   }
 
   return (

@@ -16,6 +16,16 @@ import {
 } from 'lucide-react'
 
 type RegistrationStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+type RegistrationPlayer = {
+  id: string
+  faceitPlayerId: string
+  nickname: string
+  country: string | null
+  skillLevel: number | null
+  membershipType: string | null
+  isLeader: boolean
+  faceitUrl: string | null
+}
 type Registration = {
   id: string
   protocol: string
@@ -32,6 +42,8 @@ type Registration = {
   paymentProofOriginalName: string
   status: RegistrationStatus
   createdAt: string
+  faceitLastSyncedAt: string | null
+  players: RegistrationPlayer[]
   logoDownloadUrl: string
   paymentDownloadUrl: string
 }
@@ -110,6 +122,32 @@ export default function RegistrationsAdminPage() {
       )))
     } catch (statusError) {
       setError(statusError instanceof Error ? statusError.message : 'Erro inesperado.')
+    } finally {
+      setActionId('')
+    }
+  }
+
+  async function syncPlayers(id: string) {
+    setActionId(id)
+    setError('')
+    try {
+      const response = await fetch(`/api/admin/registrations/${id}/faceit`, { method: 'POST' })
+      const data = (await response.json()) as {
+        error?: string
+        registration?: { players: RegistrationPlayer[]; faceitLastSyncedAt: string }
+      }
+      if (response.status === 401) {
+        router.push('/admin/login')
+        return
+      }
+      if (!response.ok || !data.registration) {
+        throw new Error(data.error || 'Não foi possível sincronizar os players.')
+      }
+      setRegistrations((current) => current.map((item) => (
+        item.id === id ? { ...item, ...data.registration } : item
+      )))
+    } catch (syncError) {
+      setError(syncError instanceof Error ? syncError.message : 'Erro inesperado.')
     } finally {
       setActionId('')
     }
@@ -210,6 +248,33 @@ export default function RegistrationsAdminPage() {
                       </button>
                     )}
                   </div>
+                </div>
+
+                <div className="border-t border-slate-700 pt-4 lg:col-span-3">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-cyan-400">Elenco FACEIT</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {registration.faceitLastSyncedAt
+                          ? `Última sincronização: ${new Date(registration.faceitLastSyncedAt).toLocaleString('pt-BR')}`
+                          : 'Ainda não sincronizado'}
+                      </p>
+                    </div>
+                    <button type="button" disabled={actionId === registration.id} onClick={() => syncPlayers(registration.id)} className="inline-flex items-center justify-center gap-2 border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-black text-cyan-300 hover:bg-cyan-400/20 disabled:opacity-40">
+                      <RotateCcw className={actionId === registration.id ? 'animate-spin' : ''} size={14} /> Sincronizar players
+                    </button>
+                  </div>
+                  {registration.players.length > 0 ? (
+                    <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                      {registration.players.map((player) => (
+                        <li key={player.id} className="bg-slate-800 px-3 py-2 text-xs text-slate-400">
+                          {player.faceitUrl ? <a href={player.faceitUrl} target="_blank" rel="noreferrer" className="font-black text-white hover:text-cyan-300">{player.nickname}</a> : <strong className="text-white">{player.nickname}</strong>}
+                          {player.isLeader && <span className="ml-1 text-cyan-400">· líder</span>}
+                          {player.skillLevel !== null && <span className="mt-1 block text-[10px]">Nível {player.skillLevel}{player.country ? ` · ${player.country.toUpperCase()}` : ''}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <p className="mt-4 text-sm text-slate-500">Nenhum player armazenado. Use a sincronização para importar o elenco.</p>}
                 </div>
               </div>
             </article>

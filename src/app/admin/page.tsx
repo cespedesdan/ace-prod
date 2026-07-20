@@ -68,6 +68,14 @@ export default function AdminDashboard() {
               Ver inscrições
             </Link>
           </div>
+
+          <div className="brand-card p-6">
+            <h3 className="text-xl font-semibold text-white mb-4">Campeonatos FACEIT</h3>
+            <p className="text-gray-400 mb-4">Vincule cada edição e sincronize times, partidas, horários e chaveamento</p>
+            <Link href="/admin/faceit" className="brand-button-primary">
+              Gerenciar FACEIT
+            </Link>
+          </div>
         </div>
 
         <div className="mt-8">

@@ -70,19 +70,21 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
     slug: 'copa-ace-7',
     title: 'Copa Ace 7',
     logo: '/hall-of-fame/logos/copa-ace-6-7.png',
+    date: '18 de fevereiro de 2025',
     champion: 'Chape e-Sports',
     runnerUp: 'Mystic',
-    description: 'A sétima edição marcou um novo capítulo na história da competição.',
-    highlights: ['Edição marcante', 'História em construção', 'Resumo em construção']
+    description: 'Dezesseis equipes disputaram quatro grupos em dupla eliminação antes dos playoffs em eliminação simples.',
+    highlights: ['16 equipes', 'Grupos: dupla eliminação · MD1', 'Playoffs: eliminação simples · MD3']
   },
   {
     slug: 'copa-ace-8',
     title: 'Copa Ace 8',
     logo: '/hall-of-fame/logos/copa-ace-8.png',
+    date: '26 de maio de 2025',
     champion: 'Chape e-Sports',
     runnerUp: "Don't Crash",
-    description: 'A oitava edição elevou ainda mais o nível da competição e da disputa pela taça.',
-    highlights: ['Alta competitividade', 'Final de alto nível', 'Resumo em construção']
+    description: "Dezesseis equipes disputaram quatro grupos. A Chape e-Sports venceu a Don't Crash por 2–1 na grande final.",
+    highlights: ['16 equipes', 'Grupos: todos contra todos · MD1', 'Playoffs: eliminação simples · MD3']
   },
   {
     slug: 'ace-clutch',

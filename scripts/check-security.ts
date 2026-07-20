@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
+import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
 
 const identifier = randomUUID()
 
@@ -35,6 +36,50 @@ async function main() {
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
     )
+
+    const faceitTeamId = '6204037c-30e6-408b-8aaa-dd8219860b4b'
+    assert.equal(parseFaceitTeamId(`https://www.faceit.com/pt/teams/${faceitTeamId}/ace`), faceitTeamId)
+    assert.throws(
+      () => parseFaceitTeamId(`https://faceit.com.example/pt/teams/${faceitTeamId}`),
+      (error) => error instanceof FaceitApiError,
+    )
+    assert.equal(parseFaceitChampionshipId(`https://www.faceit.com/pt/championship/${faceitTeamId}/copa-ace-10`), faceitTeamId)
+    assert.throws(
+      () => parseFaceitChampionshipId(`https://faceit.com.example/pt/championship/${faceitTeamId}`),
+      (error) => error instanceof FaceitApiError,
+    )
+
+    const originalFetch = globalThis.fetch
+    const originalApiKey = process.env.FACEIT_API_KEY
+    process.env.FACEIT_API_KEY = 'test-key'
+    globalThis.fetch = async (input) => {
+      const url = String(input)
+      const body = url.includes('/matches?') ? {
+        end: 1,
+        items: [{
+          match_id: 'match-1', round: 1, group: 1, best_of: 1, scheduled_at: 1_787_200_000, status: 'SCHEDULED',
+          teams: { faction1: { faction_id: 'team-1', name: 'Time Um' }, faction2: { faction_id: 'team-2', name: 'Time Dois' } },
+          results: { score: { faction1: 0, faction2: 0 }, winner: null },
+        }],
+      } : url.includes('/results?') ? { end: 0, items: [] }
+        : url.includes('/subscriptions?') ? { end: 1, items: [{ status: 'ACCEPTED', group: 1, coach: 'coach-1', roster: [], substitutes: [], team: { team_id: 'team-1', name: 'Time Um' } }] }
+          : { championship_id: faceitTeamId, name: 'Copa Ace 10', status: 'ongoing', game_id: 'cs2', type: 'swiss', seeding_strategy: 'swiss', total_rounds: 5, championship_start: 1_787_200_000_000 }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }
+    try {
+      const snapshot = await getFaceitChampionship(`https://www.faceit.com/pt/championship/${faceitTeamId}/copa-ace-10`)
+      assert.equal(snapshot.startsAt, 1_787_200_000_000)
+      assert.equal(snapshot.format, 'swiss')
+      assert.equal(snapshot.totalRounds, 5)
+      assert.equal(snapshot.teams[0]?.coachPlayerId, 'coach-1')
+      assert.equal(snapshot.matches[0]?.scheduledAt, 1_787_200_000_000)
+      assert.equal(snapshot.matches[0]?.teams[0]?.faction, 'faction1')
+      assert.equal(snapshot.matches[0]?.scores.faction1, 0)
+    } finally {
+      globalThis.fetch = originalFetch
+      if (originalApiKey === undefined) delete process.env.FACEIT_API_KEY
+      else process.env.FACEIT_API_KEY = originalApiKey
+    }
 
     console.log('Security checks passed.')
   } finally {

@@ -1,6 +1,6 @@
-# Publicação da Ace Produtora 1.0.0
+# Publicação da Ace Produtora 1.1.0
 
-Este guia descreve a publicação no computador Windows que hospeda o projeto. A configuração incluída assume os domínios `aceprodutora.com.br` e `www.aceprodutora.com.br`.
+Guia da produção atual em uma instância AWS EC2 com Ubuntu, Caddy, Next.js e SQLite. Os domínios usados são `aceprodutora.com.br` e `www.aceprodutora.com.br`.
 
 ## Arquitetura
 
@@ -10,183 +10,262 @@ Internet
   └─ TCP 443 ── Caddy ── 127.0.0.1:8001 ── Next.js ── SQLite + storage
 ```
 
-O Next.js nunca deve ser publicado diretamente nas portas 80 ou 443. O script `npm run start` aceita conexões apenas em `127.0.0.1:8001`; o Caddy termina o TLS e encaminha as requisições.
+O Next.js permanece acessível apenas pelo loopback. Caddy gerencia HTTPS e encaminha as requisições para a porta 8001.
 
 ## Requisitos
 
-- Node.js 24 LTS.
-- Caddy 2.10 ou superior disponível no `PATH`.
-- DNS dos domínios raiz e `www` apontando para o IP público do local.
-- Registros DNS atualmente publicados pelo proxy da Cloudflare.
-- Portas TCP 80 e 443 encaminhadas pelo roteador para o computador e liberadas no Firewall do Windows.
-- Acesso de escrita a `prisma/` e `storage/registrations/`.
+- Ubuntu Server na AWS EC2.
+- Node.js 24 LTS, npm, Git, Caddy e SQLite.
+- DNS do domínio raiz e `www` apontando para o IP público ou Elastic IP da instância.
+- Portas 22, 80 e 443 liberadas no Security Group; a porta 8001 não deve ser pública.
+- Cloudflare em SSL/TLS `Full (strict)` depois da emissão do certificado.
 
-No Windows, o Caddy pode ser instalado pelo Chocolatey ou Scoop:
+## 1. Preparar o projeto
 
-```powershell
-choco install caddy
-# ou
-scoop install caddy
+```bash
+cd /home/ubuntu
+git clone https://github.com/cespedesdan/ace-prod.git
+cd ace-prod
+cp .env.example .env.local
+chmod 600 .env.local
 ```
 
-Para produção contínua, execute Node e Caddy como serviços do Windows com reinício automático. Não dependa de terminais abertos.
+Gere o segredo JWT:
 
-## 1. Preparar variáveis privadas
-
-```powershell
-Copy-Item .env.example .env.local
-node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```bash
+openssl rand -hex 32
 ```
 
-Copie o valor gerado para `JWT_SECRET` e configure o arquivo assim:
+Preencha `.env.local` sem versionar o arquivo:
 
 ```dotenv
-JWT_SECRET=CHAVE_ALEATORIA_GERADA
-ADMIN_EMAIL=admin@exemplo.com
+JWT_SECRET=CHAVE_ALEATORIA_COM_PELO_MENOS_32_CARACTERES
+ADMIN_EMAIL=EMAIL_PRIVADO_DO_ADMINISTRADOR
 ADMIN_PASSWORD=
+FACEIT_API_KEY=CHAVE_PRIVADA_DA_FACEIT
 TRUST_PROXY=true
 ```
 
-`TRUST_PROXY=true` só é seguro porque o Next escuta no loopback e o Caddy sobrescreve os cabeçalhos de IP. Em acesso direto ou desenvolvimento, use `false`.
+`TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. A chave FACEIT nunca deve usar o prefixo `NEXT_PUBLIC_`.
 
-## 2. Instalar, migrar e construir
+## 2. Instalar e preparar o banco
 
-```powershell
+```bash
 npm ci
 npm run db:generate
 npm run db:migrate
-npm run build
+npm run db:migrate:status
 ```
 
-Em uma instalação nova, `db:migrate` cria todas as tabelas pela migration-base `20260716160000_v1_baseline`.
+Em uma instalação nova, as migrations criam toda a estrutura. Nunca use `prisma migrate dev` em produção.
 
-### Banco existente anterior à migration-base
+### Banco anterior à migration-base
 
-Esta cópia local já foi marcada como atualizada. Se outra máquina possuir um `prisma/dev.db` criado antes da migration-base:
+Se a máquina já possuía `prisma/dev.db` antes da migration `20260716160000_v1_baseline`, faça backup e execute uma única vez:
 
-1. Faça backup do banco e dos uploads.
-2. Confirme que o schema já corresponde à versão 1.0.0.
-3. Execute uma única vez:
-
-```powershell
+```bash
 npx prisma migrate resolve --applied 20260716160000_v1_baseline
 npm run db:migrate:status
 ```
 
-Não execute `migrate resolve` em um banco vazio; use `npm run db:migrate`.
+Não execute esse comando em banco vazio.
 
 ## 3. Criar ou redefinir o administrador
 
-```powershell
-$env:ADMIN_PASSWORD="SUA_SENHA_FORTE"; npm run db:seed; Remove-Item Env:ADMIN_PASSWORD
+```bash
+read -s -p "Senha do administrador: " ADMIN_PASSWORD; echo
+ADMIN_PASSWORD="$ADMIN_PASSWORD" npm run db:seed
+unset ADMIN_PASSWORD
 ```
 
-- Login: valor privado definido em `ADMIN_EMAIL`.
-- A senha não fica armazenada em texto puro; o banco recebe um hash bcrypt com custo 12.
-- Não mantenha `ADMIN_PASSWORD` preenchida em `.env.local` depois do seed.
+O seed cria ou atualiza somente o administrador. A senha é armazenada como hash bcrypt com custo 12 e não deve permanecer no `.env.local`.
 
-## 4. Validar e iniciar o Next.js
+## 4. Validar e construir
 
-```powershell
-npm run lint
-npx tsc --noEmit
-npm run test:security
+```bash
+npm run check
 npm audit
 npm run build
-npm run start
 ```
 
-O processo ficará disponível somente em `http://127.0.0.1:8001`.
+## 5. Instalar o serviço Next.js
 
-## 5. Ativar HTTPS nas portas 80 e 443
+O arquivo `deploy/ace-prod.service` assume o usuário `ubuntu` e o projeto em `/home/ubuntu/ace-prod`. Ajuste-o se o caminho for diferente.
 
-O arquivo [deploy/Caddyfile](./deploy/Caddyfile) já contém:
-
-- Certificado automático para o domínio raiz e `www`.
-- Redirecionamento automático de HTTP para HTTPS.
-- Proxy para `127.0.0.1:8001`.
-- Limite externo de corpo em 23 MiB.
-- `X-Real-IP` sobrescrito e `X-Forwarded-For` normalizado pelo proxy.
-- Faixas oficiais IPv4 e IPv6 da Cloudflare configuradas como proxies confiáveis.
-- HSTS, compressão e remoção do cabeçalho `Server`.
-
-Valide antes de iniciar:
-
-```powershell
-caddy validate --config .\deploy\Caddyfile
-caddy run --config .\deploy\Caddyfile
+```bash
+sudo cp deploy/ace-prod.service /etc/systemd/system/ace-prod.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now ace-prod
+sudo systemctl status ace-prod --no-pager
 ```
 
-O primeiro certificado só será emitido se o DNS estiver correto e as portas 80/443 estiverem acessíveis pela internet. Para recarregar uma configuração ativa sem interromper conexões:
+Comandos operacionais:
 
-```powershell
-caddy reload --config .\deploy\Caddyfile
+```bash
+sudo systemctl stop ace-prod
+sudo systemctl start ace-prod
+sudo systemctl restart ace-prod
+journalctl -u ace-prod -n 100 --no-pager
 ```
 
-Se o domínio definitivo ou o IP local forem diferentes, altere os endereços e a diretiva `bind` no Caddyfile antes de executar.
+## 6. Ativar Caddy e HTTPS
 
-Como o domínio usa a Cloudflare, mantenha o modo SSL/TLS em `Full (strict)` depois que o certificado do Caddy estiver ativo. Revise as faixas confiáveis do Caddyfile caso a Cloudflare publique uma atualização em suas listas oficiais.
-
-### Firewall do Windows
-
-Em um PowerShell executado como administrador:
-
-```powershell
-New-NetFirewallRule -DisplayName "Ace Produtora HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
-New-NetFirewallRule -DisplayName "Ace Produtora HTTP Redirect" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
+```bash
+sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl enable --now caddy
+sudo systemctl reload caddy
+sudo systemctl status caddy --no-pager
 ```
 
-Não crie uma regra pública para a porta 8001 em produção.
+O Caddyfile inclui HTTPS automático, redirecionamento HTTP, compressão, limite de 23 MiB, HSTS e proxy para `127.0.0.1:8001`.
 
-## 6. Testar a publicação
+Teste externamente:
 
-```powershell
-curl.exe -I http://aceprodutora.com.br
-curl.exe -I https://aceprodutora.com.br
-curl.exe -I https://www.aceprodutora.com.br
+```bash
+curl -I http://aceprodutora.com.br
+curl -I https://aceprodutora.com.br
+curl -I https://www.aceprodutora.com.br
 ```
-
-O primeiro comando deve redirecionar para HTTPS. Os demais devem responder pela porta 443 com certificado válido.
 
 ## Proteções ativas
 
 - Prisma sem SQL bruto nas rotas de inscrição e administração.
-- Leitura limitada do fluxo: 22 MiB para inscrições e 4 KiB para login, inclusive sem `Content-Length`.
-- Caddy rejeita requisições acima de 23 MiB antes de chegarem ao Node.
-- Arquivos individuais limitados a 10 MiB e validados por MIME e assinatura binária.
+- Chave FACEIT utilizada somente no servidor.
+- Consultas públicas à FACEIT limitadas por IP em produção.
+- Elencos e campeonatos armazenados como snapshots, com sincronização manual.
+- Corpo das inscrições limitado a 22 MiB e arquivos individuais a 10 MiB.
+- Arquivos validados por MIME e assinatura binária.
 - Comprovantes disponíveis somente para administrador autenticado.
-- Caminhos de arquivo protegidos contra saída da pasta de armazenamento.
 - Inscrições limitadas a três tentativas em 24 horas por e-mail e IP.
-- Login limitado por e-mail e IP, com bloqueio após tentativas inválidas.
-- Identificadores do rate limit armazenados apenas como SHA-256.
-- Registros expirados de rate limit removidos automaticamente após sete dias.
-- JWT assinado, cookie `httpOnly`, `Secure` em produção e `SameSite=Strict`.
+- Login limitado por e-mail e IP.
+- JWT em cookie `httpOnly`, `Secure` em produção e `SameSite=Strict`.
 
 ## Backup
 
-O conjunto persistente é formado por:
+Os dados persistentes são `prisma/dev.db` e `storage/registrations/`. Faça backup dos dois juntos:
 
-- `prisma/dev.db`
-- `storage/registrations/`
-
-Faça backup dos dois locais juntos e proteja a cópia como dado pessoal. Para uma cópia consistente, pare temporariamente o processo Node ou use a função de backup do SQLite:
-
-```powershell
-New-Item -ItemType Directory -Force backups | Out-Null
+```bash
+cd /home/ubuntu/ace-prod
+mkdir -p backups
 sqlite3 prisma/dev.db ".backup 'backups/ace-prod.db'"
-Copy-Item storage/registrations backups/registrations -Recurse -Force
+cp -a storage/registrations backups/registrations
 ```
 
-Teste periodicamente a restauração em outra pasta. Nunca force a inclusão de `prisma/dev.db`, `.env.local` ou `storage/registrations/` no Git.
+Proteja a cópia como dado pessoal e teste periodicamente a restauração. Nunca envie banco, uploads ou `.env.local` ao Git.
 
-## Atualização da aplicação
+## Atualizar a aplicação
 
-```powershell
-git pull
+```bash
+cd /home/ubuntu/ace-prod
+sudo systemctl stop ace-prod
+git pull --ff-only
 npm ci
 npm run db:generate
 npm run db:migrate
+npm run check
+npm audit
 npm run build
+sudo systemctl start ace-prod
+sudo systemctl status ace-prod --no-pager
 ```
 
-Depois, reinicie apenas o serviço Node. O Caddy pode permanecer ativo e continuará atendendo HTTPS; durante a reinicialização curta ele poderá responder `502` até o Next voltar.
+O Caddy pode permanecer ativo durante a atualização e poderá responder `502` enquanto o Next.js estiver parado.
+
+## Deploy automático com GitHub Actions
+
+O workflow `.github/workflows/ci-deploy.yml` executa as validações em todo pull request para `main`. Depois do merge, ele publica o commit exato na EC2. Antes de alterar o código, `scripts/deploy-production.sh` para o serviço e copia o banco e os uploads para:
+
+```text
+/home/ubuntu/backups/ace-prod/AAAAMMDDTHHMMSSZ-COMMIT/
+```
+
+Se migration, instalação, build ou teste de saúde falhar, o script restaura o commit e os dados anteriores automaticamente.
+
+### 1. Criar uma chave exclusiva para o deploy
+
+No PowerShell do computador de desenvolvimento:
+
+```powershell
+ssh-keygen -t ed25519 -f "$HOME\.ssh\ace-prod-github-actions" -C "github-actions-ace-prod"
+```
+
+Pressione Enter duas vezes quando for solicitada a senha. A automação não pode responder a uma solicitação interativa. Não reutilize a chave administrativa `.pem` da AWS.
+
+Mostre somente a chave pública:
+
+```powershell
+Get-Content "$HOME\.ssh\ace-prod-github-actions.pub"
+```
+
+Na EC2, acrescente essa linha a `/home/ubuntu/.ssh/authorized_keys`, mantendo a chave existente:
+
+```text
+restrict ssh-ed25519 AAAA... github-actions-ace-prod
+```
+
+O prefixo `restrict` desabilita encaminhamentos e terminal interativo para essa chave, mas permite os comandos necessários ao deploy. Depois, confira as permissões:
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Confirme também que a produção está na branch `main`, sem alterações versionadas, e que o usuário pode controlar o serviço sem senha interativa:
+
+```bash
+cd /home/ubuntu/ace-prod
+git branch --show-current
+git status --short
+sudo -n systemctl status ace-prod --no-pager
+```
+
+### 2. Conferir a identidade SSH da EC2
+
+Na EC2:
+
+```bash
+sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+No PowerShell, substitua `HOST_DA_EC2` e compare o fingerprint exibido:
+
+```powershell
+ssh-keyscan HOST_DA_EC2 | ssh-keygen -lf -
+```
+
+Somente se os fingerprints forem iguais, gere o conteúdo que será salvo no GitHub:
+
+```powershell
+ssh-keyscan -H HOST_DA_EC2
+```
+
+### 3. Criar o ambiente e os segredos no GitHub
+
+No repositório, acesse **Settings > Environments > New environment**, crie `production` e cadastre:
+
+**Environment secrets**
+
+- `EC2_SSH_KEY`: conteúdo completo da chave privada obtido com `Get-Content "$HOME\.ssh\ace-prod-github-actions" -Raw`.
+- `EC2_KNOWN_HOSTS`: saída validada de `ssh-keyscan -H HOST_DA_EC2`.
+
+**Environment variables**
+
+- `EC2_HOST`: hostname público, Elastic IP ou domínio da EC2, sem `https://`.
+- `EC2_USER`: `ubuntu`.
+
+Opcionalmente, em **Deployment branches and tags**, permita somente `main`. Se **Required reviewers** estiver disponível, adicione sua conta para exigir aprovação manual antes da produção.
+
+Em **Settings > Rules > Rulesets**, proteja a `main`: exija pull request, o status **Validar aplicação** aprovado e bloqueie force push. Assim, o deploy só recebe código que passou pelo CI.
+
+### 4. Fluxo de publicação
+
+1. Envie a branch de desenvolvimento ao GitHub e abra um pull request para `main`.
+2. Aguarde o job **Validar aplicação** terminar com sucesso.
+3. Faça o merge.
+4. A atualização da `main` inicia **Publicar na AWS**.
+5. Acompanhe em **Actions > CI e deploy**.
+
+Também é possível iniciar manualmente em **Actions > CI e deploy > Run workflow**, escolhendo `main`.
+
+O SSH da EC2 precisa aceitar conexões do runner do GitHub. A porta 22 não deve ser aberta mais do que o necessário; mantenha a chave dedicada, o `fail2ban` e as regras do Security Group ativos.

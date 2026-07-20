@@ -31,6 +31,19 @@ const inputClass =
 
 const labelClass = 'text-xs font-bold uppercase tracking-[0.08em] text-slate-300'
 
+type FaceitTeamPreview = {
+  teamId: string
+  name: string
+  nickname: string | null
+  members: Array<{
+    playerId: string
+    nickname: string
+    membershipType: string | null
+    isLeader: boolean
+    skillLevel: number | null
+  }>
+}
+
 function StepHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
   return (
     <div className="mb-7">
@@ -50,6 +63,10 @@ export default function RegistrationForm() {
   const [protocol, setProtocol] = useState('')
   const [logoName, setLogoName] = useState('')
   const [proofName, setProofName] = useState('')
+  const [teamName, setTeamName] = useState('')
+  const [faceitTeam, setFaceitTeam] = useState<FaceitTeamPreview | null>(null)
+  const [faceitLoading, setFaceitLoading] = useState(false)
+  const [faceitError, setFaceitError] = useState('')
 
   function validateStep() {
     const section = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`)
@@ -108,6 +125,29 @@ export default function RegistrationForm() {
       window.setTimeout(() => setCopied(false), 2500)
     } catch {
       setError('Não foi possível copiar automaticamente. Selecione o código PIX exibido abaixo.')
+    }
+  }
+
+  async function lookupFaceitTeam(url: string) {
+    if (!url || faceitLoading) return
+    setFaceitLoading(true)
+    setFaceitError('')
+    setFaceitTeam(null)
+    setTeamName('')
+    try {
+      const response = await fetch('/api/faceit/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      })
+      const data = (await response.json()) as { team?: FaceitTeamPreview; error?: string }
+      if (!response.ok || !data.team) throw new Error(data.error || 'Não foi possível consultar a FACEIT.')
+      setFaceitTeam(data.team)
+      setTeamName(data.team.name)
+    } catch (lookupError) {
+      setFaceitError(lookupError instanceof Error ? lookupError.message : 'Não foi possível consultar a FACEIT.')
+    } finally {
+      setFaceitLoading(false)
     }
   }
 
@@ -190,15 +230,33 @@ export default function RegistrationForm() {
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label htmlFor="teamFaceitUrl" className={labelClass}>Link do time na FACEIT</label>
-                <input id="teamFaceitUrl" name="teamFaceitUrl" type="url" required maxLength={300} pattern="https://(www\.)?faceit\.com/.*" autoComplete="url" placeholder="https://www.faceit.com/pt/teams/..." className={inputClass} />
+                <input id="teamFaceitUrl" name="teamFaceitUrl" type="url" required maxLength={300} pattern="https://(www\.)?faceit\.com/.*" autoComplete="url" placeholder="https://www.faceit.com/pt/teams/..." className={inputClass} onChange={() => { setFaceitTeam(null); setFaceitError(''); setTeamName('') }} onBlur={(event) => lookupFaceitTeam(event.currentTarget.value)} />
               </div>
-              <label className={labelClass}>Nome da equipe<input name="teamName" required minLength={2} maxLength={80} autoComplete="organization" placeholder="Ex.: Ace Gaming" className={inputClass} /></label>
+              {faceitLoading && <div className="sm:col-span-2 flex items-center gap-2 border border-[#d99a28]/25 bg-[#d99a28]/10 p-3 text-sm text-[#ffd276]"><LoaderCircle className="animate-spin" size={17} /> Consultando time e elenco na FACEIT...</div>}
+              {faceitError && <div role="alert" className="sm:col-span-2 border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{faceitError}</div>}
+              {faceitTeam && (
+                <div className="sm:col-span-2 border border-[#d99a28]/25 bg-black/25 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div><p className="font-black text-white">{faceitTeam.name}</p><p className="text-xs text-slate-400">{faceitTeam.members.length} membros encontrados</p></div>
+                    {faceitTeam.nickname && <span className="border border-[#d99a28]/30 px-2 py-1 text-[10px] font-black uppercase text-[#ffd276]">{faceitTeam.nickname}</span>}
+                  </div>
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {faceitTeam.members.map((member) => (
+                      <li key={member.playerId} className="bg-white/5 px-2.5 py-1.5 text-xs text-slate-300">
+                        <strong className="text-white">{member.nickname}</strong>
+                        {member.isLeader && <span className="ml-1 text-[#ffd276]">· líder</span>}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-xs text-slate-500">Este elenco será salvo com a inscrição e só será atualizado pela administração.</p>
+                </div>
+              )}
+              <label className={labelClass}>Nome da equipe<input name="teamName" required readOnly value={teamName} autoComplete="organization" placeholder="Preenchido pela FACEIT" className={`${inputClass} read-only:cursor-not-allowed read-only:opacity-75`} /></label>
               <label className={labelClass}>Sigla<input name="teamTag" required minLength={2} maxLength={10} autoComplete="off" placeholder="Ex.: ACE" className={`${inputClass} uppercase`} /></label>
               <label className={labelClass}>Nome completo do representante<input name="representativeName" required minLength={5} maxLength={120} autoComplete="name" placeholder="Nome e sobrenome" className={inputClass} /></label>
               <label className={labelClass}>E-mail<input name="representativeEmail" type="email" required maxLength={180} autoComplete="email" placeholder="contato@equipe.com" className={inputClass} /></label>
               <label className={`${labelClass} sm:col-span-2`}>Telefone / WhatsApp<input name="representativePhone" type="tel" required minLength={10} maxLength={24} autoComplete="tel" placeholder="(00) 00000-0000" className={inputClass} /></label>
               <label className={labelClass}>Instagram da equipe <span className="normal-case text-slate-500">(se houver)</span><input name="teamInstagram" maxLength={100} autoComplete="off" placeholder="@suaequipe" className={inputClass} /></label>
-              <label className={labelClass}>Como conheceu a Copa Ace?<input name="discoverySource" required minLength={2} maxLength={200} autoComplete="off" placeholder="Ex.: Instagram ou indicação" className={inputClass} /></label>
               <label className={labelClass}>Restrições de dias ou horários <span className="normal-case text-slate-500">(opcional)</span><textarea name="scheduleRestrictions" maxLength={500} rows={3} placeholder="Informe quando a equipe não pode jogar" className={`${inputClass} resize-y`} /></label>
             </div>
 

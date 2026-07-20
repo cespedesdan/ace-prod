@@ -4,6 +4,7 @@ import path from 'node:path'
 import { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { FaceitApiError, getFaceitTeam } from '@/lib/faceit'
 import { consumeRateLimit, getClientIp } from '@/lib/rate-limit'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
 import { readFormDataWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
@@ -95,15 +96,13 @@ export async function POST(request: NextRequest) {
       }
       return errorResponse('Os dados enviados pelo formulário são inválidos.')
     }
-    let teamFaceitUrl = readText(formData, 'teamFaceitUrl')
-    const teamName = readText(formData, 'teamName')
-    const teamNameNormalized = teamName.toLocaleLowerCase('pt-BR')
+    const submittedFaceitUrl = readText(formData, 'teamFaceitUrl')
     const teamTag = readText(formData, 'teamTag').toUpperCase()
     const representativeName = readText(formData, 'representativeName')
     const representativeEmail = readText(formData, 'representativeEmail').toLowerCase()
     const representativePhone = readText(formData, 'representativePhone')
     const teamInstagram = readText(formData, 'teamInstagram')
-    const discoverySource = readText(formData, 'discoverySource')
+    const discoverySource = readText(formData, 'discoverySource') || 'Não informado'
     const scheduleRestrictions = readText(formData, 'scheduleRestrictions')
 
     const emailLimit = await consumeRateLimit({
@@ -113,16 +112,21 @@ export async function POST(request: NextRequest) {
     })
     if (!emailLimit.allowed) return rateLimitResponse(emailLimit.retryAfterSeconds)
 
+    let faceitTeam
     try {
-      const faceitUrl = new URL(teamFaceitUrl)
-      const hostname = faceitUrl.hostname.toLowerCase().replace(/^www\./, '')
-      if (faceitUrl.protocol !== 'https:' || hostname !== 'faceit.com' || !faceitUrl.pathname.includes('/teams/')) throw new Error()
-      teamFaceitUrl = faceitUrl.toString()
-    } catch {
-      return errorResponse('Informe um link válido do time na FACEIT.')
+      faceitTeam = await getFaceitTeam(submittedFaceitUrl)
+    } catch (error) {
+      if (error instanceof FaceitApiError) return errorResponse(error.message, error.status)
+      throw error
     }
+    const teamFaceitUrl = faceitTeam.faceitUrl
+    const teamName = faceitTeam.name
+    const teamNameNormalized = teamName.toLocaleLowerCase('pt-BR')
     if (teamName.length < 2 || teamName.length > 80) {
-      return errorResponse('Informe um nome de equipe válido.')
+      return errorResponse('O nome do time retornado pela FACEIT é inválido.')
+    }
+    if (faceitTeam.members.length < 5) {
+      return errorResponse('O time precisa ter pelo menos cinco membros na FACEIT.')
     }
     if (teamTag.length < 2 || teamTag.length > 10) {
       return errorResponse('A sigla deve ter entre 2 e 10 caracteres.')
@@ -140,9 +144,6 @@ export async function POST(request: NextRequest) {
     if (teamInstagram.length > 100) {
       return errorResponse('O Instagram da equipe deve ter no máximo 100 caracteres.')
     }
-    if (discoverySource.length < 2 || discoverySource.length > 200) {
-      return errorResponse('Informe como a equipe conheceu a Copa Ace.')
-    }
     if (scheduleRestrictions.length > 500) {
       return errorResponse('As restrições de horário devem ter no máximo 500 caracteres.')
     }
@@ -157,7 +158,10 @@ export async function POST(request: NextRequest) {
     if (typeof proofUpload === 'string') return errorResponse(proofUpload)
 
     const existingTeam = await prisma.registration.findFirst({
-      where: { tournament: 'Copa Ace 10', teamNameNormalized },
+      where: {
+        tournament: 'Copa Ace 10',
+        OR: [{ teamNameNormalized }, { faceitTeamId: faceitTeam.teamId }],
+      },
       select: { id: true },
     })
     if (existingTeam) {
@@ -183,6 +187,10 @@ export async function POST(request: NextRequest) {
         id,
         protocol,
         teamFaceitUrl,
+        faceitTeamId: faceitTeam.teamId,
+        faceitTeamNickname: faceitTeam.nickname,
+        faceitTeamAvatarUrl: faceitTeam.avatarUrl,
+        faceitLastSyncedAt: new Date(),
         teamName,
         teamNameNormalized,
         teamTag,
@@ -197,6 +205,18 @@ export async function POST(request: NextRequest) {
         logoOriginalName: logoUpload.file.name,
         paymentProofPath: proofRelativePath,
         paymentProofOriginalName: proofUpload.file.name,
+        players: {
+          create: faceitTeam.members.map((member) => ({
+            faceitPlayerId: member.playerId,
+            nickname: member.nickname,
+            avatarUrl: member.avatarUrl,
+            country: member.country,
+            skillLevel: member.skillLevel,
+            membershipType: member.membershipType,
+            isLeader: member.isLeader,
+            faceitUrl: member.faceitUrl,
+          })),
+        },
       },
     })
 

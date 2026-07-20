@@ -102,6 +102,10 @@ model Registration {
   protocol                 String             @unique
   tournament               String             @default("Copa Ace 10")
   teamFaceitUrl            String
+  faceitTeamId             String?
+  faceitTeamNickname       String?
+  faceitTeamAvatarUrl      String?
+  faceitLastSyncedAt       DateTime?
   teamName                 String
   teamNameNormalized       String
   teamTag                  String
@@ -119,10 +123,53 @@ model Registration {
   status                   RegistrationStatus @default(PENDING)
   createdAt                DateTime           @default(now())
   updatedAt                DateTime           @updatedAt
+  players                  RegistrationPlayer[]
 
   @@unique([tournament, teamNameNormalized])
+  @@unique([tournament, faceitTeamId])
   @@index([tournament, status])
   @@map("registrations")
+}
+
+model RegistrationPlayer {
+  id               String       @id @default(cuid())
+  registrationId   String
+  faceitPlayerId   String
+  nickname         String
+  avatarUrl        String?
+  country          String?
+  skillLevel       Int?
+  membershipType   String?
+  isLeader         Boolean      @default(false)
+  faceitUrl        String?
+  syncedAt         DateTime     @default(now())
+  registration     Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([registrationId, faceitPlayerId])
+  @@index([registrationId])
+  @@map("registration_players")
+}
+
+model FaceitChampionship {
+  id             String   @id @default(cuid())
+  tournament     String   @unique
+  championshipId String   @unique
+  faceitUrl      String
+  name           String
+  status         String?
+  gameId         String?
+  format         String?
+  seedingStrategy String?
+  totalRounds    Int?
+  startsAt       DateTime?
+  teamsJson      String   @default("[]")
+  matchesJson    String   @default("[]")
+  resultsJson    String   @default("[]")
+  syncedAt       DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("faceit_championships")
 }
 
 model RateLimit {

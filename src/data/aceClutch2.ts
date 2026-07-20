@@ -2,6 +2,7 @@ export type AceClutchTeam = {
   name: string
   shortName: string
   logo?: string
+  darkLogo?: boolean
 }
 
 export type AceClutchMatch = {
@@ -18,7 +19,7 @@ export const faceitTournamentUrl = 'https://www.faceit.com/en/championship/e6423
 const roomUrl = (id: string) => `https://www.faceit.com/en/cs2/room/${id}`
 
 export const aceClutch2Teams = {
-  dragonsWhite: { name: 'Dragons White', shortName: 'DW', logo: '/hall-of-fame/ace-clutch-2/dragons-white.png' },
+  dragonsWhite: { name: 'Dragons White', shortName: 'DW', logo: '/hall-of-fame/ace-clutch-2/dragons-white.png', darkLogo: true },
   seaDragons: { name: 'SeaDragons', shortName: 'SD', logo: '/hall-of-fame/ace-clutch-2/seadragons.jpg' },
   rino: { name: 'RINO E-SPORTS', shortName: 'RINO', logo: '/hall-of-fame/ace-clutch-2/rino.png' },
   bala: { name: 'BALA DE MUNIQUE', shortName: 'BDM', logo: '/hall-of-fame/ace-clutch-2/bala-de-munique.png' },

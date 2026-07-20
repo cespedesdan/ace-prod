@@ -11,6 +11,8 @@ import {
   Users,
 } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { CopaAce10Faceit, type CopaAce10FaceitData } from '@/components/CopaAce10Faceit'
+import { CopaAce10Schedule } from '@/components/CopaAce10Schedule'
 
 const TOTAL_TEAMS = 16
 const SHOW_CONFIRMED_SLOTS_BADGE = false // Troque para true para exibir novamente.
@@ -24,6 +26,23 @@ async function getConfirmedTeams() {
   })
 }
 
+async function getFaceitChampionship(): Promise<CopaAce10FaceitData | null> {
+  const championship = await prisma.faceitChampionship.findUnique({
+    where: { tournament: 'Copa Ace 10' },
+    select: { name: true, faceitUrl: true, status: true, format: true, seedingStrategy: true, totalRounds: true, syncedAt: true, teamsJson: true, matchesJson: true, resultsJson: true },
+  })
+  if (!championship) return null
+  try {
+    const teams = JSON.parse(championship.teamsJson)
+    const matches = JSON.parse(championship.matchesJson)
+    const results = JSON.parse(championship.resultsJson)
+    if (!Array.isArray(teams) || !Array.isArray(matches) || !Array.isArray(results)) return null
+    return { ...championship, teams, matches, results }
+  } catch {
+    return null
+  }
+}
+
 function ConfirmedTeamLogo({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
   return (
     <span className="team-logo-surface relative block shrink-0 overflow-hidden" style={{ width: size, height: size }}>
@@ -33,7 +52,7 @@ function ConfirmedTeamLogo({ id, name, size = 52 }: { id: string; name: string; 
 }
 
 export default async function CopaAce10Page() {
-  const teams = await getConfirmedTeams()
+  const [teams, faceitChampionship] = await Promise.all([getConfirmedTeams(), getFaceitChampionship()])
   const availableSlots = TOTAL_TEAMS - teams.length
   const slots = Array.from({ length: TOTAL_TEAMS }, (_, index) => teams[index] ?? null)
 
@@ -90,6 +109,9 @@ export default async function CopaAce10Page() {
             <a href="#resumo" aria-current="true">Resumo</a>
             <a href="#equipes">Times</a>
             <a href="#formato">Formato</a>
+            <a href="#cronograma">Cronograma</a>
+            {faceitChampionship && <a href="#faceit">FACEIT</a>}
+            {faceitChampionship && <a href="#partidas">Partidas</a>}
             <a href="#premiacao">Premiação</a>
             <a href="#inscricao">Inscrição</a>
           </nav>
@@ -119,15 +141,23 @@ export default async function CopaAce10Page() {
           <div>
             <p className="tournament-section-eyebrow">Premiação total</p>
             <h2>R$ 1.500</h2>
+            <div className="copa10-prize-breakdown" aria-label="Distribuição da premiação">
+              <span><strong>1º</strong> R$ 1.000,00</span>
+              <span><strong>2º</strong> R$ 500,00</span>
+            </div>
             <p>Uma edição histórica merece uma disputa à altura.</p>
           </div>
           <Trophy size={74} aria-hidden="true" />
         </section>
 
+        <CopaAce10Schedule />
+
+        {faceitChampionship && <CopaAce10Faceit championship={faceitChampionship} />}
+
         <section id="equipes">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div><p className="tournament-section-eyebrow">Participantes</p><h2 className="tournament-section-title">Equipes confirmadas</h2></div>
-            <span className="hidden text-xs font-bold text-slate-500 sm:block">Atualização pelo painel administrativo</span>
+            {/* Texto de atualização administrativa desativado. */}
           </div>
           <article className="tournament-panel">
             <header className="tournament-panel-header flex items-center justify-between px-4 py-3">
