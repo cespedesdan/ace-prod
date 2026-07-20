@@ -246,7 +246,12 @@ No repositório, acesse **Settings > Environments > New environment**, crie `pro
 
 **Environment secrets**
 
-- `EC2_SSH_KEY`: conteúdo completo da chave privada obtido com `Get-Content "$HOME\.ssh\ace-prod-github-actions" -Raw`.
+- `EC2_SSH_KEY_B64`: chave privada codificada em Base64. Gere e copie sem alterar o conteúdo:
+
+  ```powershell
+  [Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\.ssh\ace-prod-github-actions")) | Set-Clipboard
+  ```
+
 - `EC2_KNOWN_HOSTS`: saída validada de `ssh-keyscan -H HOST_DA_EC2`.
 
 **Environment variables**

@@ -62,7 +62,7 @@ jobs:
     env:
       EC2_HOST: ${{ vars.EC2_HOST }}
       EC2_USER: ${{ vars.EC2_USER }}
-      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      EC2_SSH_KEY_B64: ${{ secrets.EC2_SSH_KEY_B64 }}
       EC2_KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
 
     steps:
@@ -72,13 +72,17 @@ jobs:
           set -Eeuo pipefail
           test -n "$EC2_HOST"
           test -n "$EC2_USER"
-          test -n "$EC2_SSH_KEY"
+          test -n "$EC2_SSH_KEY_B64"
           test -n "$EC2_KNOWN_HOSTS"
 
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$EC2_SSH_KEY" | tr -d '\r' > ~/.ssh/ace-prod
+          printf '%s' "$EC2_SSH_KEY_B64" | base64 --decode > ~/.ssh/ace-prod
           printf '%s\n' "$EC2_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/ace-prod ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/ace-prod >/dev/null || {
+            echo "::error::EC2_SSH_KEY_B64 nao contem uma chave privada OpenSSH valida e sem senha."
+            exit 1
+          }
 
       - name: Executar deploy com backup
         shell: bash
