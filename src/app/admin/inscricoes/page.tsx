@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 
 type RegistrationStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+type RegistrationSection = 'ACTIVE' | 'REJECTED'
+type ActiveFilter = 'ALL' | 'PENDING' | 'APPROVED'
 type RegistrationPlayer = {
   id: string
   faceitPlayerId: string
@@ -60,17 +62,17 @@ const statusStyle: Record<RegistrationStatus, string> = {
   REJECTED: 'bg-clutch-pink/10 text-clutch-pink',
 }
 
-const filters: Array<{ value: 'ALL' | RegistrationStatus; label: string }> = [
+const filters: Array<{ value: ActiveFilter; label: string }> = [
   { value: 'ALL', label: 'Todas' },
   { value: 'PENDING', label: 'Pendentes' },
   { value: 'APPROVED', label: 'Confirmadas' },
-  { value: 'REJECTED', label: 'Rejeitadas' },
 ]
 
 export default function RegistrationsAdminPage() {
   const router = useRouter()
   const [registrations, setRegistrations] = useState<Registration[]>([])
-  const [filter, setFilter] = useState<'ALL' | RegistrationStatus>('ALL')
+  const [section, setSection] = useState<RegistrationSection>('ACTIVE')
+  const [filter, setFilter] = useState<ActiveFilter>('ALL')
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState('')
   const [error, setError] = useState('')
@@ -96,9 +98,7 @@ export default function RegistrationsAdminPage() {
     REJECTED: registrations.filter((item) => item.status === 'REJECTED').length,
   }), [registrations])
 
-  const visibleRegistrations = filter === 'ALL'
-    ? registrations
-    : registrations.filter((item) => item.status === filter)
+  const visibleRegistrations = registrations.filter((item) => (section === 'REJECTED' ? item.status === 'REJECTED' : item.status !== 'REJECTED' && (filter === 'ALL' || item.status === filter)))
 
   async function updateStatus(id: string, status: RegistrationStatus) {
     setActionId(id)
@@ -186,19 +186,31 @@ export default function RegistrationsAdminPage() {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {filters.map((item) => (
-            <button key={item.value} type="button" onClick={() => setFilter(item.value)} className={`rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wide transition ${filter === item.value ? 'bg-cyan-400 text-slate-950' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <nav aria-label="Seções das inscrições" className="mt-7 flex flex-wrap gap-2 border-b border-slate-700 pb-3">
+          <button type="button" onClick={() => setSection('ACTIVE')} className={`rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wide transition ${section === 'ACTIVE' ? 'bg-cyan-400 text-slate-950' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
+            Inscrições <span className="ml-1 opacity-70">{counts.PENDING + counts.APPROVED}</span>
+          </button>
+          <button type="button" onClick={() => setSection('REJECTED')} className={`rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wide transition ${section === 'REJECTED' ? 'bg-clutch-pink text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
+            Rejeitadas <span className="ml-1 opacity-70">{counts.REJECTED}</span>
+          </button>
+        </nav>
+
+        {section === 'ACTIVE' && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {filters.map((item) => (
+              <button key={item.value} type="button" onClick={() => setFilter(item.value)} className={`rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wide transition ${filter === item.value ? 'bg-cyan-400 text-slate-950' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading && <div className="mt-12 flex items-center justify-center gap-2 text-slate-400"><LoaderCircle className="animate-spin" /> Carregando...</div>}
         {error && <div role="alert" className="mt-6 border border-clutch-pink/30 bg-clutch-pink/10 p-4 text-clutch-pink">{error}</div>}
-        {!loading && registrations.length === 0 && (
+        {!loading && visibleRegistrations.length === 0 && (
           <div className="mt-10 rounded-xl border border-slate-700 bg-slate-800/50 p-10 text-center text-slate-400">
-            <UsersRound className="mx-auto mb-3 text-slate-500" size={36} /> Nenhuma inscrição recebida ainda.
+            <UsersRound className="mx-auto mb-3 text-slate-500" size={36} />
+            {section === 'REJECTED' ? 'Nenhuma inscrição rejeitada.' : 'Nenhuma inscrição encontrada nesta seção.'}
           </div>
         )}
 
