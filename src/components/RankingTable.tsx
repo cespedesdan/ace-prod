@@ -1,14 +1,28 @@
-import { Clock3 } from 'lucide-react'
+import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
+import { buildFaceitSwissStandings } from '@/lib/faceit'
 
-export function RankingTable() {
+export function RankingTable({
+  teams,
+  matches,
+  syncedAt,
+}: {
+  teams: FaceitChampionshipSnapshot['teams']
+  matches: FaceitChampionshipSnapshot['matches']
+  syncedAt: Date | null
+}) {
+  const standings = buildFaceitSwissStandings(teams, matches)
+
   return (
     <div className="brand-card overflow-hidden">
       <div className="flex flex-col justify-between gap-2 border-b border-copa-cyan/15 bg-copa-cyan/5 px-6 py-4 sm:flex-row sm:items-center">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.16em] text-copa-cyan">Copa Ace 10</p>
-          <h3 className="mt-1 text-lg font-black uppercase text-white">Classificação da fase de grupos Sisema Suiço</h3>
+          <h3 className="mt-1 text-lg font-black uppercase text-white">Classificação da fase de grupos · Sistema suíço</h3>
         </div>
-        <span className="text-xs font-bold uppercase tracking-wider text-gray-500">16 equipes</span>
+        <div className="text-left text-xs font-bold uppercase tracking-wider text-gray-500 sm:text-right">
+          <p>{standings.length || 16} equipes</p>
+          {syncedAt && <p className="mt-1 text-[10px]">Atualizado em {syncedAt.toLocaleString('pt-BR')}</p>}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -25,15 +39,29 @@ export function RankingTable() {
             </tr>
           </thead>
           <tbody>
-            <tr>
+            {standings.length ? standings.map((standing, index) => (
+              <tr key={standing.teamId} className="border-t border-white/5 text-sm text-gray-300">
+                <td className="px-6 py-4 font-black text-copa-cyan">{index + 1}º</td>
+                <td className="px-6 py-4 font-black text-white">{standing.name}</td>
+                <td className="px-6 py-4 font-bold">{standing.wins}–{standing.losses}</td>
+                <td className="px-6 py-4">{standing.wins}</td>
+                <td className="px-6 py-4">{standing.losses}</td>
+                <td className="px-6 py-4">{standing.scoreBalance > 0 ? '+' : ''}{standing.scoreBalance}</td>
+                <td className="px-6 py-4">
+                  <span className={standing.status === 'Classificado'
+                    ? 'font-black text-emerald-400'
+                    : standing.status === 'Eliminado'
+                      ? 'font-black text-red-400'
+                      : 'font-bold text-gray-400'}>
+                    {standing.status}
+                  </span>
+                </td>
+              </tr>
+            )) : <tr>
               <td colSpan={7} className="px-6 py-16 text-center">
-                <Clock3 className="mx-auto text-copa-cyan" size={32} />
-                <p className="mt-4 text-3xl font-black uppercase tracking-[0.12em] text-white">ASAP</p>
-                <p className="mx-auto mt-2 max-w-lg text-sm text-gray-400">
-                  A classificação será publicada assim que começarem os jogos da Copa ACE 10.
-                </p>
+                <p className="text-sm font-bold text-gray-400">Aguardando a publicação dos times pela FACEIT.</p>
               </td>
-            </tr>
+            </tr>}
           </tbody>
         </table>
       </div>

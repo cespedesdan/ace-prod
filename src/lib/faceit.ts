@@ -88,6 +88,56 @@ export type FaceitChampionshipSnapshot = {
   }>
 }
 
+export type FaceitSwissStanding = {
+  teamId: string
+  name: string
+  played: number
+  wins: number
+  losses: number
+  scoreBalance: number
+  status: 'Classificado' | 'Eliminado' | 'Em disputa'
+}
+
+export function buildFaceitSwissStandings(
+  teams: FaceitChampionshipSnapshot['teams'],
+  matches: FaceitChampionshipSnapshot['matches'],
+) {
+  const standings = new Map<string, Omit<FaceitSwissStanding, 'status'>>()
+
+  const standingFor = (team: { teamId: string; name: string }) => {
+    const current = standings.get(team.teamId)
+    if (current) return current
+    const created = { teamId: team.teamId, name: team.name, played: 0, wins: 0, losses: 0, scoreBalance: 0 }
+    standings.set(team.teamId, created)
+    return created
+  }
+
+  teams.forEach(standingFor)
+  for (const match of matches) {
+    const winner = match.teams.find((team) => match.winner === team.faction || match.winner === team.teamId)
+    if (!winner) continue
+
+    for (const team of match.teams) {
+      const standing = standingFor(team)
+      const score = match.scores[team.faction] ?? match.scores[team.teamId] ?? 0
+      const opponentScore = match.teams
+        .filter((opponent) => opponent.teamId !== team.teamId)
+        .reduce((total, opponent) => total + (match.scores[opponent.faction] ?? match.scores[opponent.teamId] ?? 0), 0)
+      standing.played += 1
+      standing.scoreBalance += score - opponentScore
+      if (team.teamId === winner.teamId) standing.wins += 1
+      else standing.losses += 1
+    }
+  }
+
+  return [...standings.values()]
+    .sort((a, b) => b.wins - a.wins || a.losses - b.losses || b.scoreBalance - a.scoreBalance || a.name.localeCompare(b.name, 'pt-BR'))
+    .map((standing): FaceitSwissStanding => ({
+      ...standing,
+      status: standing.wins >= 3 ? 'Classificado' : standing.losses >= 3 ? 'Eliminado' : 'Em disputa',
+    }))
+}
+
 function optionalString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
