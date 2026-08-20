@@ -3,7 +3,9 @@
   "version": "1.1.0",
   "private": true,
   "overrides": {
+    "deepmerge-ts": "8.0.1",
     "jws": "3.2.3",
+    "nanoid": "3.3.18",
     "postcss": "8.5.23",
     "sharp": "0.35.0"
   },

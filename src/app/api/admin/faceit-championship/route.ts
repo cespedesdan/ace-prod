@@ -54,7 +54,10 @@ function tournamentName(value: unknown) {
 }
 
 function revalidateTournament(tournament: string) {
-  if (tournament === 'Copa Ace 10') revalidatePath('/copa-ace-10')
+  if (tournament === 'Copa Ace 10') {
+    revalidatePath('/copa-ace-10')
+    revalidatePath('/schedule')
+  }
 }
 
 export async function GET(request: NextRequest) {

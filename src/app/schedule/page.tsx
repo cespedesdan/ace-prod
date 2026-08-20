@@ -3,13 +3,39 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { ScheduleList } from '@/components/ScheduleList'
 import { CopaAce10Schedule } from '@/components/CopaAce10Schedule'
+import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
+import { prisma } from '@/lib/prisma'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Agenda Copa Ace 10 | Ace Produtora',
   description: 'Cronograma e primeira rodada da Copa Ace 10.',
 }
 
-export default function SchedulePage() {
+async function getFaceitSchedule() {
+  const championship = await prisma.faceitChampionship.findUnique({
+    where: { tournament: 'Copa Ace 10' },
+    select: { faceitUrl: true, matchesJson: true, syncedAt: true },
+  })
+  if (!championship) return null
+
+  try {
+    const matches: unknown = JSON.parse(championship.matchesJson)
+    if (!Array.isArray(matches)) return null
+    return {
+      faceitUrl: championship.faceitUrl,
+      matches: matches as FaceitChampionshipSnapshot['matches'],
+      syncedAt: championship.syncedAt,
+    }
+  } catch {
+    return null
+  }
+}
+
+export default async function SchedulePage() {
+  const faceitSchedule = await getFaceitSchedule()
+
   return (
     <main className="tournament-page">
       <section className="tournament-hero">
@@ -25,7 +51,7 @@ export default function SchedulePage() {
 
       <div className="tournament-container space-y-6 py-8">
         <CopaAce10Schedule />
-        <ScheduleList />
+        <ScheduleList championship={faceitSchedule} />
       </div>
     </main>
   )
