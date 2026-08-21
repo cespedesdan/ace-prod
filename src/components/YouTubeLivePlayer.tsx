@@ -11,6 +11,8 @@ type Player = {
 type YouTubeWindow = Window & {
   YT?: {
     Player: new (element: HTMLElement, options: {
+      width: string
+      height: string
       videoId: string
       playerVars: Record<string, string | number>
       events: { onReady(event: { target: Player }): void }
@@ -30,6 +32,8 @@ export function YouTubeLivePlayer({ videoId }: { videoId: string }) {
     const createPlayer = () => {
       if (cancelled || !container.current || !youtubeWindow.YT) return
       player = new youtubeWindow.YT.Player(container.current, {
+        width: '100%',
+        height: '100%',
         videoId,
         playerVars: { autoplay: 1, controls: 1, playsinline: 1, rel: 0, origin: window.location.origin },
         events: {
@@ -64,5 +68,5 @@ export function YouTubeLivePlayer({ videoId }: { videoId: string }) {
     }
   }, [videoId])
 
-  return <div ref={container} className="aspect-video w-full bg-black" />
+  return <div className="relative aspect-video w-full overflow-hidden bg-black"><div ref={container} className="absolute inset-0 h-full w-full" /></div>
 }
