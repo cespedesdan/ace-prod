@@ -76,6 +76,14 @@ export default function AdminDashboard() {
               Gerenciar FACEIT
             </Link>
           </div>
+
+          <div className="brand-card p-6">
+            <h3 className="text-xl font-semibold text-white mb-4">Transmissão ao vivo</h3>
+            <p className="text-gray-400 mb-4">Informe a live do YouTube e controle sua exibição na Home</p>
+            <Link href="/admin/live" className="brand-button-primary">
+              Gerenciar transmissão
+            </Link>
+          </div>
         </div>
 
         <div className="mt-8">

@@ -4,6 +4,7 @@ import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
 import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
+import { parseYouTubeVideoId } from '../src/lib/youtube'
 
 const identifier = randomUUID()
 
@@ -48,6 +49,12 @@ async function main() {
       () => parseFaceitChampionshipId(`https://faceit.com.example/pt/championship/${faceitTeamId}`),
       (error) => error instanceof FaceitApiError,
     )
+
+    const youtubeVideoId = 'M7lc1UVf-VE'
+    assert.equal(parseYouTubeVideoId(`https://www.youtube.com/watch?v=${youtubeVideoId}`), youtubeVideoId)
+    assert.equal(parseYouTubeVideoId(`https://youtu.be/${youtubeVideoId}`), youtubeVideoId)
+    assert.equal(parseYouTubeVideoId(`https://www.youtube.com/live/${youtubeVideoId}`), youtubeVideoId)
+    assert.equal(parseYouTubeVideoId(`https://youtube.com.example/watch?v=${youtubeVideoId}`), null)
 
     const originalFetch = globalThis.fetch
     const originalApiKey = process.env.FACEIT_API_KEY
