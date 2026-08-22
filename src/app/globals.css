@@ -823,10 +823,10 @@ textarea {
   overflow: hidden;
   border: 1px solid rgb(217 154 40 / 34%);
   background:
-    radial-gradient(circle at 15% 50%, rgb(21 108 111 / 20%), transparent 34%),
-    radial-gradient(circle at 85% 50%, rgb(153 34 39 / 13%), transparent 32%),
-    linear-gradient(145deg, #08121d, #07101a 58%, #120b08);
-  box-shadow: inset 0 0 80px rgb(0 0 0 / 35%), 0 24px 60px rgb(0 0 0 / 24%);
+    radial-gradient(circle at 90% 15%, rgb(238 178 71 / 85%), transparent 34%),
+    radial-gradient(circle at 52% 48%, rgb(217 154 40 / 30%), transparent 48%),
+    linear-gradient(125deg, #020302 3%, #211708 58%, #080604 100%);
+  box-shadow: inset 0 0 120px rgb(0 0 0 / 55%), 0 24px 60px rgb(0 0 0 / 24%);
 }
 
 .swiss-stage-header {
@@ -872,7 +872,7 @@ textarea {
 .swiss-flow-scroll {
   overflow-x: auto;
   outline: none;
-  scrollbar-color: #d99a28 #0a111a;
+  scrollbar-color: #d99a28 #0b0905;
 }
 
 .swiss-flow-scroll:focus-visible {
@@ -880,129 +880,133 @@ textarea {
 }
 
 .swiss-flow {
-  display: flex;
-  min-width: max-content;
-  align-items: stretch;
-  gap: 2.25rem;
-  padding: 1.5rem;
+  display: grid;
+  min-width: 73rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem 1.5rem;
 }
 
 .swiss-round {
-  position: relative;
-  width: 15rem;
+  min-width: 0;
 }
 
-.swiss-round:not(:last-of-type)::after {
-  position: absolute;
-  top: 2.65rem;
-  right: -2.25rem;
-  width: 2.25rem;
-  border-top: 1px solid rgb(217 154 40 / 48%);
-  content: "";
-}
-
-.swiss-round > h4 {
-  margin-bottom: 0.75rem;
-  color: #f7f4ee;
-  font-size: 0.7rem;
-  font-weight: 900;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
+.swiss-round-content {
+  display: flex;
+  min-height: 45rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .swiss-pools {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .swiss-pool {
-  border: 1px solid rgb(217 154 40 / 58%);
-  background: rgb(5 15 24 / 82%);
-  box-shadow: 0 12px 26px rgb(0 0 0 / 24%);
+  min-width: 0;
 }
 
-.swiss-pool[data-tone="advance"] { border-color: rgb(56 217 155 / 72%); }
-.swiss-pool[data-tone="eliminate"] { border-color: rgb(255 90 98 / 72%); }
-
-.swiss-pool > header {
+.swiss-pool-label {
   display: flex;
+  height: 1.25rem;
   align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgb(255 255 255 / 8%);
-  padding: 0.5rem 0.65rem;
-}
-
-.swiss-pool > header strong {
   color: #ffd276;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
+  font-weight: 950;
 }
 
-.swiss-pool[data-tone="advance"] > header strong { color: #38d99b; }
-.swiss-pool[data-tone="eliminate"] > header strong { color: #ff5a62; }
-
-.swiss-pool > header span {
-  color: #718092;
-  font-size: 0.55rem;
-  font-weight: 800;
-  text-transform: uppercase;
+.swiss-pool-matches {
+  display: grid;
+  gap: 0.2rem;
 }
 
 .swiss-match {
-  display: block;
-  border-bottom: 1px solid rgb(255 255 255 / 6%);
-  padding: 0.55rem 0.65rem;
-  transition: background 140ms ease;
+  display: grid;
+  min-height: 3.8rem;
+  grid-template-columns: minmax(0, 1fr) 2.9rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem;
+  border-left: 3px solid #ffd276;
+  background: #020202;
+  padding: 0.25rem 0.35rem;
+  transition: filter 140ms ease, transform 140ms ease;
 }
 
-.swiss-match:last-child { border-bottom: 0; }
-.swiss-match[href]:hover { background: rgb(255 255 255 / 5%); }
-
-.swiss-match time {
-  display: block;
-  margin-bottom: 0.25rem;
-  color: #667588;
-  font-size: 0.55rem;
-  font-weight: 800;
-  text-transform: uppercase;
+.swiss-match[href]:hover {
+  filter: brightness(1.18);
+  transform: translateY(-1px);
 }
 
-.swiss-match span {
+.swiss-match.is-placeholder {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-left-color: rgb(255 208 126 / 28%);
+}
+
+.swiss-team-mark {
+  position: relative;
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  justify-self: start;
+  overflow: hidden;
+  background: rgb(255 255 255 / 3%);
+  color: rgb(255 255 255 / 22%);
+}
+
+.swiss-team-mark:last-child {
+  justify-self: end;
+}
+
+.swiss-team-mark img { object-fit: contain; padding: 0.15rem; }
+.swiss-team-mark svg { width: 1.45rem; height: 1.45rem; stroke-width: 1.4; }
+
+.swiss-score {
+  display: grid;
+  min-height: 2rem;
+  place-items: center;
+  background: #ffd276;
+  color: #050403;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.swiss-outcome {
+  display: grid;
+  min-height: 4rem;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  align-items: center;
+  border-top: 3px solid;
+  padding: 0.35rem 0.5rem;
+}
+
+.swiss-outcome[data-tone="advance"] { border-color: #4be38a; background: #05602d; }
+.swiss-outcome[data-tone="eliminate"] { border-color: #ff4f5e; background: #85000d; }
+
+.swiss-outcome > header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.swiss-outcome > header svg { width: 1.3rem; height: 1.3rem; }
+.swiss-outcome > header strong { font-size: 0.82rem; font-weight: 950; }
+
+.swiss-outcome > div {
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  color: #aeb8c4;
-  font-size: 0.68rem;
+  justify-content: center;
+  gap: 0.15rem;
 }
 
-.swiss-match span.is-winner { color: #fff; }
-.swiss-match b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.swiss-match em { color: inherit; font-style: normal; font-weight: 900; }
-
-.swiss-outcomes {
-  display: flex;
-  width: 15rem;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding-top: 1.45rem;
-}
-
-.swiss-outcomes > div {
-  border-left: 4px solid;
-  padding: 0.9rem 1rem;
-}
-
-.swiss-outcomes .is-advance { border-color: #38d99b; background: rgb(56 217 155 / 10%); }
-.swiss-outcomes .is-eliminated { border-color: #ff5a62; background: rgb(255 90 98 / 10%); }
-.swiss-outcomes p { color: #8593a2; font-size: 0.58rem; font-weight: 900; text-transform: uppercase; }
-.swiss-outcomes h4 { margin: 0.1rem 0 0.65rem; font-size: 1rem; text-transform: uppercase; }
-.swiss-outcomes .is-advance h4 { color: #38d99b; }
-.swiss-outcomes .is-eliminated h4 { color: #ff5a62; }
-.swiss-outcomes span,
-.swiss-outcomes small { display: block; padding-block: 0.16rem; color: #dbe3ea; font-size: 0.68rem; font-weight: 700; }
+.swiss-outcome .swiss-team-mark { width: 2.7rem; height: 2.7rem; flex: 0 0 2.7rem; }
+.swiss-outcome small { color: rgb(255 255 255 / 40%); font-weight: 900; }
 
 .registration-regulation-button {
   display: inline-flex;

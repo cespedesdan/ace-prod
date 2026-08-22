@@ -1,41 +1,89 @@
+import Image from 'next/image'
+import { Shield, ShieldCheck, ShieldX } from 'lucide-react'
 import type { CopaAce10FaceitData } from '@/components/CopaAce10Faceit'
 
 type Match = CopaAce10FaceitData['matches'][number]
 type Team = CopaAce10FaceitData['teams'][number]
+type DisplayTeam = Pick<Team, 'teamId' | 'name' | 'avatarUrl'>
 type Campaign = { wins: number; losses: number }
+
+const SWISS_ROUNDS = {
+  1: ['0-0'],
+  2: ['1-0', '0-1'],
+  3: ['2-0', '1-1', '0-2'],
+  4: ['2-1', '1-2'],
+  5: ['2-2'],
+} as const
+
+type RoundNumber = keyof typeof SWISS_ROUNDS
+type SwissRecord = (typeof SWISS_ROUNDS)[RoundNumber][number]
+
+const MATCH_SLOTS: Record<SwissRecord, number> = {
+  '0-0': 8,
+  '1-0': 4,
+  '0-1': 4,
+  '2-0': 2,
+  '1-1': 4,
+  '0-2': 2,
+  '2-1': 3,
+  '1-2': 3,
+  '2-2': 3,
+}
+
+const TERMINAL_RECORDS: Partial<Record<RoundNumber, { advance: string; eliminate: string }>> = {
+  3: { advance: '3-0', eliminate: '0-3' },
+  4: { advance: '3-1', eliminate: '1-3' },
+  5: { advance: '3-2', eliminate: '2-3' },
+}
 
 function matchDate(timestamp: number | null) {
   return timestamp
-    ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }).format(timestamp)
-    : 'A definir'
-}
-
-function campaignTone(campaign: Campaign) {
-  if (campaign.wins >= 2) return 'advance'
-  if (campaign.losses >= 2) return 'eliminate'
-  return 'neutral'
+    ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }).format(timestamp)
+    : 'Horário a definir'
 }
 
 function winnerTeamId(match: Match) {
   return match.teams.find((team) => match.winner === team.faction || match.winner === team.teamId)?.teamId || null
 }
 
-function buildSwissRounds(matches: Match[]) {
-  const campaigns = new Map<string, Campaign>()
-  const roundNumbers = [...new Set(matches.flatMap((match) => match.round === null ? [] : [match.round]))].sort((a, b) => a - b)
+function recordOf(campaign: Campaign) {
+  return `${campaign.wins}-${campaign.losses}`
+}
 
-  const rounds = roundNumbers.map((round) => {
-    const pools = new Map<string, { campaign: Campaign; matches: Match[] }>()
+export function buildSwissRounds(matches: Match[], teams: Team[]) {
+  const campaigns = new Map<string, Campaign>()
+  const stageTeams = new Map<string, DisplayTeam>()
+
+  for (const team of teams) {
+    campaigns.set(team.teamId, { wins: 0, losses: 0 })
+    stageTeams.set(team.teamId, team)
+  }
+  for (const match of matches) {
+    for (const team of match.teams) {
+      campaigns.set(team.teamId, campaigns.get(team.teamId) || { wins: 0, losses: 0 })
+      stageTeams.set(team.teamId, team)
+    }
+  }
+
+  const rounds = (Object.keys(SWISS_ROUNDS).map(Number) as RoundNumber[]).map((round) => {
+    const records = [...SWISS_ROUNDS[round]] as SwissRecord[]
     const roundMatches = matches.filter((match) => match.round === round)
+    const matchesByRecord = new Map<SwissRecord, Match[]>(records.map((record) => [record, []]))
+    const pairedTeamIds = new Set<string>()
 
     for (const match of roundMatches) {
       const firstTeam = match.teams[0]
-      const current = firstTeam ? campaigns.get(firstTeam.teamId) || { wins: 0, losses: 0 } : { wins: 0, losses: 0 }
-      const label = `${current.wins}-${current.losses}`
-      const pool = pools.get(label) || { campaign: { ...current }, matches: [] }
-      pool.matches.push(match)
-      pools.set(label, pool)
+      const record = firstTeam ? recordOf(campaigns.get(firstTeam.teamId) || { wins: 0, losses: 0 }) : ''
+      if (!records.includes(record as SwissRecord)) continue
+      matchesByRecord.get(record as SwissRecord)?.push(match)
+      match.teams.forEach((team) => pairedTeamIds.add(team.teamId))
     }
+
+    const groups = records.map((record) => ({
+      record,
+      matches: matchesByRecord.get(record) || [],
+      waitingTeams: [...stageTeams.values()].filter((team) => !pairedTeamIds.has(team.teamId) && recordOf(campaigns.get(team.teamId) || { wins: 0, losses: 0 }) === record),
+    }))
 
     for (const match of roundMatches) {
       const winnerId = winnerTeamId(match)
@@ -48,57 +96,88 @@ function buildSwissRounds(matches: Match[]) {
       }
     }
 
-    return { round, pools: [...pools.entries()] }
+    return { round, groups }
   })
 
-  return { rounds, campaigns }
+  return { rounds, campaigns, teams: [...stageTeams.values()] }
+}
+
+function TeamMark({ team }: { team?: DisplayTeam }) {
+  return (
+    <span className="swiss-team-mark" title={team?.name}>
+      {team?.avatarUrl
+        ? <Image src={team.avatarUrl} alt={team.name} fill sizes="56px" unoptimized />
+        : <Shield aria-hidden="true" />}
+    </span>
+  )
+}
+
+function MatchCard({ match, teamA, teamB }: { match?: Match; teamA?: DisplayTeam; teamB?: DisplayTeam }) {
+  if (!match) {
+    return <article className="swiss-match is-placeholder" aria-label="Confronto a definir"><TeamMark team={teamA} /><TeamMark team={teamB} /></article>
+  }
+
+  const [left, right] = match.teams
+  const leftScore = left ? match.scores[left.faction] ?? match.scores[left.teamId] : undefined
+  const rightScore = right ? match.scores[right.faction] ?? match.scores[right.teamId] : undefined
+  const score = leftScore === undefined || rightScore === undefined ? 'VS' : `${leftScore}:${rightScore}`
+  const label = `${left?.name || 'A definir'} ${score} ${right?.name || 'A definir'} · ${matchDate(match.scheduledAt)}`
+  const content = <><TeamMark team={left} /><strong className="swiss-score">{score}</strong><TeamMark team={right} /></>
+
+  return match.faceitUrl
+    ? <a href={match.faceitUrl} target="_blank" rel="noreferrer" className="swiss-match" aria-label={label}>{content}</a>
+    : <article className="swiss-match" aria-label={label}>{content}</article>
+}
+
+function Outcome({ record, teams, tone }: { record: string; teams: DisplayTeam[]; tone: 'advance' | 'eliminate' }) {
+  const Icon = tone === 'advance' ? ShieldCheck : ShieldX
+  return (
+    <div className="swiss-outcome" data-tone={tone}>
+      <header><Icon aria-hidden="true" /><strong>{record.replace('-', ':')}</strong></header>
+      <div>{teams.length ? teams.map((team) => <TeamMark key={team.teamId} team={team} />) : <small>--</small>}</div>
+    </div>
+  )
 }
 
 export function CopaAce10Swiss({ matches, teams }: { matches: Match[]; teams: Team[] }) {
-  const { rounds, campaigns } = buildSwissRounds(matches)
-  const advanced = teams.filter((team) => (campaigns.get(team.teamId)?.wins || 0) >= 3)
-  const eliminated = teams.filter((team) => (campaigns.get(team.teamId)?.losses || 0) >= 3)
-  const qualificationSpots = Math.ceil(teams.length / 2)
+  const stage = buildSwissRounds(matches, teams)
+  const outcomeTeams = (record: string) => stage.teams.filter((team) => recordOf(stage.campaigns.get(team.teamId) || { wins: 0, losses: 0 }) === record)
 
   return (
     <div className="swiss-stage">
       <header className="swiss-stage-header">
         <div><p>Sistema</p><h3>Formato suíço</h3></div>
-        <strong>As melhores {qualificationSpots} equipes avançam</strong>
+        <strong>As melhores 8 equipes avançam</strong>
         <div className="swiss-rules"><span>3 vitórias <b>Avança</b></span><span>3 derrotas <b>Eliminado</b></span></div>
       </header>
 
       <div className="swiss-flow-scroll" tabIndex={0} aria-label="Chaveamento do sistema suíço; role horizontalmente para ver todas as rodadas">
         <div className="swiss-flow">
-          {rounds.map(({ round, pools }) => (
-            <section key={round} className="swiss-round">
-              <h4>Rodada {round}</h4>
-              <div className="swiss-pools">
-                {pools.map(([label, pool]) => (
-                  <article key={label} className="swiss-pool" data-tone={campaignTone(pool.campaign)}>
-                    <header><strong>{label}</strong><span>{pool.matches.length} partidas</span></header>
-                    <div>
-                      {pool.matches.map((match) => (
-                        <a key={match.matchId} href={match.faceitUrl || undefined} target={match.faceitUrl ? '_blank' : undefined} rel={match.faceitUrl ? 'noreferrer' : undefined} className="swiss-match">
-                          <time>{matchDate(match.scheduledAt)}</time>
-                          {match.teams.length ? match.teams.map((team) => {
-                            const score = match.scores[team.faction] ?? match.scores[team.teamId]
-                            const winner = match.winner === team.faction || match.winner === team.teamId
-                            return <span key={team.faction} className={winner ? 'is-winner' : ''}><b>{team.name}</b><em>{score ?? '–'}</em></span>
-                          }) : <span><b>A definir</b><em>–</em></span>}
-                        </a>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ))}
-
-          <aside className="swiss-outcomes">
-            <div className="is-advance"><p>3 vitórias</p><h4>Avançam</h4>{advanced.length ? advanced.map((team) => <span key={team.teamId}>{team.name}</span>) : <small>Aguardando resultados</small>}</div>
-            <div className="is-eliminated"><p>3 derrotas</p><h4>Eliminados</h4>{eliminated.length ? eliminated.map((team) => <span key={team.teamId}>{team.name}</span>) : <small>Aguardando resultados</small>}</div>
-          </aside>
+          {stage.rounds.map(({ round, groups }) => {
+            const terminal = TERMINAL_RECORDS[round]
+            return (
+              <section key={round} className="swiss-round" aria-labelledby={`swiss-round-${round}`}>
+                <h4 id={`swiss-round-${round}`} className="sr-only">Rodada {round}</h4>
+                <div className="swiss-round-content">
+                  {terminal && <Outcome record={terminal.advance} teams={outcomeTeams(terminal.advance)} tone="advance" />}
+                  <div className="swiss-pools">
+                    {groups.map((group) => (
+                      <div key={group.record} className="swiss-pool">
+                        <div className="swiss-pool-label">{group.record.replace('-', ':')}</div>
+                        <div className="swiss-pool-matches">
+                          {Array.from({ length: Math.max(MATCH_SLOTS[group.record], group.matches.length) }, (_, index) => {
+                            const waitingIndex = (index - group.matches.length) * 2
+                            return <MatchCard key={group.matches[index]?.matchId || `${group.record}-${index}`} match={group.matches[index]} teamA={group.waitingTeams[waitingIndex]} teamB={group.waitingTeams[waitingIndex + 1]} />
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {terminal && <Outcome record={terminal.eliminate} teams={outcomeTeams(terminal.eliminate)} tone="eliminate" />}
+                </div>
+              </section>
+            )
+          })}
         </div>
       </div>
     </div>

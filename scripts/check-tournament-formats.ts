@@ -4,6 +4,8 @@ import { copaAce8Teams } from '../src/data/copaAce8'
 import { copaAce7Teams } from '../src/data/copaAce7'
 import { tournamentArchives } from '../src/data/tournamentArchives'
 import { buildFaceitSwissStandings, type FaceitChampionshipSnapshot } from '../src/lib/faceit'
+import { buildSwissRounds } from '../src/components/CopaAce10Swiss'
+import { organizeSchedule } from '../src/components/ScheduleList'
 
 const copa9 = tournamentArchives['copa-ace-9']
 const copa8 = tournamentArchives['copa-ace-8']
@@ -57,5 +59,25 @@ assert.deepEqual(swissStandings.map(({ name, wins, losses, scoreBalance }) => ({
   { name: 'Alpha', wins: 1, losses: 0, scoreBalance: 1 },
   { name: 'Bravo', wins: 0, losses: 1, scoreBalance: -1 },
 ])
+
+const swissStage = buildSwissRounds(swissMatches, swissTeams)
+assert.deepEqual(swissStage.rounds.map(({ groups }) => groups.map(({ record }) => record)), [
+  ['0-0'],
+  ['1-0', '0-1'],
+  ['2-0', '1-1', '0-2'],
+  ['2-1', '1-2'],
+  ['2-2'],
+])
+assert.equal(swissStage.rounds[0].groups[0].matches.length, 1)
+assert.deepEqual(swissStage.campaigns.get('a'), { wins: 1, losses: 0 })
+
+const schedule = organizeSchedule([
+  { ...swissMatches[0], matchId: 'today', winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-22T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'upcoming', winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-23T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'finished', status: 'FINISHED', scheduledAt: Date.parse('2026-08-21T19:00:00-03:00') },
+], Date.parse('2026-08-22T12:00:00-03:00'))
+assert.deepEqual(schedule.today.map(({ matchId }) => matchId), ['today'])
+assert.deepEqual(schedule.upcoming.map(({ matchId }) => matchId), ['upcoming'])
+assert.deepEqual(schedule.finished.map(({ matchId }) => matchId), ['finished'])
 
 console.log('Tournament format checks passed.')

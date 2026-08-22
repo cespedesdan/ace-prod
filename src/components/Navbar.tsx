@@ -6,13 +6,13 @@ import { usePathname } from 'next/navigation'
 import { Logotipo } from './Logotipo'
 import { cn } from '@/lib/utils'
 
-const navigation = [
+const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean }> = [
   { name: 'Home', href: '/' },
   { name: 'Copa Ace 10', href: '/copa-ace-10', edition: true },
   { name: 'Agenda', href: '/schedule' },
   { name: 'Notícias', href: '/news' },
   { name: 'Hall da Fama', href: '/hall-of-fame' },
-  { name: 'Inscreva-se', href: '/inscreva-se', highlight: true },
+  //{ name: 'Inscreva-se', href: '/inscreva-se', highlight: true },
 ]
 
 export function Navbar() {

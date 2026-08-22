@@ -15,6 +15,7 @@ export type CopaAce10FaceitData = {
     teamId: string
     name: string
     nickname: string | null
+    avatarUrl: string | null
     faceitUrl: string | null
     status: string | null
     group: number | null

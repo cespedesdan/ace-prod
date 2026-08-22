@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { buildFaceitSwissStandings } from '@/lib/faceit'
 
@@ -11,6 +12,10 @@ export function RankingTable({
   syncedAt: Date | null
 }) {
   const standings = buildFaceitSwissStandings(teams, matches)
+  const logos = new Map(teams.map((team) => [team.teamId, team.avatarUrl]))
+  for (const match of matches) {
+    for (const team of match.teams) if (team.avatarUrl) logos.set(team.teamId, team.avatarUrl)
+  }
 
   return (
     <div className="brand-card overflow-hidden">
@@ -42,7 +47,16 @@ export function RankingTable({
             {standings.length ? standings.map((standing, index) => (
               <tr key={standing.teamId} className="border-t border-white/5 text-sm text-gray-300">
                 <td className="px-6 py-4 font-black text-copa-cyan">{index + 1}º</td>
-                <td className="px-6 py-4 font-black text-white">{standing.name}</td>
+                <td className="px-6 py-3 font-black text-white">
+                  <div className="flex items-center gap-3">
+                    <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden border border-white/10 bg-white/5 text-[10px] text-copa-cyan" aria-hidden="true">
+                      {logos.get(standing.teamId)
+                        ? <Image src={logos.get(standing.teamId)!} alt="" fill sizes="32px" unoptimized className="object-contain p-0.5" />
+                        : standing.name.slice(0, 2).toUpperCase()}
+                    </span>
+                    <span>{standing.name}</span>
+                  </div>
+                </td>
                 <td className="px-6 py-4 font-bold">{standing.wins}–{standing.losses}</td>
                 <td className="px-6 py-4">{standing.wins}</td>
                 <td className="px-6 py-4">{standing.losses}</td>

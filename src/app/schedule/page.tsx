@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Agenda Copa Ace 10 | Ace Produtora',
-  description: 'Cronograma e primeira rodada da Copa Ace 10.',
+  description: 'Cronograma e partidas das cinco rodadas suíças da Copa Ace 10.',
 }
 
 async function getFaceitSchedule() {
@@ -45,7 +45,7 @@ export default async function SchedulePage() {
           </Link>
           <p className="tournament-kicker">Calendário oficial</p>
           <h1 className="mt-2 text-4xl font-black uppercase tracking-tight sm:text-5xl">Agenda de jogos</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300">Datas do sistema suíço e dos playoffs da Copa ACE 10. Confrontos e horários serão divulgados em breve.</p>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300">Acompanhe as cinco rodadas do sistema suíço e os playoffs da Copa ACE 10.</p>
         </div>
       </section>
 
