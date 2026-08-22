@@ -82,7 +82,7 @@ export default async function CopaAce10Page() {
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/inscreva-se" className="tournament-button-primary">Inscreva seu time <ArrowRight size={16} /></Link>
+                {/* <Link href="/inscreva-se" className="tournament-button-primary">Inscreva seu time <ArrowRight size={16} /></Link> */}
                 <a href="/Regulamento_Copa_Ace_10.pdf"
                 target="_blank"
                 rel="noopener noreferrer"

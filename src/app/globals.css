@@ -823,9 +823,8 @@ textarea {
   overflow: hidden;
   border: 1px solid rgb(217 154 40 / 34%);
   background:
-    radial-gradient(circle at 90% 15%, rgb(238 178 71 / 85%), transparent 34%),
-    radial-gradient(circle at 52% 48%, rgb(217 154 40 / 30%), transparent 48%),
-    linear-gradient(125deg, #020302 3%, #211708 58%, #080604 100%);
+    linear-gradient(112deg, rgb(58 33 10 / 98%), rgb(23 12 5 / 96%) 58%, rgb(5 4 3 / 98%)),
+    #170c05;
   box-shadow: inset 0 0 120px rgb(0 0 0 / 55%), 0 24px 60px rgb(0 0 0 / 24%);
 }
 

@@ -194,7 +194,7 @@ export default function RegistrationForm() {
         <div className="tournament-container relative grid gap-8 py-10 lg:grid-cols-[1fr_380px] lg:py-14">
           <div>
             <div className="copa10-logo-lockup"><Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} priority /></div>
-            <div className="registration-open-badge mt-7 inline-flex items-center gap-2 border bg-[#d99a28]/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-[#ffd276]"><span className="h-2 w-2 animate-pulse bg-[#ffd276]" /> Inscrições abertas</div>
+            <div className="registration-open-badge mt-7 inline-flex items-center gap-2 border bg-[#8f0000] px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-[#ffd276]"><span className="h-2 w-2 animate-pulse bg-[#ffd276]" /> Inscrições Encerradas</div>
             <h1 className="mt-5 text-4xl font-black uppercase tracking-tight sm:text-6xl">Inscreva seu time <span>na Copa ACE 10</span></h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">Cadastre sua equipe, faça o pagamento e envie os documentos para confirmar a participação na décima edição.</p>
             <div className="mt-7 flex flex-wrap gap-3 text-xs font-bold text-slate-300">
@@ -214,6 +214,7 @@ export default function RegistrationForm() {
         </div>
       </section>
 
+      {/*
       <div className="tournament-container py-8 lg:py-12">
         <div className="registration-steps mb-7 grid grid-cols-2 overflow-hidden">
           {steps.map((item, index) => (
@@ -326,6 +327,7 @@ export default function RegistrationForm() {
           </div>
         </form>
       </div>
+      */}
     </main>
   )
 }
