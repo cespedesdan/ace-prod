@@ -45,8 +45,8 @@ export function RankingTable({
           </thead>
           <tbody>
             {standings.length ? standings.map((standing, index) => (
-              <tr key={standing.teamId} className="border-t border-white/5 text-sm text-gray-300">
-                <td className="px-6 py-4 font-black text-copa-cyan">{index + 1}º</td>
+              <tr key={standing.teamId} className={`border-t border-white/5 text-sm text-gray-300 ${index < 8 ? 'bg-emerald-500/10' : 'bg-red-500/10'} ${index === 8 ? 'shadow-[inset_0_2px_0_rgba(248,113,113,.45)]' : ''}`}>
+                <td className={`px-6 py-4 font-black ${index < 8 ? 'text-copa-cyan' : 'text-[#FF1476]'}`}>{index + 1}º</td>
                 <td className="px-6 py-3 font-black text-white">
                   <div className="flex items-center gap-3">
                     <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden border border-white/10 bg-white/5 text-[10px] text-copa-cyan" aria-hidden="true">
@@ -62,13 +62,7 @@ export function RankingTable({
                 <td className="px-6 py-4">{standing.losses}</td>
                 <td className="px-6 py-4">{standing.scoreBalance > 0 ? '+' : ''}{standing.scoreBalance}</td>
                 <td className="px-6 py-4">
-                  <span className={standing.status === 'Classificado'
-                    ? 'font-black text-emerald-400'
-                    : standing.status === 'Eliminado'
-                      ? 'font-black text-red-400'
-                      : 'font-bold text-gray-400'}>
-                    {standing.status}
-                  </span>
+                  <span className={index < 8 ? 'font-black text-emerald-400' : 'font-black text-red-400'}>{index < 8 ? 'Classifica' : 'Não classifica'}</span>
                 </td>
               </tr>
             )) : <tr>
