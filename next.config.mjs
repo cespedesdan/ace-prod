@@ -5,6 +5,7 @@ const withBundleAnalyzer = createBundleAnalyzer({
 })
 
 const nextConfig = {
+  distDir: process.env.ANALYZE === 'true' ? '.next-analyze' : '.next',
   poweredByHeader: false,
   experimental: {
     reactCompiler: true,
