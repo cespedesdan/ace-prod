@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { FormEvent, useRef, useState } from 'react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -67,6 +67,35 @@ export default function RegistrationForm() {
   const [faceitTeam, setFaceitTeam] = useState<FaceitTeamPreview | null>(null)
   const [faceitLoading, setFaceitLoading] = useState(false)
   const [faceitError, setFaceitError] = useState('')
+  const [faceitVerifying, setFaceitVerifying] = useState(false)
+  const [verifiedFaceitTeamId, setVerifiedFaceitTeamId] = useState('')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const oauthError = params.get('faceit_error')
+    if (oauthError) {
+      const messages: Record<string, string> = {
+        access_denied: 'A autorização na FACEIT foi cancelada.',
+        not_team_leader: 'Entre com a conta FACEIT que aparece como líder deste time.',
+        temporarily_unavailable: 'A FACEIT não respondeu. Tente confirmar o time novamente.',
+      }
+      setFaceitError(messages[oauthError] || 'Não foi possível confirmar a conta FACEIT.')
+    }
+    if (params.has('faceit_verified') || oauthError) {
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+
+    const controller = new AbortController()
+    fetch('/api/faceit/ownership/status', { cache: 'no-store', signal: controller.signal })
+      .then(async (response) => response.ok
+        ? response.json() as Promise<{ verified?: boolean; teamId?: string | null }>
+        : null)
+      .then((status) => {
+        if (status?.verified && status.teamId) setVerifiedFaceitTeamId(status.teamId.toLowerCase())
+      })
+      .catch(() => undefined)
+    return () => controller.abort()
+  }, [])
 
   function validateStep() {
     const section = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`)
@@ -144,6 +173,9 @@ export default function RegistrationForm() {
       if (!response.ok || !data.team) throw new Error(data.error || 'Não foi possível consultar a FACEIT.')
       setFaceitTeam(data.team)
       setTeamName(data.team.name)
+      if (verifiedFaceitTeamId && verifiedFaceitTeamId !== data.team.teamId.toLowerCase()) {
+        setVerifiedFaceitTeamId('')
+      }
     } catch (lookupError) {
       setFaceitError(lookupError instanceof Error ? lookupError.message : 'Não foi possível consultar a FACEIT.')
     } finally {
@@ -151,10 +183,38 @@ export default function RegistrationForm() {
     }
   }
 
+  async function verifyFaceitTeamOwnership() {
+    if (!faceitTeam || faceitVerifying) return
+    setFaceitVerifying(true)
+    setFaceitError('')
+    try {
+      const response = await fetch('/api/faceit/ownership/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: `https://www.faceit.com/pt/teams/${faceitTeam.teamId}` }),
+      })
+      const data = (await response.json()) as { authorizationUrl?: string; error?: string }
+      if (!response.ok || !data.authorizationUrl) {
+        throw new Error(data.error || 'Não foi possível iniciar a confirmação na FACEIT.')
+      }
+      window.location.assign(data.authorizationUrl)
+    } catch (verificationError) {
+      setFaceitError(verificationError instanceof Error
+        ? verificationError.message
+        : 'Não foi possível iniciar a confirmação na FACEIT.')
+      setFaceitVerifying(false)
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     if (!validateStep()) return
+    if (!faceitTeam || verifiedFaceitTeamId !== faceitTeam.teamId.toLowerCase()) {
+      setError('Confirme o time entrando com a conta FACEIT do líder antes de enviar a inscrição.')
+      setStep(0)
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -250,6 +310,14 @@ export default function RegistrationForm() {
                     ))}
                   </ul>
                   <p className="mt-3 text-xs text-slate-500">Este elenco será salvo com a inscrição e só será atualizado pela administração.</p>
+                  {verifiedFaceitTeamId === faceitTeam.teamId.toLowerCase() ? (
+                    <p className="mt-4 inline-flex items-center gap-2 border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-300"><ShieldCheck size={15} /> Líder confirmado pela FACEIT</p>
+                  ) : (
+                    <button type="button" onClick={verifyFaceitTeamOwnership} disabled={faceitVerifying} className="tournament-button-primary mt-4 disabled:cursor-wait disabled:opacity-70">
+                      {faceitVerifying ? <LoaderCircle className="animate-spin" size={17} /> : <ShieldCheck size={17} />}
+                      {faceitVerifying ? 'Abrindo FACEIT...' : 'Confirmar como líder na FACEIT'}
+                    </button>
+                  )}
                 </div>
               )}
               <label className={labelClass}>Nome da equipe<input name="teamName" required readOnly value={teamName} autoComplete="organization" placeholder="Preenchido pela FACEIT" className={`${inputClass} read-only:cursor-not-allowed read-only:opacity-75`} /></label>
