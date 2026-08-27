@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { NextRequest } from 'next/server'
+import { POST as submitRegistration } from '../src/app/api/registrations/route'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
@@ -37,6 +39,22 @@ async function main() {
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
     )
+
+    const originalRegistrationState = process.env.REGISTRATIONS_OPEN
+    delete process.env.REGISTRATIONS_OPEN
+    try {
+      const closedResponse = await submitRegistration(
+        new NextRequest('http://localhost/api/registrations', { method: 'POST' }),
+      )
+      assert.equal(closedResponse.status, 410)
+      assert.deepEqual(await closedResponse.json(), {
+        success: false,
+        error: 'As inscrições estão encerradas.',
+      })
+    } finally {
+      if (originalRegistrationState === undefined) delete process.env.REGISTRATIONS_OPEN
+      else process.env.REGISTRATIONS_OPEN = originalRegistrationState
+    }
 
     const faceitTeamId = '6204037c-30e6-408b-8aaa-dd8219860b4b'
     assert.equal(parseFaceitTeamId(`https://www.faceit.com/pt/teams/${faceitTeamId}/ace`), faceitTeamId)
