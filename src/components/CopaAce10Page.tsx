@@ -94,7 +94,7 @@ export default async function CopaAce10Page() {
 
             <div className="copa10-coin-stage" aria-label="Moeda comemorativa da Copa ACE 10">
               <div className="copa10-coin-orbit" aria-hidden="true" />
-              <Image src="/copa-ace-10/moeda-10.webp" alt="Moeda dourada da décima edição da Copa ACE" width={1356} height={1400} priority className="copa10-coin" />
+              <Image src="/copa-ace-10/moeda-10.webp" alt="Moeda dourada da décima edição da Copa ACE" width={1356} height={1400} priority unoptimized className="copa10-coin" />
               {SHOW_CONFIRMED_SLOTS_BADGE && (
                 <div className="copa10-slots-badge">
                   <span>Vagas confirmadas</span>

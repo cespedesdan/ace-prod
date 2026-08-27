@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import CopaAce10Page from '@/components/CopaAce10Page'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Copa Ace 10 | Ace Produtora',
