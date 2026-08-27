@@ -1,8 +1,7 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { hallOfFameEditions } from '@/data/hallOfFame'
 import { tournamentArchives } from '@/data/tournamentArchives'
-import CopaAce10Page from '@/components/CopaAce10Page'
 import {
   DoubleEliminationTournamentPage,
   GroupDoubleEliminationTournamentPage,
@@ -10,7 +9,11 @@ import {
   SingleEliminationTournamentPage,
 } from '@/components/TournamentFormatPage'
 
-export const dynamic = 'force-dynamic'
+export const dynamicParams = false
+
+export function generateStaticParams() {
+  return hallOfFameEditions.map(({ slug }) => ({ slug }))
+}
 
 interface EditionPageProps {
   params: Promise<{ slug: string }>
@@ -25,7 +28,7 @@ export default async function HallOfFameEditionPage({ params }: EditionPageProps
   }
 
   if (edition.slug === 'copa-ace-10') {
-    return <CopaAce10Page />
+    redirect('/copa-ace-10')
   }
 
   const archive = tournamentArchives[edition.slug]

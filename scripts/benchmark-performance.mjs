@@ -7,14 +7,25 @@ const numberOfRuns = Number.parseInt(process.env.PERF_RUNS || '5', 10)
 const label = (process.env.PERF_LABEL || new Date().toISOString()).replace(/[^a-zA-Z0-9_-]/g, '-')
 const outputDirectory = join(process.cwd(), '.performance-reports', label)
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
-const routes = [
-  { name: 'home', path: '/' },
-  { name: 'copa', path: '/copa-ace-10' },
-  { name: 'hall', path: '/hall-of-fame' },
-]
+const routePaths = (process.env.PERF_ROUTES || '/,/copa-ace-10,/hall-of-fame')
+  .split(',')
+  .map((path) => path.trim())
+  .filter(Boolean)
+const routes = routePaths.map((path) => ({
+  name: path === '/' ? 'home' : path.replace(/^\//, '').replace(/[^a-zA-Z0-9]+/g, '-'),
+  path,
+}))
 
 if (!Number.isInteger(numberOfRuns) || numberOfRuns < 1) {
   throw new Error('PERF_RUNS must be a positive integer')
+}
+
+if (routes.length === 0 || routes.some(({ path }) => !path.startsWith('/'))) {
+  throw new Error('PERF_ROUTES must be a comma-separated list of absolute route paths')
+}
+
+if (new Set(routes.map(({ name }) => name)).size !== routes.length) {
+  throw new Error('PERF_ROUTES contains paths that map to the same report filename')
 }
 
 mkdirSync(outputDirectory, { recursive: true })

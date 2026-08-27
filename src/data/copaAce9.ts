@@ -29,22 +29,22 @@ export type PlayoffMatch = {
 }
 
 export const teams = {
-  godNation: { name: 'GodNation', shortName: 'GN', logo: '/hall-of-fame/copa-ace-9/god-nation.png' },
-  azureBears: { name: 'Azure Bears', shortName: 'AB', logo: '/hall-of-fame/copa-ace-9/azure-bears.png' },
-  paradox: { name: 'Paradox', shortName: 'PX', logo: '/hall-of-fame/copa-ace-9/paradox.png' },
-  camarelo: { name: 'Camarelo', shortName: 'CM', logo: '/hall-of-fame/copa-ace-9/camarelo.png' },
-  lamba: { name: 'Lamba Esports', shortName: 'LE', logo: '/hall-of-fame/copa-ace-9/lamba.png', darkLogo: true },
-  choppinada: { name: 'Choppinada', shortName: 'CH', logo: '/hall-of-fame/copa-ace-9/choppinada.png' },
-  ibiaca: { name: 'Ibiaçá', shortName: 'IB', logo: '/hall-of-fame/copa-ace-9/ibiaca.png' },
-  oneVsNine: { name: '1 vs 9 Academy', shortName: '1V9', logo: '/hall-of-fame/copa-ace-9/1v9.png' },
-  ghost: { name: 'Ghost Gaming', shortName: 'GG', logo: '/hall-of-fame/copa-ace-9/ghost.png' },
+  godNation: { name: 'GodNation', shortName: 'GN', logo: '/hall-of-fame/copa-ace-9/god-nation.webp' },
+  azureBears: { name: 'Azure Bears', shortName: 'AB', logo: '/hall-of-fame/copa-ace-9/azure-bears.webp' },
+  paradox: { name: 'Paradox', shortName: 'PX', logo: '/hall-of-fame/copa-ace-9/paradox.webp' },
+  camarelo: { name: 'Camarelo', shortName: 'CM', logo: '/hall-of-fame/copa-ace-9/camarelo.webp' },
+  lamba: { name: 'Lamba Esports', shortName: 'LE', logo: '/hall-of-fame/copa-ace-9/lamba.webp', darkLogo: true },
+  choppinada: { name: 'Choppinada', shortName: 'CH', logo: '/hall-of-fame/copa-ace-9/choppinada.webp' },
+  ibiaca: { name: 'Ibiaçá', shortName: 'IB', logo: '/hall-of-fame/copa-ace-9/ibiaca.webp' },
+  oneVsNine: { name: '1 vs 9 Academy', shortName: '1V9', logo: '/hall-of-fame/copa-ace-9/1v9.webp' },
+  ghost: { name: 'Ghost Gaming', shortName: 'GG', logo: '/hall-of-fame/copa-ace-9/ghost.webp' },
   brazilians: { name: 'The Brazilians', shortName: 'TB' },
-  bala: { name: 'Bala de Munique', shortName: 'BM', logo: '/hall-of-fame/copa-ace-9/bala-de-munique.png' },
+  bala: { name: 'Bala de Munique', shortName: 'BM', logo: '/hall-of-fame/copa-ace-9/bala-de-munique.webp' },
   nox: { name: 'Nox Clan', shortName: 'NOX' },
-  saidera: { name: 'Saidera', shortName: 'SA', logo: '/hall-of-fame/copa-ace-9/saidera.png' },
-  rino: { name: 'Esports Rino', shortName: 'ER', logo: '/hall-of-fame/copa-ace-9/rino.png' },
+  saidera: { name: 'Saidera', shortName: 'SA', logo: '/hall-of-fame/copa-ace-9/saidera.webp' },
+  rino: { name: 'Esports Rino', shortName: 'ER', logo: '/hall-of-fame/copa-ace-9/rino.webp' },
   nexon: { name: 'Nexon', shortName: 'NX' },
-  outlaws: { name: 'Outlaws Gaming', shortName: 'OG', logo: '/hall-of-fame/copa-ace-9/outlaws-gaming.png' }
+  outlaws: { name: 'Outlaws Gaming', shortName: 'OG', logo: '/hall-of-fame/copa-ace-9/outlaws-gaming.webp' }
 } satisfies Record<string, Team>
 
 export const groups: Group[] = [
