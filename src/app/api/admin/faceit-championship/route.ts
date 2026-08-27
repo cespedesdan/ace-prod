@@ -55,6 +55,7 @@ function tournamentName(value: unknown) {
 
 function revalidateTournament(tournament: string) {
   if (tournament === 'Copa Ace 10') {
+    revalidatePath('/')
     revalidatePath('/copa-ace-10')
     revalidatePath('/schedule')
   }

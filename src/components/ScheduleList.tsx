@@ -73,7 +73,7 @@ function TeamLogo({ team }: { team?: FaceitMatch['teams'][number] }) {
   return (
     <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden border border-white/15 bg-[#100a15] text-xs font-black text-copa-cyan">
       {team?.avatarUrl
-        ? <Image src={team.avatarUrl} alt="" fill sizes="44px" unoptimized className="object-contain p-1" />
+        ? <Image src={team.avatarUrl} alt="" fill sizes="44px" className="object-contain p-1" />
         : team?.name.slice(0, 2).toUpperCase() || '?'}
     </span>
   )
@@ -167,7 +167,7 @@ export function ScheduleList({ championship }: { championship: ChampionshipSched
         const Icon = section.icon
         const sectionMatches = organized[key]
         return (
-          <section key={key} className="border-b border-cyan-400/15 bg-[#100a15]/60 p-4 last:border-b-0 sm:p-5" aria-labelledby={`schedule-${key}`}>
+          <section key={key} className="deferred-render border-b border-cyan-400/15 bg-[#100a15]/60 p-4 last:border-b-0 sm:p-5" aria-labelledby={`schedule-${key}`}>
             <header className="mb-4 flex items-end justify-between gap-3">
               <div><p className="tournament-section-eyebrow inline-flex items-center gap-2"><Icon size={14} /> {section.eyebrow}</p><h3 id={`schedule-${key}`} className="mt-1 text-lg font-black uppercase text-white">{section.title}</h3></div>
               <span className="text-xs font-black text-copa-cyan">{sectionMatches.length}</span>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Logotipo } from './Logotipo'
+import { IntentLink } from './IntentLink'
 import { cn } from '@/lib/utils'
 
 const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean }> = [
@@ -20,18 +21,18 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-ace-cyan/20 bg-smoke/95 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-ace-cyan/20 bg-smoke md:bg-smoke/95 md:backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
-            <Logotipo size="md" variant="neutral" />
+            <Logotipo size="md" variant="neutral" priority />
           </Link>
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-5">
             {navigation.map((item) => (
-              <Link
+              <IntentLink
                 key={item.name}
                 href={item.href}
                 className={cn(
@@ -46,7 +47,7 @@ export function Navbar() {
                 )}
               >
                 {item.name}
-              </Link>
+              </IntentLink>
             ))}
           </div>
 
@@ -69,7 +70,7 @@ export function Navbar() {
         {mobileOpen && (
           <div className="space-y-1 border-t border-white/10 pb-4 pt-3 md:hidden">
             {navigation.map((item) => (
-              <Link
+              <IntentLink
                 key={item.name}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
@@ -85,7 +86,7 @@ export function Navbar() {
                 )}
               >
                 {item.name}
-              </Link>
+              </IntentLink>
             ))}
           </div>
         )}

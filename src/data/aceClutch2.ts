@@ -19,14 +19,14 @@ export const faceitTournamentUrl = 'https://www.faceit.com/en/championship/e6423
 const roomUrl = (id: string) => `https://www.faceit.com/en/cs2/room/${id}`
 
 export const aceClutch2Teams = {
-  dragonsWhite: { name: 'Dragons White', shortName: 'DW', logo: '/hall-of-fame/ace-clutch-2/dragons-white.png', darkLogo: true },
-  seaDragons: { name: 'SeaDragons', shortName: 'SD', logo: '/hall-of-fame/ace-clutch-2/seadragons.jpg' },
-  rino: { name: 'RINO E-SPORTS', shortName: 'RINO', logo: '/hall-of-fame/ace-clutch-2/rino.png' },
-  bala: { name: 'BALA DE MUNIQUE', shortName: 'BDM', logo: '/hall-of-fame/ace-clutch-2/bala-de-munique.png' },
-  lastAuAu: { name: 'Last AuAu', shortName: 'LA', logo: '/hall-of-fame/ace-clutch-2/last-auau.png' },
-  helloRebels: { name: 'Hello Rebels', shortName: 'HR', logo: '/hall-of-fame/ace-clutch-2/hello-rebels.png' },
-  nox: { name: 'NOX CLAN', shortName: 'NOX', logo: '/hall-of-fame/ace-clutch-2/nox-clan.png' },
-  ufmg: { name: 'UFMG Red Fenix', shortName: 'UFMG', logo: '/hall-of-fame/ace-clutch-2/ufmg-red-fenix.png' },
+  dragonsWhite: { name: 'Dragons White', shortName: 'DW', logo: '/hall-of-fame/ace-clutch-2/dragons-white.webp', darkLogo: true },
+  seaDragons: { name: 'SeaDragons', shortName: 'SD', logo: '/hall-of-fame/ace-clutch-2/seadragons.webp' },
+  rino: { name: 'RINO E-SPORTS', shortName: 'RINO', logo: '/hall-of-fame/ace-clutch-2/rino.webp' },
+  bala: { name: 'BALA DE MUNIQUE', shortName: 'BDM', logo: '/hall-of-fame/ace-clutch-2/bala-de-munique.webp' },
+  lastAuAu: { name: 'Last AuAu', shortName: 'LA', logo: '/hall-of-fame/ace-clutch-2/last-auau.webp' },
+  helloRebels: { name: 'Hello Rebels', shortName: 'HR', logo: '/hall-of-fame/ace-clutch-2/hello-rebels.webp' },
+  nox: { name: 'NOX CLAN', shortName: 'NOX', logo: '/hall-of-fame/ace-clutch-2/nox-clan.webp' },
+  ufmg: { name: 'UFMG Red Fenix', shortName: 'UFMG', logo: '/hall-of-fame/ace-clutch-2/ufmg-red-fenix.webp' },
 } satisfies Record<string, AceClutchTeam>
 
 export const finalStandings = [
