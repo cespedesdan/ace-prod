@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import sharp from 'sharp'
+import { normalizeRegistrationImage } from '../src/lib/registration-upload'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
@@ -37,6 +39,16 @@ async function main() {
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
     )
+
+    const sourceImage = await sharp({
+      create: { width: 2, height: 2, channels: 4, background: '#ff0000' },
+    }).png().toBuffer()
+    const normalizedImage = await normalizeRegistrationImage(
+      Buffer.concat([sourceImage, Buffer.from('untrusted-trailer')]),
+      'png',
+    )
+    assert.equal((await sharp(normalizedImage).metadata()).format, 'png')
+    assert.equal(normalizedImage.includes(Buffer.from('untrusted-trailer')), false)
 
     const faceitTeamId = '6204037c-30e6-408b-8aaa-dd8219860b4b'
     assert.equal(parseFaceitTeamId(`https://www.faceit.com/pt/teams/${faceitTeamId}/ace`), faceitTeamId)

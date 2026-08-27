@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { FaceitApiError, getFaceitTeam } from '@/lib/faceit'
 import { consumeRateLimit, getClientIp } from '@/lib/rate-limit'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
+import { normalizeRegistrationImage } from '@/lib/registration-upload'
 import { readFormDataWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
@@ -59,7 +60,14 @@ async function validateUpload(value: FormDataEntryValue | null, allowedTypes: Re
   if (!hasValidSignature(buffer, extension)) {
     return `O conteúdo de ${label.toLowerCase()} não corresponde ao formato informado.`
   }
-  return { file: value, extension, buffer }
+  try {
+    const normalizedBuffer = extension === 'pdf'
+      ? buffer
+      : await normalizeRegistrationImage(buffer, extension)
+    return { file: value, extension, buffer: normalizedBuffer }
+  } catch {
+    return 'Não foi possível validar o conteúdo de ' + label.toLowerCase() + '.'
+  }
 }
 
 function rateLimitResponse(retryAfterSeconds: number) {
