@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import { ArrowRight, CalendarDays } from 'lucide-react'
 import { Logo } from './Logo'
+import { IntentLink } from './IntentLink'
 
 export function Hero() {
   return (
@@ -16,12 +16,12 @@ export function Hero() {
             Campeonatos de Counter-Strike 2 com produção profissional, experiência acessível e a energia da comunidade.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/copa-ace-10" prefetch={false} className="brand-button-primary">
+            <IntentLink href="/copa-ace-10" className="brand-button-primary">
               Conhecer a Copa Ace 10 <ArrowRight size={17} />
-            </Link>
-            <Link href="/schedule" className="brand-button-secondary border-white/45 bg-white/5 text-white hover:border-white hover:bg-white/10">
+            </IntentLink>
+            <IntentLink href="/schedule" className="brand-button-secondary border-white/45 bg-white/5 text-white hover:border-white hover:bg-white/10">
               <CalendarDays size={17} /> Ver agenda
-            </Link>
+            </IntentLink>
           </div>
         </div>
 

@@ -62,9 +62,9 @@ Final five-run verification on the completed branch:
 
 | Route | Score | FCP | LCP | TBT | CLS | Resource weight |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `/` | 96 | 0.92 s | 2.74 s | 39 ms | 0.000 | 255 KiB |
-| `/copa-ace-10` | 95 | 0.91 s | 2.87 s | 62 ms | 0.000 | 297 KiB |
-| `/hall-of-fame` | 98 | 0.92 s | 2.42 s | 29 ms | 0.000 | 285 KiB |
+| `/` | 96 | 0.91 s | 2.71 s | 45 ms | 0.000 | 255 KiB |
+| `/copa-ace-10` | 96 | 0.91 s | 2.77 s | 38 ms | 0.000 | 299 KiB |
+| `/hall-of-fame` | 99 | 0.92 s | 2.06 s | 56 ms | 0.000 | 285 KiB |
 
 ## What the trace showed
 
@@ -72,7 +72,7 @@ Final five-run verification on the completed branch:
 - Uploaded team logos were also delivered as full originals; two production files exceeded 1.1 MiB each. They now use the same responsive image pipeline.
 - The commemorative coin falls from 220 KiB to about 52 KiB at the measured mobile width.
 - The global Nippo font is now WOFF2: 29.1 KiB instead of 69.9 KiB.
-- Pages were prefetching the large Copa React Server Component payload during unrelated initial loads. That automatic prefetch is disabled only for the heavy route.
+- Viewport-triggered route prefetch was adding unrelated work to initial loads, including the large Copa React Server Component payload. Primary navigation now prefetches on hover, focus, or touch intent instead, exposes an immediate pending state after activation, and the Copa route has a loading boundary.
 - Below-fold tournament sections, archive cards, schedules, and the footer use `content-visibility: auto`. Mobile also avoids the continuously animated large coin and expensive navbar backdrop blur.
 - The YouTube API is now requested only when a visible live player approaches the viewport.
 

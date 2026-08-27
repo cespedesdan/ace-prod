@@ -2,15 +2,17 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { CalendarIcon, Radio, TrophyIcon } from 'lucide-react'
 import { hallOfFameEditions } from '@/data/hallOfFame'
+import { IntentLink } from '@/components/IntentLink'
 
 export function HallOfFameList() {
   return (
     <div className="space-y-5">
-      {[...hallOfFameEditions].reverse().map((edition) => (
-        <Link
+      {[...hallOfFameEditions].reverse().map((edition) => {
+        const href = edition.href ?? `/hall-of-fame/${edition.slug}`
+        const EditionLink = href === '/copa-ace-10' ? IntentLink : Link
+        return <EditionLink
           key={edition.slug}
-          href={edition.href ?? `/hall-of-fame/${edition.slug}`}
-          prefetch={edition.href === '/copa-ace-10' ? false : undefined}
+          href={href}
           className="deferred-render-compact brand-card group grid gap-5 p-5 transition hover:border-copa-cyan/50 sm:grid-cols-[120px_1fr_auto] sm:items-center"
         >
           <div className="relative h-24 w-24 overflow-hidden border border-white/10 bg-smoke/70">
@@ -40,8 +42,8 @@ export function HallOfFameList() {
             <CalendarIcon className="h-5 w-5 shrink-0 text-copa-cyan" />
             <span className="font-semibold">{edition.date ?? 'Data não informada'}</span>
           </div>
-        </Link>
-      ))}
+        </EditionLink>
+      })}
     </div>
   )
 }

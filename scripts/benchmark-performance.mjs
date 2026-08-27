@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, readFileSync, readdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const baseUrl = (process.env.PERF_BASE_URL || 'http://127.0.0.1:8001').replace(/\/$/, '')
@@ -42,12 +42,11 @@ for (const route of routes) {
 }
 
 const median = (values) => values.sort((left, right) => left - right)[Math.floor(values.length / 2)]
-const reports = readdirSync(outputDirectory).filter((file) => file.endsWith('.json'))
-
 const summary = routes.map((route) => {
-  const runs = reports
-    .filter((file) => file.startsWith(`${route.name}-`))
-    .map((file) => JSON.parse(readFileSync(join(outputDirectory, file), 'utf8')))
+  const runs = Array.from({ length: numberOfRuns }, (_, index) => {
+    const file = join(outputDirectory, `${route.name}-${index + 1}.json`)
+    return JSON.parse(readFileSync(file, 'utf8'))
+  })
 
   const metric = (audit) => median(runs.map((report) => report.audits[audit].numericValue))
   return {

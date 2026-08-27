@@ -397,6 +397,11 @@ textarea {
   }
 }
 
+a[data-navigation-pending="true"] {
+  cursor: progress;
+  opacity: 0.72;
+}
+
 /* Copa ACE 10 — commemorative edition. Intentionally scoped to this page. */
 .copa10-nav-button {
   border: 1px solid #d99a28;

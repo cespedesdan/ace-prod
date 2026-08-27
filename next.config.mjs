@@ -17,11 +17,13 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'distribution.faceit-cdn.net',
         pathname: '/images/**',
+        search: '',
       },
       {
         protocol: 'https',
         hostname: 'assets.faceit-cdn.net',
         pathname: '/**',
+        search: '',
       },
     ],
   },

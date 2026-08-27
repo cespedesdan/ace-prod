@@ -4,11 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Logotipo } from './Logotipo'
+import { IntentLink } from './IntentLink'
 import { cn } from '@/lib/utils'
 
-const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean; prefetch?: boolean }> = [
+const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean }> = [
   { name: 'Home', href: '/' },
-  { name: 'Copa Ace 10', href: '/copa-ace-10', edition: true, prefetch: false },
+  { name: 'Copa Ace 10', href: '/copa-ace-10', edition: true },
   { name: 'Agenda', href: '/schedule' },
   { name: 'Notícias', href: '/news' },
   { name: 'Hall da Fama', href: '/hall-of-fame' },
@@ -31,10 +32,9 @@ export function Navbar() {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-5">
             {navigation.map((item) => (
-              <Link
+              <IntentLink
                 key={item.name}
                 href={item.href}
-                prefetch={item.prefetch}
                 className={cn(
                   'px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   item.edition
@@ -47,7 +47,7 @@ export function Navbar() {
                 )}
               >
                 {item.name}
-              </Link>
+              </IntentLink>
             ))}
           </div>
 
@@ -70,10 +70,9 @@ export function Navbar() {
         {mobileOpen && (
           <div className="space-y-1 border-t border-white/10 pb-4 pt-3 md:hidden">
             {navigation.map((item) => (
-              <Link
+              <IntentLink
                 key={item.name}
                 href={item.href}
-                prefetch={item.prefetch}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   'block rounded-md px-3 py-2.5 text-sm font-semibold transition-colors',
@@ -87,7 +86,7 @@ export function Navbar() {
                 )}
               >
                 {item.name}
-              </Link>
+              </IntentLink>
             ))}
           </div>
         )}
