@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "next dev --turbopack -H 0.0.0.0 -p 8001",
     "build": "next build --turbopack",
-    "analyze": "cross-env ANALYZE=true next build --webpack",
+    "analyze": "cross-env ANALYZE=true next build",
     "perf:audit": "node scripts/benchmark-performance.mjs",
     "start": "next start -H 127.0.0.1 -p 8001",
     "lint": "eslint",

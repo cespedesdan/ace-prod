@@ -17,6 +17,8 @@ In a second terminal:
 npm run perf:audit
 ```
 
+For client/server module inspection, run `npm run analyze`. The normal production build remains Turbopack; the analyzer intentionally uses Next 15's default Webpack build because `@next/bundle-analyzer` is a Webpack plugin.
+
 The runner uses Lighthouse 13.4.1, five serial cold-page runs, simulated mobile throttling, and reports the median. JSON reports are written to `.performance-reports/` and ignored by Git.
 
 Environment overrides:
