@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { privateJson } from '@/lib/private-response'
 
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('admin-token')?.value
 
     if (!token) {
-      return NextResponse.json(
+      return privateJson(
         { error: 'Token não encontrado' },
         { status: 401 }
       )
@@ -15,23 +16,23 @@ export async function GET(request: NextRequest) {
     const payload = verifyToken(token)
 
     if (!payload) {
-      return NextResponse.json(
+      return privateJson(
         { error: 'Token inválido' },
         { status: 401 }
       )
     }
 
     if (payload.role !== 'ADMIN') {
-      return NextResponse.json(
+      return privateJson(
         { error: 'Acesso negado' },
         { status: 403 }
       )
     }
 
-    return NextResponse.json({ success: true, user: payload })
+    return privateJson({ success: true, user: payload })
   } catch (error) {
     console.error('Verification error:', error)
-    return NextResponse.json(
+    return privateJson(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     )

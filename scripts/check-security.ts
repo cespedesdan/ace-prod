@@ -5,6 +5,7 @@ import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
 import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
 import { parseYouTubeVideoId } from '../src/lib/youtube'
+import { privateJson } from '../src/lib/private-response'
 
 const identifier = randomUUID()
 
@@ -37,6 +38,8 @@ async function main() {
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
     )
+
+    assert.equal(privateJson({ ok: true }).headers.get('Cache-Control'), 'private, no-store')
 
     const faceitTeamId = '6204037c-30e6-408b-8aaa-dd8219860b4b'
     assert.equal(parseFaceitTeamId(`https://www.faceit.com/pt/teams/${faceitTeamId}/ace`), faceitTeamId)
