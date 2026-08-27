@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateUser, generateToken } from '@/lib/auth'
+import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { consumeRateLimit, getClientIp, resetRateLimit } from '@/lib/rate-limit'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
@@ -13,6 +14,9 @@ function rateLimitResponse(retryAfterSeconds: number) {
 }
 
 export async function POST(request: NextRequest) {
+  const invalidOrigin = requireSameOrigin(request)
+  if (invalidOrigin) return invalidOrigin
+
   try {
     let body: { email?: unknown; password?: unknown } | null = null
     try {
@@ -67,7 +71,7 @@ export async function POST(request: NextRequest) {
     ])
 
     const response = NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
-    response.cookies.set('admin-token', token, {
+    response.cookies.set(adminCookieName(), token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
