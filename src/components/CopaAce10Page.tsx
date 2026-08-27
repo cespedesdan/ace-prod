@@ -46,7 +46,7 @@ async function getFaceitChampionship(): Promise<CopaAce10FaceitData | null> {
 function ConfirmedTeamLogo({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
   return (
     <span className="team-logo-surface relative block shrink-0 overflow-hidden" style={{ width: size, height: size }}>
-      <Image src={`/api/copa-ace-10/teams/${id}/logo`} alt={`Logo ${name}`} fill sizes={`${size}px`} unoptimized className="object-contain p-1" />
+      <Image src={`/api/copa-ace-10/teams/${id}/logo`} alt={`Logo ${name}`} fill sizes={`${size}px`} className="object-contain p-1" />
     </span>
   )
 }
@@ -94,7 +94,15 @@ export default async function CopaAce10Page() {
 
             <div className="copa10-coin-stage" aria-label="Moeda comemorativa da Copa ACE 10">
               <div className="copa10-coin-orbit" aria-hidden="true" />
-              <Image src="/copa-ace-10/moeda-10.webp" alt="Moeda dourada da décima edição da Copa ACE" width={1356} height={1400} priority unoptimized className="copa10-coin" />
+              <Image
+                src="/copa-ace-10/moeda-10.webp"
+                alt="Moeda dourada da décima edição da Copa ACE"
+                width={1356}
+                height={1400}
+                sizes="(min-width: 1024px) 45vw, 90vw"
+                priority
+                className="copa10-coin"
+              />
               {SHOW_CONFIRMED_SLOTS_BADGE && (
                 <div className="copa10-slots-badge">
                   <span>Vagas confirmadas</span>

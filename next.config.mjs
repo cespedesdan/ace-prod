@@ -9,6 +9,21 @@ const nextConfig = {
   experimental: {
     reactCompiler: true,
   },
+  images: {
+    minimumCacheTTL: 86400,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'distribution.faceit-cdn.net',
+        pathname: '/images/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'assets.faceit-cdn.net',
+        pathname: '/**',
+      },
+    ],
+  },
   async headers() {
     return [{
       source: '/(.*)',

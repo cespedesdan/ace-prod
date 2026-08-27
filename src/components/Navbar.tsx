@@ -25,7 +25,7 @@ export function Navbar() {
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
-            <Logotipo size="md" variant="neutral" />
+            <Logotipo size="md" variant="neutral" priority />
           </Link>
 
           {/* Navigation Links */}

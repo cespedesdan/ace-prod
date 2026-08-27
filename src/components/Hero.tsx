@@ -26,7 +26,7 @@ export function Hero() {
         </div>
 
         <div className="mx-auto grid h-72 w-72 place-items-center border border-white/15 bg-smoke/45 p-12 backdrop-blur sm:h-80 sm:w-80">
-          <Logo size="lg" variant="neutral" className="h-40 w-40" />
+          <Logo size="lg" variant="neutral" className="h-40 w-40" sizes="160px" priority />
         </div>
       </div>
     </section>

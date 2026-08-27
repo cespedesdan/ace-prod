@@ -73,7 +73,7 @@ function TeamLogo({ team }: { team?: FaceitMatch['teams'][number] }) {
   return (
     <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden border border-white/15 bg-[#100a15] text-xs font-black text-copa-cyan">
       {team?.avatarUrl
-        ? <Image src={team.avatarUrl} alt="" fill sizes="44px" unoptimized className="object-contain p-1" />
+        ? <Image src={team.avatarUrl} alt="" fill sizes="44px" className="object-contain p-1" />
         : team?.name.slice(0, 2).toUpperCase() || '?'}
     </span>
   )
