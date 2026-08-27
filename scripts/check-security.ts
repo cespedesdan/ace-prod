@@ -5,6 +5,7 @@ import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
 import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
 import { parseYouTubeVideoId } from '../src/lib/youtube'
+import { adminLoginRateLimitIdentifiers } from '../src/lib/admin-login-rate-limit'
 
 const identifier = randomUUID()
 
@@ -36,6 +37,14 @@ async function main() {
     await assert.rejects(
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
+    )
+
+    const firstLoginSource = adminLoginRateLimitIdentifiers('admin@example.com', '192.0.2.1')
+    const secondLoginSource = adminLoginRateLimitIdentifiers('admin@example.com', '192.0.2.2')
+    assert.notEqual(firstLoginSource.credentialKey, secondLoginSource.credentialKey)
+    assert.equal(
+      adminLoginRateLimitIdentifiers('admin@example.com', null).credentialKey,
+      'admin@example.com',
     )
 
     const faceitTeamId = '6204037c-30e6-408b-8aaa-dd8219860b4b'

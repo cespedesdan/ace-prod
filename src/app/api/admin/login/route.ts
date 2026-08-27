@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateUser, generateToken } from '@/lib/auth'
+import { adminLoginRateLimitIdentifiers } from '@/lib/admin-login-rate-limit'
 import { consumeRateLimit, getClientIp, resetRateLimit } from '@/lib/rate-limit'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
@@ -25,16 +26,16 @@ export async function POST(request: NextRequest) {
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
     const password = typeof body?.password === 'string' ? body.password : ''
     const ip = getClientIp(request)
-    const emailKey = email || 'invalid-email'
+    const { credentialKey } = adminLoginRateLimitIdentifiers(email, ip)
 
-    const [ipLimit, emailLimit] = await Promise.all([
+    const [ipLimit, credentialLimit] = await Promise.all([
       ip
         ? consumeRateLimit({ scope: 'admin-login-ip', identifier: ip, ...ADMIN_RATE_LIMIT })
         : Promise.resolve({ allowed: true, remaining: ADMIN_RATE_LIMIT.limit, retryAfterSeconds: 0 }),
-      consumeRateLimit({ scope: 'admin-login-email', identifier: emailKey, ...ADMIN_RATE_LIMIT }),
+      consumeRateLimit({ scope: 'admin-login-credential', identifier: credentialKey, ...ADMIN_RATE_LIMIT }),
     ])
-    if (!ipLimit.allowed || !emailLimit.allowed) {
-      return rateLimitResponse(Math.max(ipLimit.retryAfterSeconds, emailLimit.retryAfterSeconds))
+    if (!ipLimit.allowed || !credentialLimit.allowed) {
+      return rateLimitResponse(Math.max(ipLimit.retryAfterSeconds, credentialLimit.retryAfterSeconds))
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !password || password.length > 200) {
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     const token = generateToken(user)
     await Promise.all([
       ...(ip ? [resetRateLimit('admin-login-ip', ip)] : []),
-      resetRateLimit('admin-login-email', emailKey),
+      resetRateLimit('admin-login-credential', credentialKey),
     ])
 
     const response = NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
