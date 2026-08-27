@@ -385,6 +385,18 @@ textarea {
   }
 }
 
+@supports (content-visibility: auto) {
+  .deferred-render,
+  .deferred-render-compact {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 640px;
+  }
+
+  .deferred-render-compact {
+    contain-intrinsic-size: auto 150px;
+  }
+}
+
 /* Copa ACE 10 — commemorative edition. Intentionally scoped to this page. */
 .copa10-nav-button {
   border: 1px solid #d99a28;
@@ -1051,6 +1063,11 @@ textarea {
 
   .copa10-coin-stage {
     min-height: 20rem;
+  }
+
+  .copa10-coin {
+    animation: none;
+    filter: drop-shadow(0 18px 28px rgb(0 0 0 / 50%));
   }
 
   .copa10-slots-badge {

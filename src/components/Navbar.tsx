@@ -6,9 +6,9 @@ import { usePathname } from 'next/navigation'
 import { Logotipo } from './Logotipo'
 import { cn } from '@/lib/utils'
 
-const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean }> = [
+const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean; prefetch?: boolean }> = [
   { name: 'Home', href: '/' },
-  { name: 'Copa Ace 10', href: '/copa-ace-10', edition: true },
+  { name: 'Copa Ace 10', href: '/copa-ace-10', edition: true, prefetch: false },
   { name: 'Agenda', href: '/schedule' },
   { name: 'Notícias', href: '/news' },
   { name: 'Hall da Fama', href: '/hall-of-fame' },
@@ -20,7 +20,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-ace-cyan/20 bg-smoke/95 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-ace-cyan/20 bg-smoke md:bg-smoke/95 md:backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
@@ -34,6 +34,7 @@ export function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
+                prefetch={item.prefetch}
                 className={cn(
                   'px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   item.edition
@@ -72,6 +73,7 @@ export function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
+                prefetch={item.prefetch}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   'block rounded-md px-3 py-2.5 text-sm font-semibold transition-colors',

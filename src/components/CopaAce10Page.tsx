@@ -162,7 +162,7 @@ export default async function CopaAce10Page() {
 
         {faceitChampionship && <CopaAce10Faceit championship={faceitChampionship} />}
 
-        <section id="equipes">
+        <section id="equipes" className="deferred-render">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div><p className="tournament-section-eyebrow">Participantes</p><h2 className="tournament-section-title">Equipes confirmadas</h2></div>
             {/* Texto de atualização administrativa desativado. */}
@@ -188,7 +188,7 @@ export default async function CopaAce10Page() {
           </article>
         </section>
 
-        <section id="formato" className="tournament-panel">
+        <section id="formato" className="deferred-render tournament-panel">
           <header className="tournament-panel-header flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
             <div><p className="tournament-kicker">Formato oficial</p><h2 className="mt-1 text-xl uppercase">Do suíço à grande final</h2></div>
             <span className="text-xs font-bold text-slate-400">16 equipes · Counter-Strike 2</span>
@@ -210,7 +210,7 @@ export default async function CopaAce10Page() {
           </div>
         </section>
 
-        <section id="inscricao" className="copa10-registration-panel">
+        <section id="inscricao" className="deferred-render copa10-registration-panel">
           <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center border border-[#d99a28]/50 text-[#ffd276]"><CalendarDays size={23} /></div><div><p className="tournament-section-eyebrow">Inscrições abertas</p><h2>Monte seu elenco para a Copa ACE 10</h2><p>5 titulares, até 2 reservas e 1 coach, com logo e comprovante de pagamento.</p></div></div>
           <Link href="/inscreva-se" className="tournament-button-primary">Inscrever equipe <ArrowRight size={16} /></Link>
         </section>

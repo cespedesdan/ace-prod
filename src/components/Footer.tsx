@@ -4,7 +4,7 @@ import { Logotipo } from './Logotipo'
 
 export function Footer() {
   return (
-    <footer className="border-t border-ace-cyan/20 bg-smoke">
+    <footer className="deferred-render border-t border-ace-cyan/20 bg-smoke">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">

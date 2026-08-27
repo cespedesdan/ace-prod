@@ -10,7 +10,8 @@ export function HallOfFameList() {
         <Link
           key={edition.slug}
           href={edition.href ?? `/hall-of-fame/${edition.slug}`}
-          className="brand-card group grid gap-5 p-5 transition hover:border-copa-cyan/50 sm:grid-cols-[120px_1fr_auto] sm:items-center"
+          prefetch={edition.href === '/copa-ace-10' ? false : undefined}
+          className="deferred-render-compact brand-card group grid gap-5 p-5 transition hover:border-copa-cyan/50 sm:grid-cols-[120px_1fr_auto] sm:items-center"
         >
           <div className="relative h-24 w-24 overflow-hidden border border-white/10 bg-smoke/70">
             <Image
