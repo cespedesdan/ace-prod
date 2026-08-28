@@ -114,7 +114,21 @@ export function ClientPerformance() {
       revealForFragment(target, 'smooth')
     }
 
+    const revealBeforeMatch = (event: Event) => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLElement>(deferredSelector) : null
+      if (target) revealForFragment(target, 'auto')
+    }
+
+    const revealSelectedMatch = () => {
+      const node = document.getSelection()?.anchorNode
+      const element = node instanceof Element ? node : node?.parentElement
+      const target = element?.closest<HTMLElement>(deferredSelector)
+      if (target && target.dataset.renderVisible !== 'true') revealForFragment(target, 'auto')
+    }
+
     document.addEventListener('click', navigateToFragment)
+    document.addEventListener('beforematch', revealBeforeMatch)
+    document.addEventListener('selectionchange', revealSelectedMatch)
     observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue
@@ -128,6 +142,8 @@ export function ClientPerformance() {
     if (initialTarget) revealForFragment(initialTarget, 'auto')
     return () => {
       document.removeEventListener('click', navigateToFragment)
+      document.removeEventListener('beforematch', revealBeforeMatch)
+      document.removeEventListener('selectionchange', revealSelectedMatch)
       observer?.disconnect()
     }
   }, [pathname])
