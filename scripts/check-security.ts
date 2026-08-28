@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { NextRequest } from 'next/server'
 import sharp from 'sharp'
 import { POST as submitRegistration } from '../src/app/api/registrations/route'
+import { adminCookieName, requireSameOrigin } from '../src/lib/admin-request'
 import { registrationClaimKeys } from '../src/lib/registration-claim'
 import { MAX_REGISTRATION_FILE_SIZE } from '../src/lib/registration-shared'
 import { normalizeRegistrationImage, NormalizedImageTooLargeError } from '../src/lib/registration-upload'
@@ -47,6 +48,53 @@ async function main() {
     await assert.rejects(
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
+    )
+
+    assert.equal(adminCookieName('production'), '__Host-admin-token')
+    assert.equal(adminCookieName('development'), 'admin-token')
+    const validAdminRequest = new NextRequest('https://aceprodutora.com.br/api/admin/logout', {
+      method: 'POST',
+      headers: { Origin: 'https://aceprodutora.com.br' },
+    })
+    assert.equal(requireSameOrigin(validAdminRequest), null)
+    const proxiedAdminRequest = new NextRequest('http://127.0.0.1:8001/api/admin/logout', {
+      method: 'POST',
+      headers: {
+        Origin: 'https://aceprodutora.com.br',
+        'X-Forwarded-Host': 'aceprodutora.com.br',
+        'X-Forwarded-Proto': 'https',
+      },
+    })
+    assert.equal(requireSameOrigin(proxiedAdminRequest), null)
+    assert.equal(
+      requireSameOrigin(new NextRequest(validAdminRequest.url, {
+        method: 'POST',
+        headers: { Origin: 'https://attacker.example' },
+      }))?.status,
+      403,
+    )
+    assert.equal(requireSameOrigin(new NextRequest(validAdminRequest.url, { method: 'POST' }))?.status, 403)
+    assert.equal(
+      requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
+        method: 'POST',
+        headers: {
+          Origin: 'https://attacker.example',
+          'X-Forwarded-Host': 'aceprodutora.com.br',
+          'X-Forwarded-Proto': 'https',
+        },
+      }))?.status,
+      403,
+    )
+    assert.equal(
+      requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
+        method: 'POST',
+        headers: {
+          Origin: 'https://aceprodutora.com.br',
+          'X-Forwarded-Host': 'aceprodutora.com.br, attacker.example',
+          'X-Forwarded-Proto': 'https',
+        },
+      }))?.status,
+      403,
     )
 
     const sourceImage = await sharp({
