@@ -122,9 +122,11 @@ function PlaceholderCards() {
 export function ScheduleList({ championship }: { championship: ChampionshipSchedule }) {
   const matches = championship?.matches ?? []
   const organized = organizeSchedule(matches)
-  const matchMeta = (['today', 'upcoming', 'finished'] as const).flatMap((bucket) =>
-    organized[bucket].map((match) => ({ bucket, round: match.round })),
-  )
+  const matchMeta = matches.length
+    ? (['today', 'upcoming', 'finished'] as const).flatMap((bucket) =>
+        organized[bucket].map((match) => ({ bucket, round: match.round })),
+      )
+    : firstRoundMatches.map(() => ({ bucket: 'upcoming' as const, round: 1 }))
 
   return (
     <section id="jogos" className="tournament-panel overflow-hidden">

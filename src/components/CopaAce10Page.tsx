@@ -97,6 +97,12 @@ export default async function CopaAce10Page() {
               <div className="copa10-coin-orbit" aria-hidden="true" />
               <picture>
                 <source
+                  media="(min-width: 1024px)"
+                  data-deferred-srcset="/copa-ace-10/moeda-10-mobile-1024.webp 1024w, /copa-ace-10/moeda-10.webp 1356w"
+                  sizes="45vw"
+                  type="image/webp"
+                />
+                <source
                   media="(max-width: 1023px)"
                   data-deferred-srcset="/copa-ace-10/moeda-10-mobile.webp 620w, /copa-ace-10/moeda-10-mobile-768.webp 768w, /copa-ace-10/moeda-10-mobile-1024.webp 1024w"
                   sizes="min(90vw, 32rem)"
