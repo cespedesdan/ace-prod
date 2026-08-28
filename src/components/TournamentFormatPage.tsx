@@ -30,10 +30,8 @@ function TeamLogo({ team, size = 34, deferred = false }: { team: ArchiveTeam; si
   if (deferred) {
     return (
       <span className={`${team.darkLogo ? 'team-logo-surface-dark' : 'team-logo-surface'} relative block shrink-0 overflow-hidden rounded-sm`} style={{ width: size, height: size }}>
-        {/* The source is activated just before this deferred section is painted. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img data-deferred-src={optimizedLogoSrc(team.logo, size)} alt={`Logo ${team.name}`} width={size} height={size} decoding="async" className="h-full w-full object-contain p-1" />
-        <noscript><Image src={team.logo} alt={`Logo ${team.name}`} width={size} height={size} quality={60} className="h-full w-full object-contain p-1" /></noscript>
+        <img src={optimizedLogoSrc(team.logo, size)} alt={`Logo ${team.name}`} width={size} height={size} decoding="async" loading="lazy" className="h-full w-full object-contain p-1" />
       </span>
     )
   }

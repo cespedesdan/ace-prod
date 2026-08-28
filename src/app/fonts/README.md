@@ -14,6 +14,9 @@ character of the prior Nippo face while allowing modification and redistribution
 under the OFL stored in `OFL-Chakra-Petch.txt`. Its data URL is inlined so heading
 text never waits for a font request or swaps after first paint.
 
+This is an intentional, approved visual substitution; it is not a subset of the
+closed-source Nippo file. The original asset remains untouched and unused.
+
 All three subsets cover printable ASCII, Portuguese diacritics, and the
 punctuation used by the public UI. They were generated with FontTools 4.63.0 and
 Brotli:

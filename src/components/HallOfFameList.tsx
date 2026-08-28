@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { CalendarIcon, Radio, TrophyIcon } from 'lucide-react'
 import { hallOfFameEditions } from '@/data/hallOfFame'
 import { IntentLink } from './IntentLink'
@@ -18,10 +17,8 @@ export function HallOfFameList() {
           className="deferred-render-compact brand-card group grid gap-5 p-5 transition hover:border-copa-cyan/50 sm:grid-cols-[120px_1fr_auto] sm:items-center"
         >
           <div className="relative h-24 w-24 overflow-hidden border border-white/10 bg-smoke/70">
-            {/* Activated when this deferred card reaches the viewport. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img data-deferred-src={optimizedLogoSrc(edition.logo)} alt={`Logo ${edition.title}`} width={96} height={96} decoding="async" className="h-full w-full object-contain p-3 transition duration-200 group-hover:scale-105" />
-            <noscript><Image src={edition.logo} alt={`Logo ${edition.title}`} width={96} height={96} sizes="96px" quality={60} className="h-full w-full object-contain p-3" /></noscript>
+            <img src={optimizedLogoSrc(edition.logo)} alt={`Logo ${edition.title}`} width={96} height={96} decoding="async" loading="lazy" className="h-full w-full object-contain p-3 transition duration-200 group-hover:scale-105" />
           </div>
 
           <div>

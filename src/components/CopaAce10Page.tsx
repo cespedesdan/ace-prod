@@ -98,27 +98,27 @@ export default async function CopaAce10Page() {
               <picture>
                 <source
                   media="(min-width: 1024px)"
-                  data-deferred-srcset="/copa-ace-10/moeda-10-mobile-1024.webp 1024w, /copa-ace-10/moeda-10.webp 1356w"
+                  srcSet="/copa-ace-10/moeda-10-mobile-1024.webp 1024w, /copa-ace-10/moeda-10.webp 1356w"
                   sizes="45vw"
                   type="image/webp"
                 />
                 <source
                   media="(max-width: 1023px)"
-                  data-deferred-srcset="/copa-ace-10/moeda-10-mobile.webp 620w, /copa-ace-10/moeda-10-mobile-768.webp 768w, /copa-ace-10/moeda-10-mobile-1024.webp 1024w"
+                  srcSet="/copa-ace-10/moeda-10-mobile.webp 620w, /copa-ace-10/moeda-10-mobile-768.webp 768w, /copa-ace-10/moeda-10-mobile-1024.webp 1024w"
                   sizes="min(90vw, 32rem)"
                   type="image/webp"
                 />
                 <img
-                  data-deferred-src="/copa-ace-10/moeda-10.webp"
-                  data-deferred-standalone=""
+                  src="/copa-ace-10/moeda-10.webp"
                   alt="Moeda dourada da décima edição da Copa ACE"
                   width={1356}
                   height={1400}
                   decoding="async"
+                  loading="lazy"
+                  fetchPriority="low"
                   className="copa10-coin"
                 />
               </picture>
-              <noscript><Image src="/copa-ace-10/moeda-10.webp" alt="Moeda dourada da décima edição da Copa ACE" width={1356} height={1400} sizes="(max-width: 1023px) 90vw, 45vw" className="copa10-coin" /></noscript>
               {SHOW_CONFIRMED_SLOTS_BADGE && (
                 <div className="copa10-slots-badge">
                   <span>Vagas confirmadas</span>

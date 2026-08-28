@@ -6,21 +6,6 @@ import { usePathname } from 'next/navigation'
 const deferredSelector = '.deferred-render, .deferred-render-compact'
 const stylesheetLoads = new Map<string, Promise<void>>()
 
-function activateDeferredImages(container: ParentNode) {
-  container.querySelectorAll<HTMLSourceElement>('source[data-deferred-srcset]').forEach((source) => {
-    const srcset = source.dataset.deferredSrcset
-    if (!srcset) return
-    source.srcset = srcset
-    delete source.dataset.deferredSrcset
-  })
-  container.querySelectorAll<HTMLImageElement>('img[data-deferred-src]').forEach((image) => {
-    const src = image.dataset.deferredSrc
-    if (!src) return
-    image.src = src
-    delete image.dataset.deferredSrc
-  })
-}
-
 function loadStylesheet(href: string) {
   const pending = stylesheetLoads.get(href)
   if (pending) return pending
@@ -49,35 +34,29 @@ export function ClientPerformance() {
 
   useEffect(() => {
     const sections = document.querySelectorAll<HTMLElement>(deferredSelector)
-    const standaloneImages = document.querySelectorAll<HTMLImageElement>('img[data-deferred-standalone]')
+    const stylesheets = new Set<string>()
+    sections.forEach((section) => {
+      const stylesheet = section.closest<HTMLElement>('[data-deferred-stylesheet]')?.dataset.deferredStylesheet
+      if (stylesheet) stylesheets.add(stylesheet)
+    })
+
     if (!('IntersectionObserver' in window)) {
       let cancelled = false
-      const stylesheets = new Set<string>()
-      sections.forEach((section) => {
-        const stylesheet = section.closest<HTMLElement>('[data-deferred-stylesheet]')?.dataset.deferredStylesheet
-        if (stylesheet) stylesheets.add(stylesheet)
-      })
       void Promise.all([...stylesheets].map(loadStylesheet)).then(() => {
         if (cancelled) return
         sections.forEach((section) => {
-          activateDeferredImages(section)
           section.dataset.renderVisible = 'true'
+          section.style.contentVisibility = 'visible'
         })
-        standaloneImages.forEach((image) => activateDeferredImages(image.parentElement ?? document))
       })
       return () => { cancelled = true }
     }
 
     let observer: IntersectionObserver | null = null
-    let imageObserver: IntersectionObserver | null = null
     const revealSection = (section: HTMLElement) => {
       observer?.unobserve(section)
-      const owner = section.closest<HTMLElement>('[data-deferred-stylesheet]')
-      const stylesheet = owner?.dataset.deferredStylesheet
-      const reveal = () => {
-        activateDeferredImages(section)
-        section.dataset.renderVisible = 'true'
-      }
+      const stylesheet = section.closest<HTMLElement>('[data-deferred-stylesheet]')?.dataset.deferredStylesheet
+      const reveal = () => { section.dataset.renderVisible = 'true' }
       if (!stylesheet) {
         reveal()
         return Promise.resolve()
@@ -86,11 +65,15 @@ export function ClientPerformance() {
     }
 
     const revealForFragment = (target: HTMLElement, behavior: ScrollBehavior | 'instant') => {
-      void Promise.all([...sections].map(revealSection)).then(() => {
-        // Let the browser calculate the final section heights before scrolling.
-        // The deferred stylesheet must be loaded first so the wide Swiss bracket
-        // is contained while mobile Chrome performs this layout.
+      void Promise.all([...stylesheets].map(loadStylesheet)).then(() => {
+        // Materialize preceding containers so the target's final position is
+        // stable, while native lazy loading keeps unrelated images deferred.
         sections.forEach((section) => { section.style.contentVisibility = 'visible' })
+        const targetSection = target.closest<HTMLElement>(deferredSelector)
+        if (targetSection) {
+          observer?.unobserve(targetSection)
+          targetSection.dataset.renderVisible = 'true'
+        }
         void document.documentElement.offsetHeight
         requestAnimationFrame(() => target.scrollIntoView({ behavior: behavior as ScrollBehavior, block: 'start' }))
       })
@@ -102,7 +85,12 @@ export function ClientPerformance() {
       if (!link) return
       const url = new URL(link.href, window.location.href)
       if (url.origin !== window.location.origin || url.pathname !== window.location.pathname || !url.hash) return
-      const target = document.getElementById(decodeURIComponent(url.hash.slice(1)))
+      let target: HTMLElement | null = null
+      try {
+        target = document.getElementById(decodeURIComponent(url.hash.slice(1)))
+      } catch {
+        return
+      }
       if (!target) return
 
       event.preventDefault()
@@ -135,22 +123,11 @@ export function ClientPerformance() {
     document.addEventListener('selectionchange', revealSelectedMatch)
     observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (!entry.isIntersecting) continue
-        const section = entry.target as HTMLElement
-        void revealSection(section)
+        if (entry.isIntersecting) void revealSection(entry.target as HTMLElement)
       }
     }, { rootMargin: '100px 0px' })
+    sections.forEach((section) => observer?.observe(section))
 
-    sections.forEach((section) => observer.observe(section))
-    imageObserver = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue
-        const image = entry.target as HTMLImageElement
-        imageObserver?.unobserve(image)
-        activateDeferredImages(image.parentElement ?? document)
-      }
-    })
-    standaloneImages.forEach((image) => imageObserver?.observe(image))
     let initialTarget: HTMLElement | null = null
     try {
       initialTarget = document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
@@ -158,13 +135,13 @@ export function ClientPerformance() {
       // Ignore malformed fragments instead of breaking the shared client shell.
     }
     if (initialTarget) revealForFragment(initialTarget, 'instant')
+
     return () => {
       document.removeEventListener('click', navigateToFragment)
       document.removeEventListener('beforematch', revealBeforeMatch)
       document.removeEventListener('selectionchange', revealSelectedMatch)
       window.clearTimeout(matchScrollTimer)
       observer?.disconnect()
-      imageObserver?.disconnect()
     }
   }, [pathname])
 

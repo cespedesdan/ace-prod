@@ -21,9 +21,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <head>
-        <noscript><style>{'img[data-deferred-src]{display:none!important}'}</style></noscript>
-      </head>
       <body className="min-h-screen bg-gray-900 text-white">
         <div className="flex flex-col min-h-screen">
           <Navbar />
