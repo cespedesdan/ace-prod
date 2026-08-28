@@ -39,6 +39,10 @@ export function NavigationLinks() {
 
   useEffect(() => {
     mobileMenu.current?.removeAttribute('open')
+    document.querySelectorAll<HTMLAnchorElement>(`${intentSelector}[data-navigation-pending]`).forEach((link) => {
+      link.removeAttribute('aria-busy')
+      link.removeAttribute('data-navigation-pending')
+    })
 
     const prefetched = new WeakSet<HTMLAnchorElement>()
     const prefetchLink = (event: Event) => {
@@ -52,14 +56,28 @@ export function NavigationLinks() {
       router.prefetch(`${url.pathname}${url.search}`)
     }
 
+    const markNavigationPending = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const target = event.target instanceof Element ? event.target.closest(intentSelector) : null
+      if (!(target instanceof HTMLAnchorElement) || target.target === '_blank' || target.hasAttribute('download')) return
+
+      const url = new URL(target.href, window.location.href)
+      if (url.origin !== window.location.origin || `${url.pathname}${url.search}` === `${window.location.pathname}${window.location.search}`) return
+
+      target.setAttribute('aria-busy', 'true')
+      target.setAttribute('data-navigation-pending', '')
+    }
+
     document.addEventListener('pointerover', prefetchLink, { passive: true })
     document.addEventListener('focusin', prefetchLink)
     document.addEventListener('touchstart', prefetchLink, { passive: true })
+    document.addEventListener('click', markNavigationPending)
 
     return () => {
       document.removeEventListener('pointerover', prefetchLink)
       document.removeEventListener('focusin', prefetchLink)
       document.removeEventListener('touchstart', prefetchLink)
+      document.removeEventListener('click', markNavigationPending)
     }
   }, [pathname, router])
 

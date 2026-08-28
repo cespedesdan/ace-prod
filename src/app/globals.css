@@ -418,6 +418,11 @@ textarea {
   display: block;
 }
 
+a[data-navigation-pending] {
+  cursor: progress;
+  opacity: 0.65;
+}
+
 .mobile-navigation > summary::-webkit-details-marker {
   display: none;
 }
