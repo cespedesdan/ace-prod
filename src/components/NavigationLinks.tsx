@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean }> = [
   { name: 'Home', href: '/' },
@@ -12,6 +12,8 @@ const navigation: Array<{ name: string; href: string; edition?: boolean; highlig
   { name: 'Hall da Fama', href: '/hall-of-fame' },
   //{ name: 'Inscreva-se', href: '/inscreva-se', highlight: true },
 ]
+
+const intentSelector = 'a[data-intent-prefetch][href]'
 
 function isCurrentRoute(pathname: string, href: string) {
   return pathname === href || (href === '/hall-of-fame' && pathname.startsWith('/hall-of-fame/'))
@@ -32,11 +34,34 @@ function navigationClass(item: (typeof navigation)[number], mobile = false) {
 
 export function NavigationLinks() {
   const pathname = usePathname()
+  const router = useRouter()
   const mobileMenu = useRef<HTMLDetailsElement>(null)
 
   useEffect(() => {
     mobileMenu.current?.removeAttribute('open')
-  }, [pathname])
+
+    const prefetched = new WeakSet<HTMLAnchorElement>()
+    const prefetchLink = (event: Event) => {
+      const target = event.target instanceof Element ? event.target.closest(intentSelector) : null
+      if (!(target instanceof HTMLAnchorElement) || prefetched.has(target)) return
+
+      const url = new URL(target.href, window.location.href)
+      if (url.origin !== window.location.origin) return
+
+      prefetched.add(target)
+      router.prefetch(`${url.pathname}${url.search}`)
+    }
+
+    document.addEventListener('pointerover', prefetchLink, { passive: true })
+    document.addEventListener('focusin', prefetchLink)
+    document.addEventListener('touchstart', prefetchLink, { passive: true })
+
+    return () => {
+      document.removeEventListener('pointerover', prefetchLink)
+      document.removeEventListener('focusin', prefetchLink)
+      document.removeEventListener('touchstart', prefetchLink)
+    }
+  }, [pathname, router])
 
   return (
     <>

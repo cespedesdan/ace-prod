@@ -65,7 +65,7 @@ export default async function CopaAce10Page() {
           <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_.95fr]">
             <div className="relative z-10">
               <div className="copa10-logo-lockup">
-                <Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} sizes="(max-width: 1023px) 50vw, 24rem" />
+                <Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} sizes="(max-width: 639px) 80px, 112px" />
               </div>
               <p className="tournament-kicker mt-7">10ª edição · inscrições abertas</p>
               <h1 className="lcp-text mt-3 max-w-3xl text-5xl uppercase leading-[0.92] tracking-[-0.04em] sm:text-7xl xl:text-[5.4rem]">
