@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { adminCookieName } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
+import { privateJson } from '@/lib/private-response'
 
 function isAdmin(request: NextRequest) {
   const token = request.cookies.get(adminCookieName())?.value
@@ -11,7 +12,7 @@ function isAdmin(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   if (!isAdmin(request)) {
-    return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
+    return privateJson({ error: 'Acesso negado' }, { status: 401 })
   }
 
   const registrations = await prisma.registration.findMany({
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     include: { players: { orderBy: { nickname: 'asc' } } },
   })
 
-  return NextResponse.json({
+  return privateJson({
     registrations: registrations.map((registration) => ({
       ...registration,
       logoPath: undefined,

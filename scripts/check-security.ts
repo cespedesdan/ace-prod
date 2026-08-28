@@ -14,6 +14,7 @@ import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
 import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
 import { parseYouTubeVideoId } from '../src/lib/youtube'
+import { privateJson } from '../src/lib/private-response'
 import {
   ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
   ADMIN_LOGIN_SOURCE_RATE_LIMIT,
@@ -368,6 +369,8 @@ async function main() {
         }),
       )
     }
+
+    assert.equal(privateJson({ ok: true }).headers.get('Cache-Control'), 'private, no-store')
 
     const faceitClaimId = randomUUID()
     const alternateFaceitClaimId = randomUUID()
