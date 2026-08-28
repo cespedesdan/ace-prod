@@ -13,12 +13,21 @@ import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-bo
 import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
 import { parseYouTubeVideoId } from '../src/lib/youtube'
 import {
+  ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+  ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+  adminLoginRateLimitIdentifiers,
+} from '../src/lib/admin-login-rate-limit'
+import {
   registrationTextLimitError,
   registrationTextLimits,
 } from '../src/lib/registration-input'
 
 const identifier = randomUUID()
 const claimTestIds: string[] = []
+const adminLoginTestScopes = {
+  account: `security-admin-account-${identifier}`,
+  credential: `security-admin-credential-${identifier}`,
+}
 
 async function main() {
   try {
@@ -49,6 +58,46 @@ async function main() {
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
     )
+
+    const firstLoginSource = adminLoginRateLimitIdentifiers('admin@example.com', '192.0.2.1')
+    const secondLoginSource = adminLoginRateLimitIdentifiers('admin@example.com', '192.0.2.2')
+    assert.notEqual(firstLoginSource.credentialKey, secondLoginSource.credentialKey)
+    assert.equal(
+      adminLoginRateLimitIdentifiers('admin@example.com', null).credentialKey,
+      'admin@example.com',
+    )
+    assert.equal(firstLoginSource.emailKey, secondLoginSource.emailKey)
+
+    for (let attempt = 0; attempt < ADMIN_LOGIN_SOURCE_RATE_LIMIT.limit; attempt += 1) {
+      assert.equal((await consumeRateLimit({
+        scope: adminLoginTestScopes.credential,
+        identifier: firstLoginSource.credentialKey,
+        ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+      })).allowed, true)
+    }
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.credential,
+      identifier: firstLoginSource.credentialKey,
+      ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+    })).allowed, false)
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.credential,
+      identifier: secondLoginSource.credentialKey,
+      ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+    })).allowed, true)
+
+    for (let attempt = 0; attempt < ADMIN_LOGIN_ACCOUNT_RATE_LIMIT.limit; attempt += 1) {
+      assert.equal((await consumeRateLimit({
+        scope: adminLoginTestScopes.account,
+        identifier: firstLoginSource.emailKey,
+        ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+      })).allowed, true)
+    }
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.account,
+      identifier: secondLoginSource.emailKey,
+      ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+    })).allowed, false)
 
     assert.equal(adminCookieName('production'), '__Host-admin-token')
     assert.equal(adminCookieName('development'), 'admin-token')
@@ -304,6 +353,11 @@ async function main() {
     console.log('Security checks passed.')
   } finally {
     await prisma.registration.deleteMany({ where: { id: { in: claimTestIds } } })
+    await Promise.all([
+      resetRateLimit(adminLoginTestScopes.account, 'admin@example.com'),
+      resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.1'),
+      resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.2'),
+    ])
     await resetRateLimit('security-check', identifier)
     await prisma.$disconnect()
   }
