@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { NextRequest } from 'next/server'
+import sharp from 'sharp'
 import { POST as submitRegistration } from '../src/app/api/registrations/route'
 import { registrationClaimKeys } from '../src/lib/registration-claim'
+import { MAX_REGISTRATION_FILE_SIZE } from '../src/lib/registration-shared'
+import { normalizeRegistrationImage, NormalizedImageTooLargeError } from '../src/lib/registration-upload'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
@@ -44,6 +47,49 @@ async function main() {
     await assert.rejects(
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
+    )
+
+    const sourceImage = await sharp({
+      create: { width: 2, height: 2, channels: 4, background: '#ff0000' },
+    }).png().toBuffer()
+    const normalizedImage = await normalizeRegistrationImage(
+      Buffer.concat([sourceImage, Buffer.from('untrusted-trailer')]),
+      'png',
+    )
+    assert.equal((await sharp(normalizedImage).metadata()).format, 'png')
+    assert.equal(normalizedImage.includes(Buffer.from('untrusted-trailer')), false)
+
+    const noisyPixels = randomBytes(4_500 * 4_500 * 3)
+    const expandingImage = await sharp(noisyPixels, {
+      raw: { width: 4_500, height: 4_500, channels: 3 },
+    }).jpeg({ quality: 45 }).toBuffer()
+    assert.ok(expandingImage.length < MAX_REGISTRATION_FILE_SIZE)
+    await assert.rejects(
+      normalizeRegistrationImage(expandingImage, 'jpg'),
+      (error) => error instanceof NormalizedImageTooLargeError,
+    )
+
+    const redFrame = Buffer.alloc(2 * 2 * 3)
+    const blueFrame = Buffer.alloc(2 * 2 * 3)
+    for (let offset = 0; offset < redFrame.length; offset += 3) {
+      redFrame[offset] = 255
+      blueFrame[offset + 2] = 255
+    }
+    const animatedGif = await sharp(Buffer.concat([redFrame, blueFrame]), {
+      raw: { width: 2, height: 4, channels: 3, pageHeight: 2 },
+    }).gif({ loop: 0, delay: [100, 100] }).toBuffer()
+    const animatedWebp = await sharp(animatedGif, { animated: true }).webp().toBuffer()
+    await assert.rejects(
+      normalizeRegistrationImage(animatedWebp, 'webp'),
+      /Animated images are not supported/,
+    )
+
+    const oversizedPixelImage = await sharp({
+      create: { width: 5_001, height: 5_000, channels: 3, background: '#ff0000' },
+    }).jpeg({ quality: 10 }).toBuffer()
+    await assert.rejects(
+      normalizeRegistrationImage(oversizedPixelImage, 'jpg'),
+      /Input image exceeds pixel limit/,
     )
 
     const originalRegistrationState = process.env.REGISTRATIONS_OPEN
