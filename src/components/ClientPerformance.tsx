@@ -7,6 +7,21 @@ const intentSelector = 'a[data-intent-prefetch][href]'
 const deferredSelector = '.deferred-render, .deferred-render-compact'
 const stylesheetLoads = new Map<string, Promise<void>>()
 
+function activateDeferredImages(container: ParentNode) {
+  container.querySelectorAll<HTMLSourceElement>('source[data-deferred-srcset]').forEach((source) => {
+    const srcset = source.dataset.deferredSrcset
+    if (!srcset) return
+    source.srcset = srcset
+    delete source.dataset.deferredSrcset
+  })
+  container.querySelectorAll<HTMLImageElement>('img[data-deferred-src]').forEach((image) => {
+    const src = image.dataset.deferredSrc
+    if (!src) return
+    image.src = src
+    delete image.dataset.deferredSrc
+  })
+}
+
 function loadStylesheet(href: string) {
   const pending = stylesheetLoads.get(href)
   if (pending) return pending
@@ -60,26 +75,24 @@ export function ClientPerformance() {
 
   useEffect(() => {
     const sections = document.querySelectorAll<HTMLElement>(deferredSelector)
-    if (document.documentElement.classList.contains('until-found')) {
-      sections.forEach((section) => section.setAttribute('hidden', 'until-found'))
-    } else {
-      sections.forEach((section) => section.removeAttribute('hidden'))
-    }
+    const standaloneImages = document.querySelectorAll<HTMLImageElement>('img[data-deferred-standalone]')
     if (!('IntersectionObserver' in window)) {
       sections.forEach((section) => {
-        section.removeAttribute('hidden')
+        activateDeferredImages(section)
         section.dataset.renderVisible = 'true'
       })
+      standaloneImages.forEach((image) => activateDeferredImages(image.parentElement ?? document))
       return
     }
 
     let observer: IntersectionObserver | null = null
+    let imageObserver: IntersectionObserver | null = null
     const revealSection = (section: HTMLElement) => {
       observer?.unobserve(section)
       const owner = section.closest<HTMLElement>('[data-deferred-stylesheet]')
       const stylesheet = owner?.dataset.deferredStylesheet
       const reveal = () => {
-        section.removeAttribute('hidden')
+        activateDeferredImages(section)
         section.dataset.renderVisible = 'true'
       }
       if (!stylesheet) {
@@ -145,6 +158,15 @@ export function ClientPerformance() {
     }, { rootMargin: '100px 0px' })
 
     sections.forEach((section) => observer.observe(section))
+    imageObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue
+        const image = entry.target as HTMLImageElement
+        imageObserver?.unobserve(image)
+        activateDeferredImages(image.parentElement ?? document)
+      }
+    })
+    standaloneImages.forEach((image) => imageObserver?.observe(image))
     let initialTarget: HTMLElement | null = null
     try {
       initialTarget = document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
@@ -158,6 +180,7 @@ export function ClientPerformance() {
       document.removeEventListener('selectionchange', revealSelectedMatch)
       window.clearTimeout(matchScrollTimer)
       observer?.disconnect()
+      imageObserver?.disconnect()
     }
   }, [pathname])
 

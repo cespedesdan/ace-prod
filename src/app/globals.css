@@ -201,7 +201,6 @@ textarea {
 
 .tournament-hero {
   position: relative;
-  contain: paint;
   overflow: hidden;
   border-bottom: 4px solid var(--tournament-accent);
   background:
@@ -394,11 +393,6 @@ textarea {
 
   .deferred-render-compact {
     contain-intrinsic-size: auto 150px;
-  }
-
-  .js .deferred-render:not([data-render-visible="true"]):not([hidden]),
-  .js .deferred-render-compact:not([data-render-visible="true"]):not([hidden]) {
-    content-visibility: hidden;
   }
 
   @media (max-width: 639px) {

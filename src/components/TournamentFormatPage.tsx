@@ -13,11 +13,27 @@ import type {
   TournamentArchive,
 } from '@/data/tournamentArchives'
 
-function TeamLogo({ team, size = 34 }: { team: ArchiveTeam; size?: number }) {
+function optimizedLogoSrc(src: string, size: number) {
+  const width = size <= 32 ? 64 : size <= 48 ? 96 : size <= 64 ? 128 : 256
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=60`
+}
+
+function TeamLogo({ team, size = 34, deferred = false }: { team: ArchiveTeam; size?: number; deferred?: boolean }) {
   if (!team.logo) {
     return (
       <span className="grid shrink-0 place-items-center rounded-sm bg-slate-700 font-black text-white" style={{ width: size, height: size, fontSize: Math.max(9, size * 0.26) }}>
         {team.shortName}
+      </span>
+    )
+  }
+
+  if (deferred) {
+    return (
+      <span className={`${team.darkLogo ? 'team-logo-surface-dark' : 'team-logo-surface'} relative block shrink-0 overflow-hidden rounded-sm`} style={{ width: size, height: size }}>
+        {/* The source is activated just before this deferred section is painted. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img data-deferred-src={optimizedLogoSrc(team.logo, size)} alt={`Logo ${team.name}`} width={size} height={size} decoding="async" className="h-full w-full object-contain p-1" />
+        <noscript><Image src={team.logo} alt={`Logo ${team.name}`} width={size} height={size} quality={60} className="h-full w-full object-contain p-1" /></noscript>
       </span>
     )
   }
@@ -41,12 +57,12 @@ function MatchCard({ match }: { match: ArchiveMatch }) {
         </div>
       )}
       <div className={`flex items-center gap-2 px-3 py-2.5 ${aWon ? 'bg-orange-50' : ''}`}>
-        <TeamLogo team={match.teamA} size={25} />
+        <TeamLogo team={match.teamA} size={25} deferred />
         <span className={`min-w-0 flex-1 truncate text-sm ${aWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamA.name}</span>
         <span className={`text-base font-black tabular-nums ${aWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreA}</span>
       </div>
       <div className={`flex items-center gap-2 border-t border-slate-100 px-3 py-2.5 ${bWon ? 'bg-orange-50' : ''}`}>
-        <TeamLogo team={match.teamB} size={25} />
+        <TeamLogo team={match.teamB} size={25} deferred />
         <span className={`min-w-0 flex-1 truncate text-sm ${bWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamB.name}</span>
         <span className={`text-base font-black tabular-nums ${bWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreB}</span>
       </div>
@@ -102,10 +118,10 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
 
 function Summary({ data }: { data: TournamentArchive }) {
   return (
-    <section id="resumo" className="grid gap-4 md:grid-cols-4">
+    <section id="resumo" className="deferred-render grid gap-4 md:grid-cols-4">
       {data.summary.map((item) => (
         <article key={`${item.place}-${item.team.name}`} className="tournament-stat-card">
-          <div className="mb-4 flex items-start justify-between"><TeamLogo team={item.team} size={52} /><span className="text-2xl font-black text-slate-300">{item.place}</span></div>
+          <div className="mb-4 flex items-start justify-between"><TeamLogo team={item.team} size={52} deferred /><span className="text-2xl font-black text-slate-300">{item.place}</span></div>
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">{item.label}</p>
           <h3 className="mt-1 font-black text-slate-900">{item.team.name}</h3>
         </article>
@@ -143,7 +159,7 @@ function FinalStandings({ standings, teamCount }: { standings: Array<{ place: st
         {standings.map((standing) => (
           <div key={`${standing.place}-${standing.team.name}`} className="flex items-center gap-4 bg-white p-4">
             <span className="w-16 text-center text-base font-black text-orange-600">{standing.place}</span>
-            <TeamLogo team={standing.team} size={40} />
+            <TeamLogo team={standing.team} size={40} deferred />
             <span className="font-black text-slate-900">{standing.team.name}</span>
           </div>
         ))}
@@ -210,7 +226,7 @@ export function GroupRoundRobinTournamentPage({ data }: { data: GroupRoundRobinA
                     {group.standings.map((standing) => (
                       <tr key={standing.team.name} className={standing.qualified ? 'bg-orange-50/60' : ''}>
                         <td className="relative px-3 py-3 text-center font-black text-slate-500">{standing.qualified && <span className="absolute inset-y-0 left-0 w-1 bg-orange-500" />}{standing.position}</td>
-                        <td className="px-3 py-3"><div className="flex items-center gap-3"><TeamLogo team={standing.team} size={30} /><span className="font-bold text-slate-800">{standing.team.name}</span>{standing.qualified && <span className="ml-auto text-[9px] font-black uppercase text-orange-600">Classificado</span>}</div></td>
+                        <td className="px-3 py-3"><div className="flex items-center gap-3"><TeamLogo team={standing.team} size={30} deferred /><span className="font-bold text-slate-800">{standing.team.name}</span>{standing.qualified && <span className="ml-auto text-[9px] font-black uppercase text-orange-600">Classificado</span>}</div></td>
                         <td className="px-3 py-3 text-center font-bold tabular-nums text-slate-700">{standing.record}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.wins}</td>
                         <td className={`px-3 py-3 text-center font-bold tabular-nums ${standing.roundDiff > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{standing.roundDiff > 0 ? '+' : ''}{standing.roundDiff}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.rounds ?? '—'}</td>
                       </tr>
@@ -271,7 +287,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
                   <div className="grid gap-3 sm:grid-cols-2">
                     {group.qualifiers.map((team, index) => (
                       <div key={team.name} className="flex items-center gap-3 border border-slate-200 bg-white p-3">
-                        <span className="text-xs font-black text-orange-600">{index + 1}º</span><TeamLogo team={team} size={32} /><span className="min-w-0 truncate text-sm font-black text-slate-900">{team.name}</span>
+                        <span className="text-xs font-black text-orange-600">{index + 1}º</span><TeamLogo team={team} size={32} deferred /><span className="min-w-0 truncate text-sm font-black text-slate-900">{team.name}</span>
                       </div>
                     ))}
                   </div>
