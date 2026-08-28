@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { adminCookieName } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
@@ -15,7 +16,7 @@ const contentTypes: Record<string, string> = {
 }
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string; kind: string }> }) {
-  const token = request.cookies.get('admin-token')?.value
+  const token = request.cookies.get(adminCookieName())?.value
   const payload = token ? verifyToken(token) : null
   if (payload?.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })

@@ -44,9 +44,12 @@ ADMIN_EMAIL=EMAIL_PRIVADO_DO_ADMINISTRADOR
 ADMIN_PASSWORD=
 FACEIT_API_KEY=CHAVE_PRIVADA_DA_FACEIT
 TRUST_PROXY=true
+REGISTRATIONS_OPEN=false
 ```
 
 `TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. A chave FACEIT nunca deve usar o prefixo `NEXT_PUBLIC_`.
+
+`REGISTRATIONS_OPEN` controla a aceitação no servidor. Mantenha `false` fora da janela de inscrições e reinicie o serviço depois de alterar o valor. Ocultar o formulário no frontend não substitui este bloqueio.
 
 ## 2. Instalar e preparar o banco
 

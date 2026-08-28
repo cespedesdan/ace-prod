@@ -101,6 +101,7 @@ model Registration {
   id                       String             @id @default(cuid())
   protocol                 String             @unique
   claimKey                 String?            @unique
+  teamNameClaimKey         String?            @unique
   tournament               String             @default("Copa Ace 10")
   teamFaceitUrl            String
   faceitTeamId             String?

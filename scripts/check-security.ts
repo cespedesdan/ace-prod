@@ -1,14 +1,28 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { NextRequest } from 'next/server'
+import sharp from 'sharp'
+import { POST as submitRegistration } from '../src/app/api/registrations/route'
 import { POST as collectCspReport } from '../src/app/api/security/csp-report/route'
+import { adminCookieName, requireSameOrigin } from '../src/lib/admin-request'
 import { CSP_REPORT_MAX_BODY_BYTES, CSP_REPORT_RATE_LIMIT } from '../src/lib/csp-report'
-import { registrationClaimKey } from '../src/lib/registration-claim'
+import { registrationClaimKeys } from '../src/lib/registration-claim'
+import { MAX_REGISTRATION_FILE_SIZE } from '../src/lib/registration-shared'
+import { normalizeRegistrationImage, NormalizedImageTooLargeError } from '../src/lib/registration-upload'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
 import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
 import { parseYouTubeVideoId } from '../src/lib/youtube'
+import {
+  ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+  ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+  adminLoginRateLimitIdentifiers,
+} from '../src/lib/admin-login-rate-limit'
+import {
+  registrationTextLimitError,
+  registrationTextLimits,
+} from '../src/lib/registration-input'
 
 const identifier = randomUUID()
 const claimTestIds: string[] = []
@@ -157,6 +171,11 @@ async function checkCspReportCollector() {
   }
 }
 
+const adminLoginTestScopes = {
+  account: `security-admin-account-${identifier}`,
+  credential: `security-admin-credential-${identifier}`,
+}
+
 async function main() {
   try {
     const options = { scope: 'security-check', identifier, limit: 3, windowMs: 60_000, blockMs: 60_000 }
@@ -188,21 +207,202 @@ async function main() {
     )
     await checkCspReportCollector()
 
+    const firstLoginSource = adminLoginRateLimitIdentifiers('admin@example.com', '192.0.2.1')
+    const secondLoginSource = adminLoginRateLimitIdentifiers('admin@example.com', '192.0.2.2')
+    assert.notEqual(firstLoginSource.credentialKey, secondLoginSource.credentialKey)
+    assert.equal(
+      adminLoginRateLimitIdentifiers('admin@example.com', null).credentialKey,
+      'admin@example.com',
+    )
+    assert.equal(firstLoginSource.emailKey, secondLoginSource.emailKey)
+
+    for (let attempt = 0; attempt < ADMIN_LOGIN_SOURCE_RATE_LIMIT.limit; attempt += 1) {
+      assert.equal((await consumeRateLimit({
+        scope: adminLoginTestScopes.credential,
+        identifier: firstLoginSource.credentialKey,
+        ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+      })).allowed, true)
+    }
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.credential,
+      identifier: firstLoginSource.credentialKey,
+      ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+    })).allowed, false)
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.credential,
+      identifier: secondLoginSource.credentialKey,
+      ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+    })).allowed, true)
+
+    for (let attempt = 0; attempt < ADMIN_LOGIN_ACCOUNT_RATE_LIMIT.limit; attempt += 1) {
+      assert.equal((await consumeRateLimit({
+        scope: adminLoginTestScopes.account,
+        identifier: firstLoginSource.emailKey,
+        ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+      })).allowed, true)
+    }
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.account,
+      identifier: secondLoginSource.emailKey,
+      ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+    })).allowed, false)
+
+    assert.equal(adminCookieName('production'), '__Host-admin-token')
+    assert.equal(adminCookieName('development'), 'admin-token')
+    const validAdminRequest = new NextRequest('https://aceprodutora.com.br/api/admin/logout', {
+      method: 'POST',
+      headers: { Origin: 'https://aceprodutora.com.br' },
+    })
+    assert.equal(requireSameOrigin(validAdminRequest), null)
+    const proxiedAdminRequest = new NextRequest('http://127.0.0.1:8001/api/admin/logout', {
+      method: 'POST',
+      headers: {
+        Origin: 'https://aceprodutora.com.br',
+        'X-Forwarded-Host': 'aceprodutora.com.br',
+        'X-Forwarded-Proto': 'https',
+      },
+    })
+    assert.equal(requireSameOrigin(proxiedAdminRequest), null)
+    assert.equal(
+      requireSameOrigin(new NextRequest(validAdminRequest.url, {
+        method: 'POST',
+        headers: { Origin: 'https://attacker.example' },
+      }))?.status,
+      403,
+    )
+    assert.equal(requireSameOrigin(new NextRequest(validAdminRequest.url, { method: 'POST' }))?.status, 403)
+    assert.equal(
+      requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
+        method: 'POST',
+        headers: {
+          Origin: 'https://attacker.example',
+          'X-Forwarded-Host': 'aceprodutora.com.br',
+          'X-Forwarded-Proto': 'https',
+        },
+      }))?.status,
+      403,
+    )
+    assert.equal(
+      requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
+        method: 'POST',
+        headers: {
+          Origin: 'https://aceprodutora.com.br',
+          'X-Forwarded-Host': 'aceprodutora.com.br, attacker.example',
+          'X-Forwarded-Proto': 'https',
+        },
+      }))?.status,
+      403,
+    )
+
+    const sourceImage = await sharp({
+      create: { width: 2, height: 2, channels: 4, background: '#ff0000' },
+    }).png().toBuffer()
+    const normalizedImage = await normalizeRegistrationImage(
+      Buffer.concat([sourceImage, Buffer.from('untrusted-trailer')]),
+      'png',
+    )
+    assert.equal((await sharp(normalizedImage).metadata()).format, 'png')
+    assert.equal(normalizedImage.includes(Buffer.from('untrusted-trailer')), false)
+
+    const noisyPixels = randomBytes(4_500 * 4_500 * 3)
+    const expandingImage = await sharp(noisyPixels, {
+      raw: { width: 4_500, height: 4_500, channels: 3 },
+    }).jpeg({ quality: 45 }).toBuffer()
+    assert.ok(expandingImage.length < MAX_REGISTRATION_FILE_SIZE)
+    await assert.rejects(
+      normalizeRegistrationImage(expandingImage, 'jpg'),
+      (error) => error instanceof NormalizedImageTooLargeError,
+    )
+
+    const redFrame = Buffer.alloc(2 * 2 * 3)
+    const blueFrame = Buffer.alloc(2 * 2 * 3)
+    for (let offset = 0; offset < redFrame.length; offset += 3) {
+      redFrame[offset] = 255
+      blueFrame[offset + 2] = 255
+    }
+    const animatedGif = await sharp(Buffer.concat([redFrame, blueFrame]), {
+      raw: { width: 2, height: 4, channels: 3, pageHeight: 2 },
+    }).gif({ loop: 0, delay: [100, 100] }).toBuffer()
+    const animatedWebp = await sharp(animatedGif, { animated: true }).webp().toBuffer()
+    await assert.rejects(
+      normalizeRegistrationImage(animatedWebp, 'webp'),
+      /Animated images are not supported/,
+    )
+
+    const oversizedPixelImage = await sharp({
+      create: { width: 5_001, height: 5_000, channels: 3, background: '#ff0000' },
+    }).jpeg({ quality: 10 }).toBuffer()
+    await assert.rejects(
+      normalizeRegistrationImage(oversizedPixelImage, 'jpg'),
+      /Input image exceeds pixel limit/,
+    )
+
+    const originalRegistrationState = process.env.REGISTRATIONS_OPEN
+    delete process.env.REGISTRATIONS_OPEN
+    try {
+      const closedResponse = await submitRegistration(
+        new NextRequest('http://localhost/api/registrations', { method: 'POST' }),
+      )
+      assert.equal(closedResponse.status, 410)
+      assert.deepEqual(await closedResponse.json(), {
+        success: false,
+        error: 'As inscrições estão encerradas.',
+      })
+    } finally {
+      if (originalRegistrationState === undefined) delete process.env.REGISTRATIONS_OPEN
+      else process.env.REGISTRATIONS_OPEN = originalRegistrationState
+    }
+
+    const validRegistrationText = {
+      teamFaceitUrl: 'x'.repeat(registrationTextLimits.teamFaceitUrl),
+      representativeEmail: 'x'.repeat(registrationTextLimits.representativeEmail),
+      representativePhone: 'x'.repeat(registrationTextLimits.representativePhone),
+      discoverySource: 'x'.repeat(registrationTextLimits.discoverySource),
+    }
+    assert.equal(registrationTextLimitError(validRegistrationText), null)
+    for (const field of Object.keys(registrationTextLimits) as Array<keyof typeof registrationTextLimits>) {
+      assert.ok(
+        registrationTextLimitError({
+          ...validRegistrationText,
+          [field]: validRegistrationText[field] + 'x',
+        }),
+      )
+    }
+
     const faceitClaimId = randomUUID()
-    const claimKey = registrationClaimKey('Copa Ace 10', faceitClaimId)
-    assert.equal(registrationClaimKey('Copa Ace 10', null, 'Legacy Team'), 'copa ace 10:name:legacy team')
-    const registrationData = (status: 'PENDING' | 'REJECTED', activeClaimKey: string | null) => {
+    const alternateFaceitClaimId = randomUUID()
+    const claims = registrationClaimKeys('Copa Ace 10', faceitClaimId, 'Security Test Team')
+    assert.deepEqual(claims, {
+      claimKey: `copa ace 10:${faceitClaimId}`,
+      teamNameClaimKey: 'copa ace 10:name:security test team',
+    })
+    assert.deepEqual(registrationClaimKeys('Copa Ace 10', null, 'Legacy Team'), {
+      claimKey: 'copa ace 10:name:legacy team',
+      teamNameClaimKey: 'copa ace 10:name:legacy team',
+    })
+    const registrationData = ({
+      status,
+      faceitTeamId = faceitClaimId,
+      teamName = 'Security Test Team',
+      activeClaims,
+    }: {
+      status: 'PENDING' | 'REJECTED'
+      faceitTeamId?: string
+      teamName?: string
+      activeClaims: ReturnType<typeof registrationClaimKeys> | null
+    }) => {
       const id = randomUUID()
       claimTestIds.push(id)
       return {
         id,
         protocol: 'SECURITY-' + id,
         tournament: 'Copa Ace 10',
-        claimKey: activeClaimKey,
-        teamFaceitUrl: 'https://www.faceit.com/pt/teams/' + faceitClaimId,
-        faceitTeamId: faceitClaimId,
-        teamName: 'Security Test Team',
-        teamNameNormalized: 'security test team',
+        claimKey: activeClaims?.claimKey ?? null,
+        teamNameClaimKey: activeClaims?.teamNameClaimKey ?? null,
+        teamFaceitUrl: 'https://www.faceit.com/pt/teams/' + faceitTeamId,
+        faceitTeamId,
+        teamName,
+        teamNameNormalized: teamName.toLocaleLowerCase('pt-BR'),
         teamTag: 'SEC',
         representativeName: 'Security Test',
         representativeEmail: 'security@example.invalid',
@@ -215,11 +415,36 @@ async function main() {
         status,
       }
     }
-    await prisma.registration.create({ data: registrationData('REJECTED', null) })
-    await prisma.registration.create({ data: registrationData('REJECTED', null) })
-    await prisma.registration.create({ data: registrationData('PENDING', claimKey) })
+    const rejectedRegistration = registrationData({ status: 'REJECTED', activeClaims: null })
+    await prisma.registration.create({ data: rejectedRegistration })
+    await prisma.registration.create({ data: registrationData({ status: 'REJECTED', activeClaims: null }) })
+    await prisma.registration.create({ data: registrationData({ status: 'PENDING', activeClaims: claims }) })
     await assert.rejects(
-      prisma.registration.create({ data: registrationData('PENDING', claimKey) }),
+      prisma.registration.create({
+        data: registrationData({
+          status: 'PENDING',
+          faceitTeamId: faceitClaimId,
+          teamName: 'Different Security Team',
+          activeClaims: registrationClaimKeys('Copa Ace 10', faceitClaimId, 'Different Security Team'),
+        }),
+      }),
+      (error: unknown) => error instanceof Error && 'code' in error && error.code === 'P2002',
+    )
+    await assert.rejects(
+      prisma.registration.update({
+        where: { id: rejectedRegistration.id },
+        data: { status: 'PENDING', ...claims },
+      }),
+      (error: unknown) => error instanceof Error && 'code' in error && error.code === 'P2002',
+    )
+    await assert.rejects(
+      prisma.registration.create({
+        data: registrationData({
+          status: 'PENDING',
+          faceitTeamId: alternateFaceitClaimId,
+          activeClaims: registrationClaimKeys('Copa Ace 10', alternateFaceitClaimId, 'Security Test Team'),
+        }),
+      }),
       (error: unknown) => error instanceof Error && 'code' in error && error.code === 'P2002',
     )
 
@@ -276,6 +501,11 @@ async function main() {
     console.log('Security checks passed.')
   } finally {
     await prisma.registration.deleteMany({ where: { id: { in: claimTestIds } } })
+    await Promise.all([
+      resetRateLimit(adminLoginTestScopes.account, 'admin@example.com'),
+      resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.1'),
+      resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.2'),
+    ])
     await resetRateLimit('security-check', identifier)
     await prisma.$disconnect()
   }
