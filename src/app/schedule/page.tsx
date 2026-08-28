@@ -5,7 +5,6 @@ import { ScheduleList } from '@/components/ScheduleList'
 import { CopaAce10Schedule } from '@/components/CopaAce10Schedule'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
-import './schedule.css'
 
 export const revalidate = 60
 

@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import {
   ArrowRight,
   CalendarDays,
@@ -13,6 +12,7 @@ import {
 import { prisma } from '@/lib/prisma'
 import { CopaAce10Faceit, type CopaAce10FaceitData } from '@/components/CopaAce10Faceit'
 import { CopaAce10Schedule } from '@/components/CopaAce10Schedule'
+import { IntentLink } from '@/components/IntentLink'
 
 const TOTAL_TEAMS = 16
 const SHOW_CONFIRMED_SLOTS_BADGE = false // Troque para true para exibir novamente.
@@ -210,13 +210,13 @@ export default async function CopaAce10Page() {
           </div>
           <div className="flex flex-col justify-between gap-4 border-t border-slate-200 p-5 sm:flex-row sm:items-center">
             <div className="flex items-center gap-4"><div className="grid h-12 w-12 place-items-center tournament-accent-bg text-[#050403]"><Swords size={23} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Primeira rodada</p><p className="mt-1 font-black text-slate-900">Pareamentos e horários a definir</p></div></div>
-            <Link href="/schedule" prefetch={false} className="inline-flex items-center gap-2 text-sm font-black tournament-accent-text">Consultar agenda <ArrowRight size={16} /></Link>
+            <IntentLink href="/schedule" className="inline-flex items-center gap-2 text-sm font-black tournament-accent-text">Consultar agenda <ArrowRight size={16} /></IntentLink>
           </div>
         </section>
 
         <section id="inscricao" className="deferred-render copa10-registration-panel">
           <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center border border-[#d99a28]/50 text-[#ffd276]"><CalendarDays size={23} /></div><div><p className="tournament-section-eyebrow">Inscrições abertas</p><h2>Monte seu elenco para a Copa ACE 10</h2><p>5 titulares, até 2 reservas e 1 coach, com logo e comprovante de pagamento.</p></div></div>
-          <Link href="/inscreva-se" prefetch={false} className="tournament-button-primary">Inscrever equipe <ArrowRight size={16} /></Link>
+          <IntentLink href="/inscreva-se" className="tournament-button-primary">Inscrever equipe <ArrowRight size={16} /></IntentLink>
         </section>
       </div>
     </main>

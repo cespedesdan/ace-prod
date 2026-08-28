@@ -1,5 +1,4 @@
 import { HallOfFameList } from '@/components/HallOfFameList'
-import './hall-of-fame.css'
 
 export default function HallOfFamePage() {
   return (

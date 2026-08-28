@@ -74,3 +74,12 @@ jobs:
           PERF_MIN_SCORE=99 \
           PERF_ROUTES='/,/copa-ace-10,/schedule,/news,/inscreva-se,/hall-of-fame,/hall-of-fame/copa-ace-1,/hall-of-fame/copa-ace-2,/hall-of-fame/copa-ace-3,/hall-of-fame/copa-ace-4,/hall-of-fame/copa-ace-5,/hall-of-fame/copa-ace-6,/hall-of-fame/copa-ace-7,/hall-of-fame/copa-ace-8,/hall-of-fame/ace-clutch,/hall-of-fame/ace-clutch-2,/hall-of-fame/copa-ace-9' \
           npm run perf:audit
+
+      - name: Preservar relatorios do Lighthouse
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: lighthouse-mobile-${{ github.run_id }}
+          path: .performance-reports/
+          if-no-files-found: warn
+          retention-days: 7

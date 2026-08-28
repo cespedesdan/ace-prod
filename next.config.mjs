@@ -26,6 +26,7 @@ const nextConfig = {
   distDir: process.env.ANALYZE === 'true' ? '.next-analyze' : '.next',
   poweredByHeader: false,
   experimental: {
+    cssChunking: 'strict',
     inlineCss: true,
     reactCompiler: true,
   },

@@ -4,6 +4,26 @@
 @source "../components/Logo.tsx";
 @source "../components/Logotipo.tsx";
 @source "../components/Navbar.tsx";
+@source "../components/NavigationLinks.tsx";
+@source "../components/Hero.tsx";
+@source "./page.tsx";
+@source "./copa-ace-10/page.tsx";
+@source "./hall-of-fame/page.tsx";
+@source "./hall-of-fame/[slug]/page.tsx";
+@source "./inscreva-se/page.tsx";
+@source "./news/page.tsx";
+@source "./schedule/page.tsx";
+@source "../components/CopaAce10Faceit.tsx";
+@source "../components/CopaAce10Page.tsx";
+@source "../components/CopaAce10Schedule.tsx";
+@source "../components/CopaAce10Swiss.tsx";
+@source "../components/HallOfFameList.tsx";
+@source "../components/NewsList.tsx";
+@source "../components/RankingTable.tsx";
+@source "../components/RegistrationClosed.tsx";
+@source "../components/ScheduleList.tsx";
+@source "../components/TournamentFormatPage.tsx";
+@source "../components/YouTubeLivePlayer.tsx";
 
 :root {
   --ace-cyan: #53b29b;
@@ -106,6 +126,13 @@ textarea {
   font: inherit;
 }
 
+/* The brand uses a two-weight Poppins system so browsers never synthesize extra faces. */
+.font-semibold,
+.font-extrabold,
+.font-black {
+  font-weight: 700 !important;
+}
+
 ::selection {
   background: var(--ace-copa);
   color: var(--ace-smoke);
@@ -141,7 +168,7 @@ textarea {
 .brand-kicker {
   color: var(--ace-copa);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -154,7 +181,7 @@ textarea {
   background: var(--ace-copa);
   padding: 0.75rem 1.25rem;
   color: var(--ace-smoke);
-  font-weight: 800;
+  font-weight: 700;
   transition: background 150ms ease, transform 150ms ease;
 }
 
@@ -236,7 +263,7 @@ textarea {
 .tournament-section-eyebrow {
   color: var(--tournament-accent);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -245,7 +272,7 @@ textarea {
   margin-top: 0.25rem;
   color: white;
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.025em;
   text-transform: uppercase;
 }
@@ -259,7 +286,7 @@ textarea {
   border-top: 1px solid rgb(255 255 255 / 10%);
   color: #ad9fb4;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -356,7 +383,7 @@ textarea {
   padding: 0.75rem 1.25rem;
   color: var(--ace-smoke);
   font-size: 0.875rem;
-  font-weight: 800;
+  font-weight: 700;
   transition: background 150ms ease;
 }
 
@@ -450,7 +477,7 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
   background: linear-gradient(135deg, #ffd276, #d99a28);
   color: #170c05 !important;
   font-family: var(--font-nippo), var(--font-poppins), sans-serif !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   letter-spacing: 0.03em;
   box-shadow: 0 0 0 1px rgb(255 210 118 / 12%), 0 8px 24px rgb(217 154 40 / 14%);
   clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
@@ -576,7 +603,7 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
   padding: 0.75rem 1.25rem;
   color: #f7f4ee;
   font-size: 0.875rem;
-  font-weight: 800;
+  font-weight: 700;
   transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
 
@@ -758,7 +785,7 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
   margin-top: 1rem;
   color: #fff;
   font-size: 0.875rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .copa10-prize-breakdown strong {
@@ -822,7 +849,7 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
 .swiss-rules {
   color: #c8c4bd;
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
@@ -986,7 +1013,7 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
 }
 
 .swiss-outcome .swiss-team-mark { width: 2.7rem; height: 2.7rem; flex: 0 0 2.7rem; }
-.swiss-outcome small { color: rgb(255 255 255 / 40%); font-weight: 900; }
+.swiss-outcome small { color: rgb(255 255 255 / 40%); font-weight: 700; }
 
 .registration-regulation-button {
   display: inline-flex;
@@ -996,7 +1023,7 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
   padding: 0.75rem 1.25rem;
   color: #f7f4ee;
   font-size: 0.875rem;
-  font-weight: 800;
+  font-weight: 700;
   transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
 

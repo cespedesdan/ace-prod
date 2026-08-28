@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { CalendarDays, ChevronLeft, ExternalLink, Gamepad2, Medal, ShieldCheck, Swords, Trophy, Users } from 'lucide-react'
+import { IntentLink } from './IntentLink'
 import type {
   ArchiveMatch,
   ArchiveRound,
@@ -63,9 +63,9 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
     <main className="tournament-page">
       <section className="tournament-hero">
         <div className="tournament-container py-6">
-          <Link href="/hall-of-fame" prefetch={false} className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">
+          <IntentLink href="/hall-of-fame" className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">
             <ChevronLeft size={16} /> Hall da Fama
-          </Link>
+          </IntentLink>
 
           <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div>

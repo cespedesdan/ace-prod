@@ -4,7 +4,6 @@ import { RankingTable } from '@/components/RankingTable'
 import { YouTubeLivePlayer } from '@/components/YouTubeLivePlayer'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
-import './home.css'
 
 export const revalidate = 60
 
