@@ -55,7 +55,26 @@ const teams = logoSources.map((source, index) => {
 
 function fixtureMatches() {
   const campaigns = new Map(teams.map((team) => [team.id, { wins: 0, losses: 0 }]))
+  const priorPairings = new Set()
   const matches = []
+
+  const pairingKey = (left, right) => [left.id, right.id].sort().join(':')
+  const pairPool = (pool) => {
+    const search = (remaining, pairs = []) => {
+      if (remaining.length === 0) return pairs
+      const left = remaining[0]
+      for (let index = 1; index < remaining.length; index += 1) {
+        const right = remaining[index]
+        if (priorPairings.has(pairingKey(left, right))) continue
+        const next = search(remaining.slice(1, index).concat(remaining.slice(index + 1)), [...pairs, [left, right]])
+        if (next) return next
+      }
+      return null
+    }
+    const pairs = search(pool)
+    if (!pairs) throw new Error('Unable to generate Swiss fixture without rematches')
+    return pairs
+  }
 
   for (let round = 1; round <= 5; round += 1) {
     const active = teams.filter((team) => {
@@ -70,10 +89,9 @@ function fixtureMatches() {
     }
 
     for (const pool of pools.values()) {
-      for (let pair = 0; pair < pool.length; pair += 2) {
-        const left = pool[pair]
-        const right = pool[pair + 1]
-        if (!right) throw new Error(`Invalid Swiss fixture pool in round ${round}`)
+      if (pool.length % 2 !== 0) throw new Error(`Invalid Swiss fixture pool in round ${round}`)
+      for (const [left, right] of pairPool(pool)) {
+        priorPairings.add(pairingKey(left, right))
         const matchNumber = matches.length + 1
         const leftWins = (matchNumber + round) % 2 === 0
         const winner = leftWins ? left : right
@@ -102,7 +120,8 @@ function fixtureMatches() {
     }
   }
 
-  const finalists = teams.slice(0, 8)
+  const finalists = teams.filter((team) => campaigns.get(team.id).wins === 3)
+  if (finalists.length !== 8) throw new Error(`Invalid Swiss fixture: expected 8 finalists, received ${finalists.length}`)
   for (let index = 0; index < 4; index += 1) {
     const left = finalists[index * 2]
     const right = finalists[index * 2 + 1]
@@ -123,7 +142,7 @@ function fixtureMatches() {
     })
   }
 
-  return matches
+  return { matches, finalists }
 }
 
 async function seedRegistrations() {
@@ -165,7 +184,7 @@ async function seedRegistrations() {
 }
 
 async function seedChampionship() {
-  const matches = fixtureMatches()
+  const { matches, finalists } = fixtureMatches()
   const championship = {
     tournament,
     championshipId: '00000000-0000-4000-8000-000000000999',
@@ -191,7 +210,7 @@ async function seedChampionship() {
       substitutePlayerIds: team.substitutePlayerIds,
     }))),
     matchesJson: JSON.stringify(matches),
-    resultsJson: JSON.stringify([{ left: 1, right: 16, placements: [{ id: teams[0].id, name: teams[0].name, type: 'team' }] }]),
+    resultsJson: JSON.stringify([{ left: 1, right: 8, placements: [{ id: finalists[0].id, name: finalists[0].name, type: 'team' }] }]),
     syncedAt: now,
   }
   await prisma.faceitChampionship.upsert({

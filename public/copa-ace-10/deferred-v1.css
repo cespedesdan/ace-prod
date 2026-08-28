@@ -140,9 +140,8 @@
 
 .swiss-flow {
   display: grid;
-  min-width: 73rem;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: 2rem;
   padding: 2rem 1.5rem;
 }
@@ -153,10 +152,15 @@
 
 .swiss-round-content {
   display: flex;
-  min-height: 45rem;
+  min-height: 0;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.5rem;
+}
+
+.swiss-round + .swiss-round {
+  border-top: 1px solid rgb(217 154 40 / 22%);
+  padding-top: 2rem;
 }
 
 .swiss-pools {
@@ -266,6 +270,23 @@
 
 .swiss-outcome .swiss-team-mark { width: 2.7rem; height: 2.7rem; flex: 0 0 2.7rem; }
 .swiss-outcome small { color: rgb(255 255 255 / 40%); font-weight: 700; }
+
+@media (min-width: 1024px) {
+  .swiss-flow {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+  }
+
+  .swiss-round-content {
+    min-height: 45rem;
+    justify-content: center;
+  }
+
+  .swiss-round + .swiss-round {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
 
 .registration-regulation-button {
   display: inline-flex;

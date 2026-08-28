@@ -22,7 +22,7 @@ export default function RegistrationClosed() {
               <a href="/Regulamento_Copa_Ace_10.pdf" target="_blank" rel="noreferrer" className="copa10-button-secondary">Regulamento</a>
             </div>
           </div>
-          <aside className="registration-aside self-end border border-[#d99a28]/25 bg-black/30 p-5 backdrop-blur">
+          <aside className="registration-aside self-end border border-[#d99a28]/25 bg-black/45 p-5">
             <h2 className="font-black text-white">Acompanhe a Copa ACE 10</h2>
             <ul className="mt-4 space-y-3 text-sm text-slate-300">
               {['Confira as equipes confirmadas', 'Veja datas e horários na agenda', 'Acompanhe resultados e classificação'].map((item) => (

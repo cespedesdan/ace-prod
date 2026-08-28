@@ -80,7 +80,7 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
             </div>
 
             <div className="relative overflow-hidden border border-white/10 bg-white/5 p-5">
-              <div className="absolute right-0 top-0 h-24 w-24 bg-orange-500/10 blur-2xl" />
+              <div className="absolute right-0 top-0 h-24 w-24 bg-[radial-gradient(circle,rgb(249_115_22_/_16%),transparent_70%)]" />
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-400">{data.championLabel}</p>
               <div className="mt-3 flex items-center gap-5">
                 <div className="grid h-24 w-24 place-items-center bg-white p-3 shadow-xl"><TeamLogo team={data.champion} size={72} /></div>

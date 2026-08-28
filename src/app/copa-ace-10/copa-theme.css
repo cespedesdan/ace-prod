@@ -62,6 +62,27 @@
   background: rgb(255 210 118 / 13%);
 }
 
+/* This containment must arrive before the deferred Swiss layout. Otherwise
+   mobile Chrome can widen its layout viewport as the 73rem bracket appears. */
+.swiss-stage,
+.swiss-flow-scroll {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.swiss-stage {
+  overflow: hidden;
+}
+
+.swiss-flow-scroll {
+  overflow-x: auto;
+  contain: inline-size;
+}
+
+.swiss-flow {
+  min-width: 0;
+}
+
 .copa10-facts > div {
   min-height: 5.2rem;
   background: rgb(5 4 3 / 84%);
@@ -279,6 +300,12 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .swiss-flow {
+    min-width: 73rem;
+  }
+}
+
 @media (max-width: 1023px) {
   .copa10-coin-stage {
     min-height: 24rem;
@@ -300,11 +327,12 @@
 
   .copa10-coin-stage {
     min-height: 20rem;
+    margin-top: 2rem;
   }
 
   .copa10-coin {
     animation: none;
-    filter: drop-shadow(0 18px 28px rgb(0 0 0 / 50%));
+    filter: none;
   }
 
   .copa10-slots-badge {

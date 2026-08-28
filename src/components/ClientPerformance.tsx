@@ -89,6 +89,17 @@ export function ClientPerformance() {
       return loadStylesheet(stylesheet).then(reveal)
     }
 
+    const revealForFragment = (target: HTMLElement, behavior: ScrollBehavior) => {
+      void Promise.all([...sections].map(revealSection)).then(() => {
+        // Let the browser calculate the final section heights before scrolling.
+        // The deferred stylesheet must be loaded first so the wide Swiss bracket
+        // is contained while mobile Chrome performs this layout.
+        sections.forEach((section) => { section.style.contentVisibility = 'visible' })
+        void document.documentElement.offsetHeight
+        requestAnimationFrame(() => target.scrollIntoView({ behavior, block: 'start' }))
+      })
+    }
+
     const navigateToFragment = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
       const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href*="#"]') : null
@@ -99,11 +110,8 @@ export function ClientPerformance() {
       if (!target) return
 
       event.preventDefault()
-      sections.forEach((section) => { section.style.contentVisibility = 'visible' })
-      void Promise.all([...sections].map(revealSection)).then(() => {
-        window.history.pushState(window.history.state, '', url.hash)
-        requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-      })
+      window.history.pushState(window.history.state, '', url.hash)
+      revealForFragment(target, 'smooth')
     }
 
     document.addEventListener('click', navigateToFragment)
@@ -113,9 +121,11 @@ export function ClientPerformance() {
         const section = entry.target as HTMLElement
         void revealSection(section)
       }
-    }, { rootMargin: '400px 0px' })
+    }, { rootMargin: '100px 0px' })
 
     sections.forEach((section) => observer.observe(section))
+    const initialTarget = document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
+    if (initialTarget) revealForFragment(initialTarget, 'auto')
     return () => {
       document.removeEventListener('click', navigateToFragment)
       observer?.disconnect()

@@ -6,8 +6,10 @@ on:
     paths:
       - '.github/workflows/frontend-performance.yml'
       - 'next.config.mjs'
+      - 'postcss.config.mjs'
       - 'package.json'
       - 'package-lock.json'
+      - 'prisma/**'
       - 'public/**'
       - 'scripts/benchmark-performance.mjs'
       - 'scripts/seed-performance.mjs'
