@@ -6,10 +6,16 @@ const globalRule = rules.find((rule) => rule.source === '/(.*)')
 const csp = globalRule?.headers.find(
   (header) => header.key === 'Content-Security-Policy-Report-Only',
 )?.value
+const reportingEndpoints = globalRule?.headers.find(
+  (header) => header.key === 'Reporting-Endpoints',
+)?.value
 
 assert.ok(csp)
 assert.match(csp, /object-src 'none'/)
 assert.match(csp, /frame-ancestors 'none'/)
 assert.match(csp, /base-uri 'self'/)
+assert.match(csp, /report-uri \/api\/security\/csp-report/)
+assert.match(csp, /report-to csp-endpoint/)
+assert.equal(reportingEndpoints, 'csp-endpoint="/api/security/csp-report"')
 
 console.log('Security header checks passed.')

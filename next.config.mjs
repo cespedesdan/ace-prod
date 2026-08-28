@@ -18,6 +18,8 @@ const contentSecurityPolicy = [
   "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
   "media-src 'self' https:",
   "worker-src 'self' blob:",
+  'report-uri /api/security/csp-report',
+  'report-to csp-endpoint',
 ].join('; ')
 
 const nextConfig = {
@@ -51,6 +53,7 @@ const nextConfig = {
         { key: 'X-Frame-Options', value: 'DENY' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        { key: 'Reporting-Endpoints', value: 'csp-endpoint="/api/security/csp-report"' },
         { key: 'Content-Security-Policy-Report-Only', value: contentSecurityPolicy },
       ],
     }]
