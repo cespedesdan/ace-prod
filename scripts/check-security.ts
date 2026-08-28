@@ -6,6 +6,10 @@ import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
 import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
 import { parseYouTubeVideoId } from '../src/lib/youtube'
+import {
+  registrationTextLimitError,
+  registrationTextLimits,
+} from '../src/lib/registration-input'
 
 const identifier = randomUUID()
 const claimTestIds: string[] = []
@@ -39,6 +43,22 @@ async function main() {
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
     )
+
+    const validRegistrationText = {
+      teamFaceitUrl: 'x'.repeat(registrationTextLimits.teamFaceitUrl),
+      representativeEmail: 'x'.repeat(registrationTextLimits.representativeEmail),
+      representativePhone: 'x'.repeat(registrationTextLimits.representativePhone),
+      discoverySource: 'x'.repeat(registrationTextLimits.discoverySource),
+    }
+    assert.equal(registrationTextLimitError(validRegistrationText), null)
+    for (const field of Object.keys(registrationTextLimits) as Array<keyof typeof registrationTextLimits>) {
+      assert.ok(
+        registrationTextLimitError({
+          ...validRegistrationText,
+          [field]: validRegistrationText[field] + 'x',
+        }),
+      )
+    }
 
     const faceitClaimId = randomUUID()
     const alternateFaceitClaimId = randomUUID()

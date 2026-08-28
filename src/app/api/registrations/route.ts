@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { FaceitApiError, getFaceitTeam } from '@/lib/faceit'
 import { consumeRateLimit, getClientIp } from '@/lib/rate-limit'
+import { registrationTextLimitError } from '@/lib/registration-input'
 import { registrationClaimKeys } from '@/lib/registration-claim'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
 import { readFormDataWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
@@ -105,6 +106,14 @@ export async function POST(request: NextRequest) {
     const teamInstagram = readText(formData, 'teamInstagram')
     const discoverySource = readText(formData, 'discoverySource') || 'Não informado'
     const scheduleRestrictions = readText(formData, 'scheduleRestrictions')
+
+    const textLimitError = registrationTextLimitError({
+      teamFaceitUrl: submittedFaceitUrl,
+      representativeEmail,
+      representativePhone,
+      discoverySource,
+    })
+    if (textLimitError) return errorResponse(textLimitError)
 
     const emailLimit = await consumeRateLimit({
       scope: 'registration-email',
