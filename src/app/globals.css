@@ -23,6 +23,7 @@
 @source "../components/RankingTable.tsx";
 @source "../components/RegistrationClosed.tsx";
 @source "../components/ScheduleList.tsx";
+@source "../components/ScheduleFilters.tsx";
 @source "../components/TournamentFormatPage.tsx";
 @source "../components/YouTubeLivePlayer.tsx";
 
@@ -235,6 +236,7 @@ textarea {
 
 .tournament-hero {
   position: relative;
+  contain: paint;
   overflow: hidden;
   border-bottom: 4px solid var(--tournament-accent);
   background:
@@ -425,8 +427,19 @@ textarea {
     contain-intrinsic-size: auto 640px;
   }
 
+  .js .deferred-render:not([data-render-visible="true"]),
+  .js .deferred-render-compact:not([data-render-visible="true"]) {
+    content-visibility: hidden;
+  }
+
   .deferred-render-compact {
     contain-intrinsic-size: auto 150px;
+  }
+
+  @media (max-width: 639px) {
+    .deferred-render-compact {
+      contain-intrinsic-size: auto 306px;
+    }
   }
 }
 

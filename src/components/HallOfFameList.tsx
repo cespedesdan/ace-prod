@@ -19,6 +19,7 @@ export function HallOfFameList() {
               alt={`Logo ${edition.title}`}
               fill
               sizes="96px"
+              quality={60}
               className="object-contain p-3 transition duration-200 group-hover:scale-105"
             />
           </div>

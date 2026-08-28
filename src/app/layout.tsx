@@ -4,7 +4,7 @@ import localFont from 'next/font/local'
 import './globals.css'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
-import { IntentPrefetch } from '@/components/IntentPrefetch'
+import { ClientPerformance } from '@/components/ClientPerformance'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -36,9 +36,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} /></head>
       <body className={`${poppins.variable} ${nippo.variable} min-h-screen bg-gray-900 text-white`}>
-        <IntentPrefetch />
+        <ClientPerformance />
         <div className="flex flex-col min-h-screen">
           <Navbar />
           <main className="flex-1">

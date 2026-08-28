@@ -49,6 +49,9 @@ const nextConfig = {
   },
   async headers() {
     return [{
+      source: '/copa-ace-10/deferred-v1.css',
+      headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+    }, {
       source: '/(.*)',
       headers: [
         { key: 'X-Content-Type-Options', value: 'nosniff' },

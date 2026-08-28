@@ -57,7 +57,7 @@ export default async function CopaAce10Page() {
   const slots = Array.from({ length: TOTAL_TEAMS }, (_, index) => teams[index] ?? null)
 
   return (
-    <main className="tournament-page copa-ace-10-page">
+    <main className="tournament-page copa-ace-10-page" data-deferred-stylesheet="/copa-ace-10/deferred-v1.css">
       <section className="tournament-hero copa10-hero">
         <div className="copa10-hero-glow" aria-hidden="true" />
         <div className="tournament-container relative py-8 lg:py-14">
@@ -147,7 +147,7 @@ export default async function CopaAce10Page() {
           ))}
         </section>
 
-        <section id="premiacao" className="copa10-prize-panel">
+        <section id="premiacao" className="deferred-render copa10-prize-panel">
           <div>
             <p className="tournament-section-eyebrow">Premiação total</p>
             <h2>R$ 1.500</h2>

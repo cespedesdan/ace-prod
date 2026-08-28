@@ -231,7 +231,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
   return (
     <TournamentShell data={data} tabs={[{ href: '#resumo', label: 'Resumo' }, { href: '#grupos', label: 'Fase de grupos' }, { href: '#mata-mata', label: 'Mata-mata' }]}>
       <Summary data={data} />
-      <section id="grupos" className="deferred-render">
+      <section id="grupos" className="deferred-render" style={{ containIntrinsicSize: 'auto 4590px' }}>
         <div className="mb-4 flex items-end justify-between gap-4">
           <div><p className="tournament-section-eyebrow">Primeira fase</p><h2 className="tournament-section-title">Fase de grupos</h2></div>
           <span className="hidden text-xs font-bold text-slate-500 sm:block">{data.groupSubtitle}</span>
