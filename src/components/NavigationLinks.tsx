@@ -71,13 +71,15 @@ export function NavigationLinks() {
     document.addEventListener('pointerover', prefetchLink, { passive: true })
     document.addEventListener('focusin', prefetchLink)
     document.addEventListener('touchstart', prefetchLink, { passive: true })
-    document.addEventListener('click', markNavigationPending)
+    // Capture before Next.js prevents the link's native click during client
+    // navigation, otherwise the delegated handler would see defaultPrevented.
+    document.addEventListener('click', markNavigationPending, true)
 
     return () => {
       document.removeEventListener('pointerover', prefetchLink)
       document.removeEventListener('focusin', prefetchLink)
       document.removeEventListener('touchstart', prefetchLink)
-      document.removeEventListener('click', markNavigationPending)
+      document.removeEventListener('click', markNavigationPending, true)
     }
   }, [pathname, router])
 
