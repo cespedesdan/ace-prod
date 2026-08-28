@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { ArrowLeft, Newspaper, Pencil, Plus, Trash2 } from 'lucide-react'
 import { ConfirmSubmit } from '@/components/ConfirmSubmit'
 import { verifyToken } from '@/lib/auth'
+import { adminCookieName } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
 
 const fieldClass = 'mt-2 w-full border border-slate-700 bg-slate-950/60 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:border-copa-cyan'
@@ -19,7 +20,7 @@ const messages: Record<string, string> = {
 }
 
 async function requireAdmin() {
-  const token = (await cookies()).get('admin-token')?.value
+  const token = (await cookies()).get(adminCookieName())?.value
   if (!token || verifyToken(token)?.role !== 'ADMIN') redirect('/admin/login')
 }
 
