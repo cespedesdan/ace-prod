@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { NextRequest } from 'next/server'
+import { POST as submitRegistration } from '../src/app/api/registrations/route'
 import { registrationClaimKeys } from '../src/lib/registration-claim'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
@@ -43,6 +45,22 @@ async function main() {
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
     )
+
+    const originalRegistrationState = process.env.REGISTRATIONS_OPEN
+    delete process.env.REGISTRATIONS_OPEN
+    try {
+      const closedResponse = await submitRegistration(
+        new NextRequest('http://localhost/api/registrations', { method: 'POST' }),
+      )
+      assert.equal(closedResponse.status, 410)
+      assert.deepEqual(await closedResponse.json(), {
+        success: false,
+        error: 'As inscrições estão encerradas.',
+      })
+    } finally {
+      if (originalRegistrationState === undefined) delete process.env.REGISTRATIONS_OPEN
+      else process.env.REGISTRATIONS_OPEN = originalRegistrationState
+    }
 
     const validRegistrationText = {
       teamFaceitUrl: 'x'.repeat(registrationTextLimits.teamFaceitUrl),
