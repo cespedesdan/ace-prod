@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Radio, Save } from 'lucide-react'
 import { verifyToken } from '@/lib/auth'
+import { adminCookieName } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
 import { parseYouTubeVideoId } from '@/lib/youtube'
 
@@ -15,7 +16,7 @@ const messages: Record<string, string> = {
 }
 
 async function requireAdmin() {
-  const token = (await cookies()).get('admin-token')?.value
+  const token = (await cookies()).get(adminCookieName())?.value
   if (!token || verifyToken(token)?.role !== 'ADMIN') redirect('/admin/login')
 }
 

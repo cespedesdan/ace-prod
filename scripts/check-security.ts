@@ -1,11 +1,24 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
+import { NextRequest } from 'next/server'
+import sharp from 'sharp'
+import { POST as submitRegistration } from '../src/app/api/registrations/route'
+import { POST as collectCspReport } from '../src/app/api/security/csp-report/route'
+import { adminCookieName, requireSameOrigin } from '../src/lib/admin-request'
+import { CSP_REPORT_MAX_BODY_BYTES, CSP_REPORT_RATE_LIMIT } from '../src/lib/csp-report'
 import { registrationClaimKeys } from '../src/lib/registration-claim'
+import { MAX_REGISTRATION_FILE_SIZE } from '../src/lib/registration-shared'
+import { normalizeRegistrationImage, NormalizedImageTooLargeError } from '../src/lib/registration-upload'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
 import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parseFaceitTeamId } from '../src/lib/faceit'
 import { parseYouTubeVideoId } from '../src/lib/youtube'
+import {
+  ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+  ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+  adminLoginRateLimitIdentifiers,
+} from '../src/lib/admin-login-rate-limit'
 import {
   registrationTextLimitError,
   registrationTextLimits,
@@ -13,6 +26,155 @@ import {
 
 const identifier = randomUUID()
 const claimTestIds: string[] = []
+const cspReportOrigin = 'https://aceprodutora.com.br'
+const cspReportEndpoint = `${cspReportOrigin}/api/security/csp-report`
+
+function cspReportRequest(body: string, headers: Record<string, string> = {}) {
+  return new NextRequest(cspReportEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/csp-report',
+      Origin: cspReportOrigin,
+      'Sec-Fetch-Site': 'same-origin',
+      ...headers,
+    },
+    body,
+  })
+}
+
+function proxiedCspReportRequest(body: string, headers: Record<string, string> = {}) {
+  return new NextRequest('http://127.0.0.1:8001/api/security/csp-report', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/csp-report',
+      Origin: cspReportOrigin,
+      'X-Forwarded-Host': 'aceprodutora.com.br',
+      'X-Forwarded-Proto': 'https',
+      'Sec-Fetch-Site': 'same-origin',
+      ...headers,
+    },
+    body,
+  })
+}
+
+async function checkCspReportCollector() {
+  const legacyReport = JSON.stringify({
+    'csp-report': {
+      'document-uri': `${cspReportOrigin}/admin?token=private#fragment`,
+      'effective-directive': 'script-src-elem',
+      'blocked-uri': 'https://attacker.example/payload.js?token=private',
+      'source-file': `${cspReportOrigin}/_next/static/chunk.js?token=private`,
+      'status-code': 200,
+      'line-number': 42,
+      'column-number': 7,
+      sample: 'private',
+    },
+  })
+  const reportingApiReport = JSON.stringify([{
+    type: 'csp-violation',
+    url: `${cspReportOrigin}/ignored?token=private`,
+    user_agent: 'private',
+    body: {
+      documentURL: `${cspReportOrigin}/schedule?token=private`,
+      effectiveDirective: 'img-src',
+      blockedURL: 'data:image/png;base64,private',
+      disposition: 'report',
+    },
+  }])
+  const capturedLogs: unknown[][] = []
+  const originalInfo = console.info
+  console.info = (...args: unknown[]) => capturedLogs.push(args)
+
+  try {
+    assert.equal((await collectCspReport(cspReportRequest(legacyReport, {
+      Origin: 'https://attacker.example',
+      'Sec-Fetch-Site': 'cross-site',
+    }))).status, 403)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport, {
+      Origin: 'https://attacker.example',
+      'Sec-Fetch-Site': 'cross-site',
+    }))).status, 403)
+    assert.equal((await collectCspReport(cspReportRequest(legacyReport, {
+      'X-Forwarded-Host': 'aceprodutora.com.br',
+    }))).status, 403)
+    assert.equal((await collectCspReport(cspReportRequest(legacyReport, {
+      'X-Forwarded-Proto': 'https',
+    }))).status, 403)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport, {
+      'X-Forwarded-Host': 'aceprodutora.com.br, attacker.example',
+    }))).status, 403)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport, {
+      'X-Forwarded-Host': 'aceprodutora.com.br/path',
+    }))).status, 403)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport, {
+      'X-Forwarded-Proto': 'https, http',
+    }))).status, 403)
+    assert.equal((await collectCspReport(cspReportRequest(legacyReport, {
+      'Content-Type': 'application/json',
+    }))).status, 415)
+    assert.equal((await collectCspReport(cspReportRequest('{}', {
+      'Content-Length': String(CSP_REPORT_MAX_BODY_BYTES + 1),
+    }))).status, 413)
+    assert.equal((await collectCspReport(cspReportRequest('{'))).status, 400)
+
+    assert.equal((await collectCspReport(cspReportRequest(legacyReport))).status, 204)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport))).status, 204)
+    assert.equal((await collectCspReport(cspReportRequest(reportingApiReport, {
+      'Content-Type': 'application/reports+json',
+    }))).status, 204)
+    assert.equal(capturedLogs.length, 3)
+    assert.deepEqual(capturedLogs[0], ['CSP violation report', {
+      documentPath: '/admin',
+      effectiveDirective: 'script-src-elem',
+      blockedLocation: 'https://attacker.example',
+      sourceOrigin: 'self',
+      disposition: 'unknown',
+      statusCode: 200,
+      lineNumber: 42,
+      columnNumber: 7,
+    }])
+    assert.doesNotMatch(JSON.stringify(capturedLogs), /private|fragment/)
+
+    const capabilityPathReport = legacyReport.replace(
+      '/admin?token=private#fragment',
+      '/reset/capability-secret?token=private#fragment',
+    )
+    assert.equal((await collectCspReport(cspReportRequest(capabilityPathReport))).status, 204)
+    assert.equal((capturedLogs[3]?.[1] as { documentPath?: unknown }).documentPath, '/other')
+    assert.doesNotMatch(JSON.stringify(capturedLogs), /capability-secret/)
+
+    const crossOriginDocument = legacyReport.replace(
+      `${cspReportOrigin}/admin?token=private#fragment`,
+      'https://attacker.example/private',
+    )
+    assert.equal((await collectCspReport(cspReportRequest(crossOriginDocument))).status, 400)
+
+    const reportingBatch = JSON.stringify(Array.from(
+      { length: 10 },
+      () => JSON.parse(reportingApiReport)[0],
+    ))
+    assert.equal((await collectCspReport(cspReportRequest(reportingBatch, {
+      'Content-Type': 'application/reports+json',
+    }))).status, 204)
+    assert.equal(capturedLogs.length, 4 + 5)
+
+    await resetRateLimit('csp-report-source', 'unresolved-source')
+    for (let report = 0; report < CSP_REPORT_RATE_LIMIT.limit; report += 1) {
+      assert.equal((await collectCspReport(cspReportRequest(legacyReport))).status, 204)
+    }
+    const limitedResponse = await collectCspReport(cspReportRequest(legacyReport))
+    assert.equal(limitedResponse.status, 429)
+    assert.ok(Number(limitedResponse.headers.get('Retry-After')) > 0)
+  } finally {
+    console.info = originalInfo
+    await resetRateLimit('csp-report-source', 'unresolved-source')
+  }
+}
+
+const adminLoginTestScopes = {
+  account: `security-admin-account-${identifier}`,
+  credential: `security-admin-credential-${identifier}`,
+}
 
 async function main() {
   try {
@@ -43,6 +205,153 @@ async function main() {
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
     )
+    await checkCspReportCollector()
+
+    const firstLoginSource = adminLoginRateLimitIdentifiers('admin@example.com', '192.0.2.1')
+    const secondLoginSource = adminLoginRateLimitIdentifiers('admin@example.com', '192.0.2.2')
+    assert.notEqual(firstLoginSource.credentialKey, secondLoginSource.credentialKey)
+    assert.equal(
+      adminLoginRateLimitIdentifiers('admin@example.com', null).credentialKey,
+      'admin@example.com',
+    )
+    assert.equal(firstLoginSource.emailKey, secondLoginSource.emailKey)
+
+    for (let attempt = 0; attempt < ADMIN_LOGIN_SOURCE_RATE_LIMIT.limit; attempt += 1) {
+      assert.equal((await consumeRateLimit({
+        scope: adminLoginTestScopes.credential,
+        identifier: firstLoginSource.credentialKey,
+        ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+      })).allowed, true)
+    }
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.credential,
+      identifier: firstLoginSource.credentialKey,
+      ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+    })).allowed, false)
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.credential,
+      identifier: secondLoginSource.credentialKey,
+      ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+    })).allowed, true)
+
+    for (let attempt = 0; attempt < ADMIN_LOGIN_ACCOUNT_RATE_LIMIT.limit; attempt += 1) {
+      assert.equal((await consumeRateLimit({
+        scope: adminLoginTestScopes.account,
+        identifier: firstLoginSource.emailKey,
+        ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+      })).allowed, true)
+    }
+    assert.equal((await consumeRateLimit({
+      scope: adminLoginTestScopes.account,
+      identifier: secondLoginSource.emailKey,
+      ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+    })).allowed, false)
+
+    assert.equal(adminCookieName('production'), '__Host-admin-token')
+    assert.equal(adminCookieName('development'), 'admin-token')
+    const validAdminRequest = new NextRequest('https://aceprodutora.com.br/api/admin/logout', {
+      method: 'POST',
+      headers: { Origin: 'https://aceprodutora.com.br' },
+    })
+    assert.equal(requireSameOrigin(validAdminRequest), null)
+    const proxiedAdminRequest = new NextRequest('http://127.0.0.1:8001/api/admin/logout', {
+      method: 'POST',
+      headers: {
+        Origin: 'https://aceprodutora.com.br',
+        'X-Forwarded-Host': 'aceprodutora.com.br',
+        'X-Forwarded-Proto': 'https',
+      },
+    })
+    assert.equal(requireSameOrigin(proxiedAdminRequest), null)
+    assert.equal(
+      requireSameOrigin(new NextRequest(validAdminRequest.url, {
+        method: 'POST',
+        headers: { Origin: 'https://attacker.example' },
+      }))?.status,
+      403,
+    )
+    assert.equal(requireSameOrigin(new NextRequest(validAdminRequest.url, { method: 'POST' }))?.status, 403)
+    assert.equal(
+      requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
+        method: 'POST',
+        headers: {
+          Origin: 'https://attacker.example',
+          'X-Forwarded-Host': 'aceprodutora.com.br',
+          'X-Forwarded-Proto': 'https',
+        },
+      }))?.status,
+      403,
+    )
+    assert.equal(
+      requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
+        method: 'POST',
+        headers: {
+          Origin: 'https://aceprodutora.com.br',
+          'X-Forwarded-Host': 'aceprodutora.com.br, attacker.example',
+          'X-Forwarded-Proto': 'https',
+        },
+      }))?.status,
+      403,
+    )
+
+    const sourceImage = await sharp({
+      create: { width: 2, height: 2, channels: 4, background: '#ff0000' },
+    }).png().toBuffer()
+    const normalizedImage = await normalizeRegistrationImage(
+      Buffer.concat([sourceImage, Buffer.from('untrusted-trailer')]),
+      'png',
+    )
+    assert.equal((await sharp(normalizedImage).metadata()).format, 'png')
+    assert.equal(normalizedImage.includes(Buffer.from('untrusted-trailer')), false)
+
+    const noisyPixels = randomBytes(4_500 * 4_500 * 3)
+    const expandingImage = await sharp(noisyPixels, {
+      raw: { width: 4_500, height: 4_500, channels: 3 },
+    }).jpeg({ quality: 45 }).toBuffer()
+    assert.ok(expandingImage.length < MAX_REGISTRATION_FILE_SIZE)
+    await assert.rejects(
+      normalizeRegistrationImage(expandingImage, 'jpg'),
+      (error) => error instanceof NormalizedImageTooLargeError,
+    )
+
+    const redFrame = Buffer.alloc(2 * 2 * 3)
+    const blueFrame = Buffer.alloc(2 * 2 * 3)
+    for (let offset = 0; offset < redFrame.length; offset += 3) {
+      redFrame[offset] = 255
+      blueFrame[offset + 2] = 255
+    }
+    const animatedGif = await sharp(Buffer.concat([redFrame, blueFrame]), {
+      raw: { width: 2, height: 4, channels: 3, pageHeight: 2 },
+    }).gif({ loop: 0, delay: [100, 100] }).toBuffer()
+    const animatedWebp = await sharp(animatedGif, { animated: true }).webp().toBuffer()
+    await assert.rejects(
+      normalizeRegistrationImage(animatedWebp, 'webp'),
+      /Animated images are not supported/,
+    )
+
+    const oversizedPixelImage = await sharp({
+      create: { width: 5_001, height: 5_000, channels: 3, background: '#ff0000' },
+    }).jpeg({ quality: 10 }).toBuffer()
+    await assert.rejects(
+      normalizeRegistrationImage(oversizedPixelImage, 'jpg'),
+      /Input image exceeds pixel limit/,
+    )
+
+    const originalRegistrationState = process.env.REGISTRATIONS_OPEN
+    delete process.env.REGISTRATIONS_OPEN
+    try {
+      const closedResponse = await submitRegistration(
+        new NextRequest('http://localhost/api/registrations', { method: 'POST' }),
+      )
+      assert.equal(closedResponse.status, 410)
+      assert.deepEqual(await closedResponse.json(), {
+        success: false,
+        error: 'As inscrições estão encerradas.',
+      })
+    } finally {
+      if (originalRegistrationState === undefined) delete process.env.REGISTRATIONS_OPEN
+      else process.env.REGISTRATIONS_OPEN = originalRegistrationState
+    }
 
     const validRegistrationText = {
       teamFaceitUrl: 'x'.repeat(registrationTextLimits.teamFaceitUrl),
@@ -192,6 +501,11 @@ async function main() {
     console.log('Security checks passed.')
   } finally {
     await prisma.registration.deleteMany({ where: { id: { in: claimTestIds } } })
+    await Promise.all([
+      resetRateLimit(adminLoginTestScopes.account, 'admin@example.com'),
+      resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.1'),
+      resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.2'),
+    ])
     await resetRateLimit('security-check', identifier)
     await prisma.$disconnect()
   }

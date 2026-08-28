@@ -7,7 +7,7 @@
     "jws": "3.2.3",
     "nanoid": "3.3.18",
     "postcss": "8.5.23",
-    "sharp": "0.35.0"
+    "sharp": "0.35.4"
   },
   "scripts": {
     "dev": "next dev --turbopack -H 0.0.0.0 -p 8001",
@@ -16,8 +16,9 @@
     "perf:audit": "node scripts/benchmark-performance.mjs",
     "start": "next start -H 127.0.0.1 -p 8001",
     "lint": "eslint",
-    "check": "npm run lint && tsc --noEmit && npm run test:security && npm run test:tournaments",
+    "check": "npm run lint && tsc --noEmit && npm run test:security && npm run test:headers && npm run test:tournaments",
     "test:security": "tsx scripts/check-security.ts",
+    "test:headers": "node scripts/check-security-headers.mjs",
     "test:tournaments": "tsx scripts/check-tournament-formats.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
@@ -33,6 +34,7 @@
     "next": "15.5.24",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "sharp": "0.35.4",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {

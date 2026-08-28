@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { FaceitApiError, getFaceitTeam } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { registrationClaimKeys } from '@/lib/registration-claim'
 
 function isAdmin(request: NextRequest) {
-  const token = request.cookies.get('admin-token')?.value
+  const token = request.cookies.get(adminCookieName())?.value
   const payload = token ? verifyToken(token) : null
   return payload?.role === 'ADMIN'
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const invalidOrigin = requireSameOrigin(request)
+  if (invalidOrigin) return invalidOrigin
+
   if (!isAdmin(request)) {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
   }

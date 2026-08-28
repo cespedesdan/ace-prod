@@ -9,6 +9,8 @@ import { consumeRateLimit, getClientIp } from '@/lib/rate-limit'
 import { registrationTextLimitError } from '@/lib/registration-input'
 import { registrationClaimKeys } from '@/lib/registration-claim'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
+import { normalizeRegistrationImage, NormalizedImageTooLargeError } from '@/lib/registration-upload'
+import { registrationsAreOpen } from '@/lib/registration-status'
 import { readFormDataWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
@@ -61,7 +63,17 @@ async function validateUpload(value: FormDataEntryValue | null, allowedTypes: Re
   if (!hasValidSignature(buffer, extension)) {
     return `O conteúdo de ${label.toLowerCase()} não corresponde ao formato informado.`
   }
-  return { file: value, extension, buffer }
+  try {
+    const normalizedBuffer = extension === 'pdf'
+      ? buffer
+      : await normalizeRegistrationImage(buffer, extension)
+    return { file: value, extension, buffer: normalizedBuffer }
+  } catch (error) {
+    if (error instanceof NormalizedImageTooLargeError) {
+      return `${label} deve ter no máximo 10 MB após o processamento.`
+    }
+    return 'Não foi possível validar o conteúdo de ' + label.toLowerCase() + '.'
+  }
 }
 
 function rateLimitResponse(retryAfterSeconds: number) {
@@ -72,6 +84,10 @@ function rateLimitResponse(retryAfterSeconds: number) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!registrationsAreOpen()) {
+    return errorResponse('As inscrições estão encerradas.', 410)
+  }
+
   let registrationDirectory = ''
 
   try {

@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { verifyToken } from '@/lib/auth'
+import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
 import { registrationClaimKeys } from '@/lib/registration-claim'
 
@@ -9,12 +10,15 @@ const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED'] as const
 type AllowedStatus = (typeof allowedStatuses)[number]
 
 function isAdmin(request: NextRequest) {
-  const token = request.cookies.get('admin-token')?.value
+  const token = request.cookies.get(adminCookieName())?.value
   const payload = token ? verifyToken(token) : null
   return payload?.role === 'ADMIN'
 }
 
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const invalidOrigin = requireSameOrigin(request)
+  if (invalidOrigin) return invalidOrigin
+
   if (!isAdmin(request)) {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
   }

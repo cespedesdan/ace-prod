@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { adminCookieName } from '@/lib/admin-request'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('admin-token')?.value
+    const token = request.cookies.get(adminCookieName())?.value
 
     if (!token) {
       return NextResponse.json(
