@@ -69,7 +69,7 @@ export function CopaAce10Faceit({ championship }: { championship: CopaAce10Facei
   const placements = championship.results.flatMap((result) => result.placements)
 
   return (
-    <section id="faceit" className="space-y-6">
+    <section id="faceit" className="deferred-render space-y-6">
       <article className="tournament-panel">
         <header className="tournament-panel-header flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
           <div>

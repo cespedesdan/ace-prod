@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { FaceitApiError, getFaceitTeam } from '@/lib/faceit'
 import { consumeRateLimit, getClientIp } from '@/lib/rate-limit'
 import { registrationTextLimitError } from '@/lib/registration-input'
+import { registrationClaimKey } from '@/lib/registration-claim'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
 import { readFormDataWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
@@ -167,10 +168,7 @@ export async function POST(request: NextRequest) {
     if (typeof proofUpload === 'string') return errorResponse(proofUpload)
 
     const existingTeam = await prisma.registration.findFirst({
-      where: {
-        tournament: 'Copa Ace 10',
-        OR: [{ teamNameNormalized }, { faceitTeamId: faceitTeam.teamId }],
-      },
+      where: { claimKey: registrationClaimKey('Copa Ace 10', faceitTeam.teamId) },
       select: { id: true },
     })
     if (existingTeam) {
@@ -195,6 +193,7 @@ export async function POST(request: NextRequest) {
       data: {
         id,
         protocol,
+        claimKey: registrationClaimKey('Copa Ace 10', faceitTeam.teamId),
         teamFaceitUrl,
         faceitTeamId: faceitTeam.teamId,
         faceitTeamNickname: faceitTeam.nickname,

@@ -5,7 +5,7 @@ import { YouTubeLivePlayer } from '@/components/YouTubeLivePlayer'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Home | Ace Produtora',
