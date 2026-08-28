@@ -140,10 +140,6 @@ textarea {
   text-transform: uppercase;
 }
 
-.lcp-text {
-  contain: layout paint;
-}
-
 .brand-button-primary {
   display: inline-flex;
   align-items: center;
