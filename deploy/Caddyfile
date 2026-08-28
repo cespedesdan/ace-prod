@@ -23,5 +23,6 @@ aceprodutora.com.br, www.aceprodutora.com.br {
 	reverse_proxy 127.0.0.1:8001 {
 		header_up X-Real-IP {client_ip}
 		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Host {host}
 	}
 }

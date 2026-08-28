@@ -49,6 +49,15 @@ async function main() {
       headers: { Origin: 'https://aceprodutora.com.br' },
     })
     assert.equal(requireSameOrigin(validAdminRequest), null)
+    const proxiedAdminRequest = new NextRequest('http://127.0.0.1:8001/api/admin/logout', {
+      method: 'POST',
+      headers: {
+        Origin: 'https://aceprodutora.com.br',
+        'X-Forwarded-Host': 'aceprodutora.com.br',
+        'X-Forwarded-Proto': 'https',
+      },
+    })
+    assert.equal(requireSameOrigin(proxiedAdminRequest), null)
     assert.equal(
       requireSameOrigin(new NextRequest(validAdminRequest.url, {
         method: 'POST',
@@ -57,6 +66,28 @@ async function main() {
       403,
     )
     assert.equal(requireSameOrigin(new NextRequest(validAdminRequest.url, { method: 'POST' }))?.status, 403)
+    assert.equal(
+      requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
+        method: 'POST',
+        headers: {
+          Origin: 'https://attacker.example',
+          'X-Forwarded-Host': 'aceprodutora.com.br',
+          'X-Forwarded-Proto': 'https',
+        },
+      }))?.status,
+      403,
+    )
+    assert.equal(
+      requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
+        method: 'POST',
+        headers: {
+          Origin: 'https://aceprodutora.com.br',
+          'X-Forwarded-Host': 'aceprodutora.com.br, attacker.example',
+          'X-Forwarded-Proto': 'https',
+        },
+      }))?.status,
+      403,
+    )
 
     const faceitClaimId = randomUUID()
     const claimKey = registrationClaimKey('Copa Ace 10', faceitClaimId)
