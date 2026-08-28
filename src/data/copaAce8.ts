@@ -1,22 +1,22 @@
 import type { Team } from '@/data/copaAce9'
 
 export const copaAce8Teams = {
-  chape: { name: 'Chape e-Sports', shortName: 'CHAPE', logo: '/hall-of-fame/copa-ace-8/chape.jpg' },
-  newIcons: { name: 'New Icons', shortName: 'NI', logo: '/hall-of-fame/copa-ace-8/new-icons.jpg' },
-  teamDelf: { name: 'Team DELF', shortName: 'DELF', logo: '/hall-of-fame/copa-ace-8/team-delf.jpg' },
-  youngDreamers: { name: 'Young Dreamers', shortName: 'YD', logo: '/hall-of-fame/copa-ace-8/young-dreamers.png' },
-  bloodyMindset: { name: 'Bloody Mindset', shortName: 'BM', logo: '/hall-of-fame/copa-ace-8/bloody-mindset.jpg' },
-  alzon: { name: 'Alzon', shortName: 'ALZ', logo: '/hall-of-fame/copa-ace-8/alzon.png' },
-  godGenesis: { name: 'God Genesis', shortName: 'GG', logo: '/hall-of-fame/copa-ace-8/god-genesis.png' },
-  intense: { name: 'Intense', shortName: 'INT', logo: '/hall-of-fame/copa-ace-8/intense.png' },
-  azureBears: { name: 'Azure Bears', shortName: 'AB', logo: '/hall-of-fame/copa-ace-8/azure-bears.png' },
-  dontCrash: { name: "Don't Crash", shortName: 'DC', logo: '/hall-of-fame/copa-ace-8/dont-crash.png' },
-  hylander: { name: 'Hylander Comédia', shortName: 'HC', logo: '/hall-of-fame/copa-ace-8/hylander-comedia.jpg' },
-  wifeEaters: { name: 'Wife Eaters', shortName: 'WE', logo: '/hall-of-fame/copa-ace-8/wife-eaters.png' },
-  bamb1nos: { name: 'Bamb1nos', shortName: 'B1', logo: '/hall-of-fame/copa-ace-8/bamb1nos.png' },
-  expanse: { name: 'Expanse', shortName: 'EXP', logo: '/hall-of-fame/copa-ace-8/expanse.png' },
-  juventus: { name: 'Juventus Gaming', shortName: 'JUV', logo: '/hall-of-fame/copa-ace-8/juventus.png' },
-  mystic: { name: 'Mystic', shortName: 'MYS', logo: '/hall-of-fame/copa-ace-8/mystic.jpg' },
+  chape: { name: 'Chape e-Sports', shortName: 'CHAPE', logo: '/hall-of-fame/copa-ace-8/chape.webp' },
+  newIcons: { name: 'New Icons', shortName: 'NI', logo: '/hall-of-fame/copa-ace-8/new-icons.webp' },
+  teamDelf: { name: 'Team DELF', shortName: 'DELF', logo: '/hall-of-fame/copa-ace-8/team-delf.webp' },
+  youngDreamers: { name: 'Young Dreamers', shortName: 'YD', logo: '/hall-of-fame/copa-ace-8/young-dreamers.webp' },
+  bloodyMindset: { name: 'Bloody Mindset', shortName: 'BM', logo: '/hall-of-fame/copa-ace-8/bloody-mindset.webp' },
+  alzon: { name: 'Alzon', shortName: 'ALZ', logo: '/hall-of-fame/copa-ace-8/alzon.webp' },
+  godGenesis: { name: 'God Genesis', shortName: 'GG', logo: '/hall-of-fame/copa-ace-8/god-genesis.webp' },
+  intense: { name: 'Intense', shortName: 'INT', logo: '/hall-of-fame/copa-ace-8/intense.webp' },
+  azureBears: { name: 'Azure Bears', shortName: 'AB', logo: '/hall-of-fame/copa-ace-8/azure-bears.webp' },
+  dontCrash: { name: "Don't Crash", shortName: 'DC', logo: '/hall-of-fame/copa-ace-8/dont-crash.webp' },
+  hylander: { name: 'Hylander Comédia', shortName: 'HC', logo: '/hall-of-fame/copa-ace-8/hylander-comedia.webp' },
+  wifeEaters: { name: 'Wife Eaters', shortName: 'WE', logo: '/hall-of-fame/copa-ace-8/wife-eaters.webp' },
+  bamb1nos: { name: 'Bamb1nos', shortName: 'B1', logo: '/hall-of-fame/copa-ace-8/bamb1nos.webp' },
+  expanse: { name: 'Expanse', shortName: 'EXP', logo: '/hall-of-fame/copa-ace-8/expanse.webp' },
+  juventus: { name: 'Juventus Gaming', shortName: 'JUV', logo: '/hall-of-fame/copa-ace-8/juventus.webp' },
+  mystic: { name: 'Mystic', shortName: 'MYS', logo: '/hall-of-fame/copa-ace-8/mystic.webp' },
 } satisfies Record<string, Team>
 
 export const copaAce8Groups = [

@@ -28,6 +28,7 @@ export function YouTubeLivePlayer({ videoId }: { videoId: string }) {
     const youtubeWindow = window as YouTubeWindow
     let player: Player | null = null
     let cancelled = false
+    let observer: IntersectionObserver | null = null
 
     const createPlayer = () => {
       if (cancelled || !container.current || !youtubeWindow.YT) return
@@ -51,18 +52,33 @@ export function YouTubeLivePlayer({ videoId }: { videoId: string }) {
       createPlayer()
     }
 
-    if (youtubeWindow.YT?.Player) createPlayer()
-    else {
-      youtubeWindow.onYouTubeIframeAPIReady = ready
-      if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
-        const script = document.createElement('script')
-        script.src = 'https://www.youtube.com/iframe_api'
-        document.head.appendChild(script)
+    const loadPlayer = () => {
+      if (youtubeWindow.YT?.Player) createPlayer()
+      else {
+        youtubeWindow.onYouTubeIframeAPIReady = ready
+        if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+          const script = document.createElement('script')
+          script.src = 'https://www.youtube.com/iframe_api'
+          script.async = true
+          document.head.appendChild(script)
+        }
       }
+    }
+
+    if (container.current && 'IntersectionObserver' in window) {
+      observer = new IntersectionObserver(([entry]) => {
+        if (!entry.isIntersecting) return
+        observer?.disconnect()
+        loadPlayer()
+      }, { rootMargin: '200px' })
+      observer.observe(container.current)
+    } else {
+      loadPlayer()
     }
 
     return () => {
       cancelled = true
+      observer?.disconnect()
       player?.destroy()
       if (youtubeWindow.onYouTubeIframeAPIReady === ready) youtubeWindow.onYouTubeIframeAPIReady = previousReady
     }

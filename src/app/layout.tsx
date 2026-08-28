@@ -13,7 +13,7 @@ const poppins = Poppins({
 })
 
 const nippo = localFont({
-  src: './fonts/Nippo-Variable.ttf',
+  src: './fonts/Nippo-Variable.woff2',
   variable: '--font-nippo',
   display: 'swap',
 })
