@@ -5,6 +5,7 @@ import { verifyToken } from '@/lib/auth'
 import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { FaceitApiError, getFaceitChampionship } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
+import { privateJson } from '@/lib/private-response'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
@@ -63,9 +64,9 @@ function revalidateTournament(tournament: string) {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAdmin(request)) return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
+  if (!isAdmin(request)) return privateJson({ error: 'Acesso negado' }, { status: 401 })
   const championships = await prisma.faceitChampionship.findMany({ orderBy: { tournament: 'asc' } })
-  return NextResponse.json({ championships: championships.map(responseData) })
+  return privateJson({ championships: championships.map(responseData) })
 }
 
 export async function POST(request: NextRequest) {
