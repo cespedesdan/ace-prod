@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import './news.css'
 import { NewsList } from '@/components/NewsList'
 
 async function getNews() {

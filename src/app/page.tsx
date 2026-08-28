@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import './home.css'
 import { Hero } from '@/components/Hero'
 import { RankingTable } from '@/components/RankingTable'
 import { YouTubeLivePlayer } from '@/components/YouTubeLivePlayer'
@@ -56,7 +57,7 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="deferred-render mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 border-l-4 border-copa-cyan pl-5">
           <p className="brand-kicker mb-2">Competição atual</p>
           <h2 className="text-3xl font-bold uppercase text-white">Classificação Copa ACE 10</h2>

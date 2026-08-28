@@ -37,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <head><script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} /></head>
+      <head><script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js');const e=document.createElement('div');e.setAttribute('hidden','until-found');if(e.hidden==='until-found')document.documentElement.classList.add('until-found')" }} /></head>
       <body className={`${poppins.variable} ${nippo.variable} min-h-screen bg-gray-900 text-white`}>
         <ClientPerformance />
         <div className="flex flex-col min-h-screen">

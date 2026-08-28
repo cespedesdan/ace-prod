@@ -60,26 +60,66 @@ export function ClientPerformance() {
 
   useEffect(() => {
     const sections = document.querySelectorAll<HTMLElement>(deferredSelector)
+    if (document.documentElement.classList.contains('until-found')) {
+      sections.forEach((section) => section.setAttribute('hidden', 'until-found'))
+    } else {
+      sections.forEach((section) => section.removeAttribute('hidden'))
+    }
     if (!('IntersectionObserver' in window)) {
-      sections.forEach((section) => { section.dataset.renderVisible = 'true' })
+      sections.forEach((section) => {
+        section.removeAttribute('hidden')
+        section.dataset.renderVisible = 'true'
+      })
       return
     }
 
-    const observer = new IntersectionObserver((entries) => {
+    let observer: IntersectionObserver | null = null
+    const revealSection = (section: HTMLElement) => {
+      observer?.unobserve(section)
+      const owner = section.closest<HTMLElement>('[data-deferred-stylesheet]')
+      const stylesheet = owner?.dataset.deferredStylesheet
+      const reveal = () => {
+        section.removeAttribute('hidden')
+        section.dataset.renderVisible = 'true'
+      }
+      if (!stylesheet) {
+        reveal()
+        return Promise.resolve()
+      }
+      return loadStylesheet(stylesheet).then(reveal)
+    }
+
+    const navigateToFragment = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href*="#"]') : null
+      if (!link) return
+      const url = new URL(link.href, window.location.href)
+      if (url.origin !== window.location.origin || url.pathname !== window.location.pathname || !url.hash) return
+      const target = document.getElementById(decodeURIComponent(url.hash.slice(1)))
+      if (!target) return
+
+      event.preventDefault()
+      sections.forEach((section) => { section.style.contentVisibility = 'visible' })
+      void Promise.all([...sections].map(revealSection)).then(() => {
+        window.history.pushState(window.history.state, '', url.hash)
+        requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+      })
+    }
+
+    document.addEventListener('click', navigateToFragment)
+    observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue
         const section = entry.target as HTMLElement
-        observer.unobserve(section)
-        const owner = section.closest<HTMLElement>('[data-deferred-stylesheet]')
-        const stylesheet = owner?.dataset.deferredStylesheet
-        const reveal = () => { section.dataset.renderVisible = 'true' }
-        if (stylesheet) void loadStylesheet(stylesheet).then(reveal)
-        else reveal()
+        void revealSection(section)
       }
     }, { rootMargin: '400px 0px' })
 
     sections.forEach((section) => observer.observe(section))
-    return () => observer.disconnect()
+    return () => {
+      document.removeEventListener('click', navigateToFragment)
+      observer?.disconnect()
+    }
   }, [pathname])
 
   return null

@@ -1,3 +1,7 @@
+@import "tailwindcss" source(none);
+@source "./page.tsx";
+@source "../../components/RegistrationClosed.tsx";
+
 .tournament-page.copa-ace-10-page {
   --tournament-accent: #d99a28;
   --tournament-accent-dark: #865612;

@@ -1,0 +1,5 @@
+@import "tailwindcss" source(none);
+@source "./page.tsx";
+@source "./[slug]/page.tsx";
+@source "../../components/HallOfFameList.tsx";
+@source "../../components/TournamentFormatPage.tsx";

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import './schedule.css'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { ScheduleList } from '@/components/ScheduleList'

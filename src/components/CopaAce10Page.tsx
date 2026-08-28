@@ -102,6 +102,8 @@ export default async function CopaAce10Page() {
                   width={1356}
                   height={1400}
                   sizes="45vw"
+                  loading="eager"
+                  fetchPriority="high"
                   className="copa10-coin"
                 />
               </picture>

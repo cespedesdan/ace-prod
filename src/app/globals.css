@@ -5,27 +5,6 @@
 @source "../components/Logotipo.tsx";
 @source "../components/Navbar.tsx";
 @source "../components/NavigationLinks.tsx";
-@source "../components/Hero.tsx";
-@source "./page.tsx";
-@source "./copa-ace-10/page.tsx";
-@source "./copa-ace-10/loading.tsx";
-@source "./hall-of-fame/page.tsx";
-@source "./hall-of-fame/[slug]/page.tsx";
-@source "./inscreva-se/page.tsx";
-@source "./news/page.tsx";
-@source "./schedule/page.tsx";
-@source "../components/CopaAce10Faceit.tsx";
-@source "../components/CopaAce10Page.tsx";
-@source "../components/CopaAce10Schedule.tsx";
-@source "../components/CopaAce10Swiss.tsx";
-@source "../components/HallOfFameList.tsx";
-@source "../components/NewsList.tsx";
-@source "../components/RankingTable.tsx";
-@source "../components/RegistrationClosed.tsx";
-@source "../components/ScheduleList.tsx";
-@source "../components/ScheduleFilters.tsx";
-@source "../components/TournamentFormatPage.tsx";
-@source "../components/YouTubeLivePlayer.tsx";
 
 :root {
   --ace-cyan: #53b29b;
@@ -427,13 +406,13 @@ textarea {
     contain-intrinsic-size: auto 640px;
   }
 
-  .js .deferred-render:not([data-render-visible="true"]),
-  .js .deferred-render-compact:not([data-render-visible="true"]) {
-    content-visibility: hidden;
-  }
-
   .deferred-render-compact {
     contain-intrinsic-size: auto 150px;
+  }
+
+  .js .deferred-render:not([data-render-visible="true"]):not([hidden]),
+  .js .deferred-render-compact:not([data-render-visible="true"]):not([hidden]) {
+    content-visibility: hidden;
   }
 
   @media (max-width: 639px) {

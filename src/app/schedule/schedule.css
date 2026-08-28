@@ -1,0 +1,5 @@
+@import "tailwindcss" source(none);
+@source "./page.tsx";
+@source "../../components/CopaAce10Schedule.tsx";
+@source "../../components/ScheduleFilters.tsx";
+@source "../../components/ScheduleList.tsx";
