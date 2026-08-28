@@ -2,13 +2,19 @@ import { copyFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { PrismaClient } from '@prisma/client'
 
-if (process.env.PERFORMANCE_FIXTURES !== 'true') {
-  throw new Error('Performance fixtures require PERFORMANCE_FIXTURES=true')
+if (
+  process.env.PERFORMANCE_FIXTURES !== 'true'
+  || process.env.CI !== 'true'
+  || process.env.GITHUB_ACTIONS !== 'true'
+) {
+  throw new Error('Performance fixtures can only run in the isolated GitHub Actions performance job')
 }
 
 const prisma = new PrismaClient()
 const now = new Date()
 const nowMs = now.getTime()
+const tournament = '__performance_copa_ace_10__'
+const liveStreamId = '__performance_home__'
 const logoSources = [
   'public/hall-of-fame/copa-ace-7/astus.webp',
   'public/hall-of-fame/copa-ace-7/atlanta.webp',
@@ -30,7 +36,7 @@ const logoSources = [
 
 const teams = logoSources.map((source, index) => {
   const number = String(index + 1).padStart(2, '0')
-  const id = `performance-team-${number}`
+  const id = `ci-performance-team-${number}`
   return {
     id,
     name: `Equipe Performance ${number}`,
@@ -47,29 +53,77 @@ const teams = logoSources.map((source, index) => {
   }
 })
 
-function fixtureMatch(index) {
-  const left = teams[index % teams.length]
-  const right = teams[(index * 5 + 3) % teams.length]
-  const finished = index < 8
-  const today = index >= 8 && index < 16
-  const scheduledAt = today
-    ? nowMs + (index - 12) * 45 * 60_000
-    : nowMs + (finished ? -(index + 1) * 86_400_000 : (index - 14) * 86_400_000)
-  return {
-    matchId: `performance-match-${String(index + 1).padStart(2, '0')}`,
-    round: Math.floor(index / 5) + 1,
-    group: null,
-    bestOf: index >= 20 ? 3 : 1,
-    scheduledAt,
-    status: finished ? 'finished' : today && index === 8 ? 'ongoing' : 'scheduled',
-    faceitUrl: `https://www.faceit.com/pt/cs2/room/1-performance-match-${index + 1}`,
-    winner: finished ? 'faction1' : null,
-    scores: finished ? { faction1: 13, faction2: 9 } : {},
-    teams: [
-      { faction: 'faction1', teamId: left.id, name: left.name, avatarUrl: left.avatarUrl },
-      { faction: 'faction2', teamId: right.id, name: right.name, avatarUrl: right.avatarUrl },
-    ],
+function fixtureMatches() {
+  const campaigns = new Map(teams.map((team) => [team.id, { wins: 0, losses: 0 }]))
+  const matches = []
+
+  for (let round = 1; round <= 5; round += 1) {
+    const active = teams.filter((team) => {
+      const campaign = campaigns.get(team.id)
+      return campaign.wins < 3 && campaign.losses < 3
+    })
+    const pools = new Map()
+    for (const team of active) {
+      const campaign = campaigns.get(team.id)
+      const record = `${campaign.wins}-${campaign.losses}`
+      pools.set(record, [...(pools.get(record) || []), team])
+    }
+
+    for (const pool of pools.values()) {
+      for (let pair = 0; pair < pool.length; pair += 2) {
+        const left = pool[pair]
+        const right = pool[pair + 1]
+        if (!right) throw new Error(`Invalid Swiss fixture pool in round ${round}`)
+        const matchNumber = matches.length + 1
+        const leftWins = (matchNumber + round) % 2 === 0
+        const winner = leftWins ? left : right
+        const loser = leftWins ? right : left
+        const winnerFaction = leftWins ? 'faction1' : 'faction2'
+        const winnerCampaign = campaigns.get(winner.id)
+        const loserCampaign = campaigns.get(loser.id)
+        campaigns.set(winner.id, { ...winnerCampaign, wins: winnerCampaign.wins + 1 })
+        campaigns.set(loser.id, { ...loserCampaign, losses: loserCampaign.losses + 1 })
+        matches.push({
+          matchId: `performance-swiss-${String(matchNumber).padStart(2, '0')}`,
+          round,
+          group: null,
+          bestOf: 1,
+          scheduledAt: nowMs - (34 - matchNumber) * 3_600_000,
+          status: 'finished',
+          faceitUrl: `https://www.faceit.com/pt/cs2/room/1-performance-swiss-${matchNumber}`,
+          winner: winnerFaction,
+          scores: leftWins ? { faction1: 13, faction2: 9 } : { faction1: 9, faction2: 13 },
+          teams: [
+            { faction: 'faction1', teamId: left.id, name: left.name, avatarUrl: left.avatarUrl },
+            { faction: 'faction2', teamId: right.id, name: right.name, avatarUrl: right.avatarUrl },
+          ],
+        })
+      }
+    }
   }
+
+  const finalists = teams.slice(0, 8)
+  for (let index = 0; index < 4; index += 1) {
+    const left = finalists[index * 2]
+    const right = finalists[index * 2 + 1]
+    matches.push({
+      matchId: `performance-playoff-${index + 1}`,
+      round: null,
+      group: null,
+      bestOf: 3,
+      scheduledAt: nowMs + (index + 1) * 3_600_000,
+      status: index === 0 ? 'ongoing' : 'scheduled',
+      faceitUrl: `https://www.faceit.com/pt/cs2/room/1-performance-playoff-${index + 1}`,
+      winner: null,
+      scores: {},
+      teams: [
+        { faction: 'faction1', teamId: left.id, name: left.name, avatarUrl: left.avatarUrl },
+        { faction: 'faction2', teamId: right.id, name: right.name, avatarUrl: right.avatarUrl },
+      ],
+    })
+  }
+
+  return matches
 }
 
 async function seedRegistrations() {
@@ -82,11 +136,11 @@ async function seedRegistrations() {
     await copyFile(path.join(process.cwd(), team.logoSource), path.join(storageDirectory, `team-${number}.webp`))
     await prisma.registration.upsert({
       where: { id: team.id },
-      update: { teamName: team.name, teamTag: `P${number}`, logoPath, status: 'APPROVED' },
+      update: { tournament, teamName: team.name, teamTag: `P${number}`, logoPath, status: 'APPROVED' },
       create: {
         id: team.id,
-        protocol: `PERFORMANCE-${number}`,
-        tournament: 'Copa Ace 10',
+        protocol: `CI-PERFORMANCE-${number}`,
+        tournament,
         teamFaceitUrl: team.faceitUrl,
         faceitTeamId: team.id,
         faceitTeamNickname: team.nickname,
@@ -111,11 +165,11 @@ async function seedRegistrations() {
 }
 
 async function seedChampionship() {
-  const matches = Array.from({ length: 25 }, (_, index) => fixtureMatch(index))
+  const matches = fixtureMatches()
   const championship = {
-    tournament: 'Copa Ace 10',
-    championshipId: '00000000-0000-4000-8000-000000000010',
-    faceitUrl: 'https://www.faceit.com/pt/championship/00000000-0000-4000-8000-000000000010/copa-ace-10',
+    tournament,
+    championshipId: '00000000-0000-4000-8000-000000000999',
+    faceitUrl: 'https://www.faceit.com/pt/championship/00000000-0000-4000-8000-000000000999/copa-ace-10',
     name: 'Copa ACE 10 — Benchmark',
     status: 'ongoing',
     gameId: 'cs2',
@@ -162,9 +216,9 @@ async function seedNewsAndStream() {
     })
   }
   await prisma.liveStream.upsert({
-    where: { id: 'home' },
+    where: { id: liveStreamId },
     update: { title: 'Copa ACE 10 ao vivo', youtubeVideoId: 'M7lc1UVf-VE', visibleOnHome: true },
-    create: { id: 'home', title: 'Copa ACE 10 ao vivo', youtubeVideoId: 'M7lc1UVf-VE', visibleOnHome: true },
+    create: { id: liveStreamId, title: 'Copa ACE 10 ao vivo', youtubeVideoId: 'M7lc1UVf-VE', visibleOnHome: true },
   })
 }
 
@@ -172,7 +226,7 @@ async function main() {
   await seedRegistrations()
   await seedChampionship()
   await seedNewsAndStream()
-  console.log(`Performance fixtures ready: ${teams.length} teams, 25 matches, 4 news articles, live stream enabled.`)
+  console.log(`Performance fixtures ready: ${teams.length} teams, 37 matches, 4 news articles, live stream enabled.`)
 }
 
 main()

@@ -1,4 +1,4 @@
 @reference "../theme.css";
-@import "tailwindcss" source(none);
+@import "tailwindcss/utilities" source(none);
 @source "./";
 @source "../../components/ConfirmSubmit.tsx";

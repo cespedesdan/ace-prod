@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { publicTournament } from '@/lib/public-content'
 
 export const runtime = 'nodejs'
 
@@ -17,7 +18,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const registration = await prisma.registration.findFirst({
     where: {
       id,
-      tournament: 'Copa Ace 10',
+      tournament: publicTournament,
       status: 'APPROVED',
     },
     select: { logoPath: true },

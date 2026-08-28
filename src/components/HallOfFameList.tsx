@@ -17,10 +17,10 @@ export function HallOfFameList() {
             <Image
               src={edition.logo}
               alt={`Logo ${edition.title}`}
-              fill
-              sizes="96px"
+              width={96}
+              height={96}
               quality={60}
-              className="object-contain p-3 transition duration-200 group-hover:scale-105"
+              className="h-full w-full object-contain p-3 transition duration-200 group-hover:scale-105"
             />
           </div>
 

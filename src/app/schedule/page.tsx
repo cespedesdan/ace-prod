@@ -6,6 +6,7 @@ import { ScheduleList } from '@/components/ScheduleList'
 import { CopaAce10Schedule } from '@/components/CopaAce10Schedule'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
+import { publicTournament } from '@/lib/public-content'
 
 export const revalidate = 60
 
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 
 async function getFaceitSchedule() {
   const championship = await prisma.faceitChampionship.findUnique({
-    where: { tournament: 'Copa Ace 10' },
+    where: { tournament: publicTournament },
     select: { faceitUrl: true, matchesJson: true, syncedAt: true },
   })
   if (!championship) return null

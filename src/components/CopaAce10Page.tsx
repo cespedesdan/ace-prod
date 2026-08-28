@@ -13,13 +13,14 @@ import { prisma } from '@/lib/prisma'
 import { CopaAce10Faceit, type CopaAce10FaceitData } from '@/components/CopaAce10Faceit'
 import { CopaAce10Schedule } from '@/components/CopaAce10Schedule'
 import { IntentLink } from '@/components/IntentLink'
+import { publicTournament } from '@/lib/public-content'
 
 const TOTAL_TEAMS = 16
 const SHOW_CONFIRMED_SLOTS_BADGE = false // Troque para true para exibir novamente.
 
 async function getConfirmedTeams() {
   return prisma.registration.findMany({
-    where: { tournament: 'Copa Ace 10', status: 'APPROVED' },
+    where: { tournament: publicTournament, status: 'APPROVED' },
     orderBy: { updatedAt: 'asc' },
     take: TOTAL_TEAMS,
     select: { id: true, teamName: true, teamTag: true },
@@ -28,7 +29,7 @@ async function getConfirmedTeams() {
 
 async function getFaceitChampionship(): Promise<CopaAce10FaceitData | null> {
   const championship = await prisma.faceitChampionship.findUnique({
-    where: { tournament: 'Copa Ace 10' },
+    where: { tournament: publicTournament },
     select: { name: true, faceitUrl: true, status: true, format: true, seedingStrategy: true, totalRounds: true, syncedAt: true, teamsJson: true, matchesJson: true, resultsJson: true },
   })
   if (!championship) return null
@@ -46,7 +47,7 @@ async function getFaceitChampionship(): Promise<CopaAce10FaceitData | null> {
 function ConfirmedTeamLogo({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
   return (
     <span className="team-logo-surface relative block shrink-0 overflow-hidden" style={{ width: size, height: size }}>
-      <Image src={`/api/copa-ace-10/teams/${id}/logo`} alt={`Logo ${name}`} fill sizes={`${size}px`} className="object-contain p-1" />
+      <Image src={`/api/copa-ace-10/teams/${id}/logo`} alt={`Logo ${name}`} width={size} height={size} className="h-full w-full object-contain p-1" />
     </span>
   )
 }
@@ -94,15 +95,19 @@ export default async function CopaAce10Page() {
 
             <div className="copa10-coin-stage" aria-label="Moeda comemorativa da Copa ACE 10">
               <div className="copa10-coin-orbit" aria-hidden="true" />
-              <Image
-                src="/copa-ace-10/moeda-10.webp"
-                alt="Moeda dourada da décima edição da Copa ACE"
-                width={1356}
-                height={1400}
-                sizes="(max-width: 1023px) 90vw, 45vw"
-                priority
-                className="copa10-coin"
-              />
+              <picture>
+                <source media="(max-width: 1023px)" srcSet="/copa-ace-10/moeda-10-mobile.webp" type="image/webp" />
+                <Image
+                  src="/copa-ace-10/moeda-10.webp"
+                  alt="Moeda dourada da décima edição da Copa ACE"
+                  width={1356}
+                  height={1400}
+                  sizes="45vw"
+                  loading="eager"
+                  fetchPriority="high"
+                  className="copa10-coin"
+                />
+              </picture>
               {SHOW_CONFIRMED_SLOTS_BADGE && (
                 <div className="copa10-slots-badge">
                   <span>Vagas confirmadas</span>

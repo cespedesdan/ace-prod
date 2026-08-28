@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { CalendarClock, CalendarDays, CheckCircle2, ExternalLink, Gamepad2, Radio } from 'lucide-react'
+import { CalendarClock, CheckCircle2, Gamepad2, Radio } from 'lucide-react'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { ScheduleFilters } from './ScheduleFilters'
 
@@ -63,7 +63,7 @@ function TeamLogo({ team }: { team?: FaceitMatch['teams'][number] }) {
   return (
     <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden border border-white/15 bg-[#100a15] text-xs font-black text-copa-cyan">
       {team?.avatarUrl
-        ? <Image src={team.avatarUrl} alt="" fill sizes="44px" className="object-contain p-1" />
+        ? <Image src={team.avatarUrl} alt="" width={44} height={44} className="h-full w-full object-contain p-1" />
         : team?.name.slice(0, 2).toUpperCase() || '?'}
     </span>
   )
@@ -96,9 +96,9 @@ function MatchCard({ match, bucket }: { match: FaceitMatch; bucket: Exclude<Sche
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-white/15 pt-3 text-xs font-bold text-slate-300">
-        <time className="inline-flex items-center gap-1.5"><CalendarDays size={14} /> {matchDate(match.scheduledAt)}</time>
+        <time>{matchDate(match.scheduledAt)}</time>
         {match.faceitUrl
-          ? <a href={match.faceitUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-copa-cyan hover:underline">{statusLabel(match.status)} <ExternalLink size={12} /></a>
+          ? <a href={match.faceitUrl} target="_blank" rel="noreferrer" className="text-copa-cyan hover:underline">{statusLabel(match.status)} <span aria-hidden="true">↗</span></a>
           : <span>{statusLabel(match.status)}</span>}
       </div>
     </article>

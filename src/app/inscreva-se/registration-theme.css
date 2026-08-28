@@ -1,5 +1,5 @@
 @reference "../theme.css";
-@import "tailwindcss" source(none);
+@import "tailwindcss/utilities" source(none);
 @source "./page.tsx";
 @source "../../components/RegistrationClosed.tsx";
 

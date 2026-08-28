@@ -10,6 +10,7 @@ on:
       - 'package-lock.json'
       - 'public/**'
       - 'scripts/benchmark-performance.mjs'
+      - 'scripts/seed-performance.mjs'
       - 'src/**'
 
 permissions:
@@ -28,6 +29,7 @@ jobs:
       JWT_SECRET: github-actions-performance-only-0123456789abcdef0123456789abcdef
       ADMIN_EMAIL: performance@example.invalid
       TRUST_PROXY: 'false'
+      PERFORMANCE_FIXTURES: 'true'
 
     steps:
       - name: Baixar codigo
@@ -46,7 +48,7 @@ jobs:
         run: |
           npm run db:generate
           npm run db:migrate
-          PERFORMANCE_FIXTURES=true npm run perf:seed
+          npm run perf:seed
 
       - name: Gerar build de producao
         run: npm run build
