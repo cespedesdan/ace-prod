@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { IntentLink } from './IntentLink'
 
 const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean }> = [
   { name: 'Home', href: '/' },
@@ -42,14 +42,16 @@ export function NavigationLinks() {
     <>
       <div className="desktop-navigation items-center space-x-5">
         {navigation.map((item) => (
-          <IntentLink
+          <Link
             key={item.name}
             href={item.href}
+            prefetch={false}
+            data-intent-prefetch=""
             aria-current={isCurrentRoute(pathname, item.href) ? 'page' : undefined}
             className={navigationClass(item)}
           >
             {item.name}
-          </IntentLink>
+          </Link>
         ))}
       </div>
 
@@ -62,15 +64,17 @@ export function NavigationLinks() {
         </summary>
         <div className="absolute inset-x-0 top-20 space-y-1 border-y border-white/10 bg-smoke px-4 pb-4 pt-3 shadow-2xl">
           {navigation.map((item) => (
-            <IntentLink
+            <Link
               key={item.name}
               href={item.href}
+              prefetch={false}
+              data-intent-prefetch=""
               aria-current={isCurrentRoute(pathname, item.href) ? 'page' : undefined}
               onClick={() => mobileMenu.current?.removeAttribute('open')}
               className={navigationClass(item, true)}
             >
               {item.name}
-            </IntentLink>
+            </Link>
           ))}
         </div>
       </details>
