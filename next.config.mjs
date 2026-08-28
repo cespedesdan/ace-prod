@@ -50,7 +50,7 @@ const nextConfig = {
   },
   async headers() {
     return [{
-      source: '/critical-fonts-v1.css',
+      source: '/fonts/:font*',
       headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
     }, {
       source: '/copa-ace-10/deferred-v1.css',
@@ -62,7 +62,6 @@ const nextConfig = {
         { key: 'X-Frame-Options', value: 'DENY' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-        { key: 'Link', value: '</critical-fonts-v1.css>; rel=preload; as=style' },
         { key: 'Reporting-Endpoints', value: 'csp-endpoint="/api/security/csp-report"' },
         { key: 'Content-Security-Policy-Report-Only', value: contentSecurityPolicy },
       ],

@@ -1,12 +1,19 @@
 # Critical font subsets
 
-`public/critical-fonts-v1.css` embeds small WOFF2 subsets of Poppins 400/700 and
-Nippo 700 so the branded first paint needs one cacheable stylesheet instead of
-three font requests. The original Nippo file remains in this directory. Poppins is sourced from the Google Fonts
+`src/app/critical-fonts.css` declares small, separately cacheable Poppins
+400/700 WOFF2 subsets from `public/fonts`. Next.js inlines the declarations into
+the initial document, so they do not add a render-blocking stylesheet request.
+Poppins is sourced from the Google Fonts
 repository at commit `ade3d1533e06b2b1462ffcde8e08b129627ca360`; its OFL is
 stored in `OFL-Poppins.txt`.
 
-The subsets cover printable ASCII, Portuguese diacritics, and the punctuation
+Nippo is loaded separately through `next/font/local` from the original,
+unmodified WOFF2 file. Do not subset, convert, or otherwise modify Nippo without
+written permission from Indian Type Foundry; its Fontshare license does not
+permit font-software modification by default:
+https://www.fontshare.com/licenses/itf-ffl
+
+The Poppins subsets cover printable ASCII, Portuguese diacritics, and the punctuation
 used by the public UI. They were generated with FontTools 4.63.0 and Brotli:
 
 ```sh
@@ -16,5 +23,5 @@ base64 -w0 SUBSET.woff2
 ```
 
 After changing public copy, compare its character set with `ACE_UNICODES`,
-regenerate the subsets when needed, bump the stylesheet filename, then run the
+regenerate the Poppins subsets when needed, bump the font filenames, then run the
 browser and Lighthouse checks.

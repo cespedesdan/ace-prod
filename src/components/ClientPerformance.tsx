@@ -124,7 +124,8 @@ export function ClientPerformance() {
 
       event.preventDefault()
       window.history.pushState(window.history.state, '', url.hash)
-      revealForFragment(target, 'smooth')
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
+      revealForFragment(target, behavior)
     }
 
     const revealBeforeMatch = (event: Event) => {
