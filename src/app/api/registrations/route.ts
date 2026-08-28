@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { FaceitApiError, getFaceitTeam } from '@/lib/faceit'
 import { consumeRateLimit, getClientIp } from '@/lib/rate-limit'
-import { registrationClaimKey } from '@/lib/registration-claim'
+import { registrationClaimKeys } from '@/lib/registration-claim'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
 import { readFormDataWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
@@ -158,8 +158,14 @@ export async function POST(request: NextRequest) {
     const proofUpload = await validateUpload(formData.get('paymentProof'), proofMimeTypes, 'O comprovante de pagamento')
     if (typeof proofUpload === 'string') return errorResponse(proofUpload)
 
+    const activeClaims = registrationClaimKeys('Copa Ace 10', faceitTeam.teamId, teamNameNormalized)
     const existingTeam = await prisma.registration.findFirst({
-      where: { claimKey: registrationClaimKey('Copa Ace 10', faceitTeam.teamId) },
+      where: {
+        OR: [
+          { claimKey: activeClaims.claimKey },
+          { teamNameClaimKey: activeClaims.teamNameClaimKey },
+        ],
+      },
       select: { id: true },
     })
     if (existingTeam) {
@@ -184,7 +190,7 @@ export async function POST(request: NextRequest) {
       data: {
         id,
         protocol,
-        claimKey: registrationClaimKey('Copa Ace 10', faceitTeam.teamId),
+        ...activeClaims,
         teamFaceitUrl,
         faceitTeamId: faceitTeam.teamId,
         faceitTeamNickname: faceitTeam.nickname,
