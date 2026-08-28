@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateUser, generateToken } from '@/lib/auth'
+import {
+  ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+  ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+  adminLoginRateLimitIdentifiers,
+} from '@/lib/admin-login-rate-limit'
+import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { consumeRateLimit, getClientIp, resetRateLimit } from '@/lib/rate-limit'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
-
-const ADMIN_RATE_LIMIT = { limit: 3, windowMs: 15 * 60_000, blockMs: 60 * 60_000 }
 
 function rateLimitResponse(retryAfterSeconds: number) {
   return NextResponse.json(
@@ -13,6 +17,9 @@ function rateLimitResponse(retryAfterSeconds: number) {
 }
 
 export async function POST(request: NextRequest) {
+  const invalidOrigin = requireSameOrigin(request)
+  if (invalidOrigin) return invalidOrigin
+
   try {
     let body: { email?: unknown; password?: unknown } | null = null
     try {
@@ -25,16 +32,29 @@ export async function POST(request: NextRequest) {
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
     const password = typeof body?.password === 'string' ? body.password : ''
     const ip = getClientIp(request)
-    const emailKey = email || 'invalid-email'
+    const { emailKey, credentialKey } = adminLoginRateLimitIdentifiers(email, ip)
 
-    const [ipLimit, emailLimit] = await Promise.all([
+    const [ipLimit, credentialLimit, accountLimit] = await Promise.all([
       ip
-        ? consumeRateLimit({ scope: 'admin-login-ip', identifier: ip, ...ADMIN_RATE_LIMIT })
-        : Promise.resolve({ allowed: true, remaining: ADMIN_RATE_LIMIT.limit, retryAfterSeconds: 0 }),
-      consumeRateLimit({ scope: 'admin-login-email', identifier: emailKey, ...ADMIN_RATE_LIMIT }),
+        ? consumeRateLimit({ scope: 'admin-login-ip', identifier: ip, ...ADMIN_LOGIN_SOURCE_RATE_LIMIT })
+        : Promise.resolve({ allowed: true, remaining: ADMIN_LOGIN_SOURCE_RATE_LIMIT.limit, retryAfterSeconds: 0 }),
+      consumeRateLimit({
+        scope: 'admin-login-credential',
+        identifier: credentialKey,
+        ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+      }),
+      consumeRateLimit({
+        scope: 'admin-login-account',
+        identifier: emailKey,
+        ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+      }),
     ])
-    if (!ipLimit.allowed || !emailLimit.allowed) {
-      return rateLimitResponse(Math.max(ipLimit.retryAfterSeconds, emailLimit.retryAfterSeconds))
+    if (!ipLimit.allowed || !credentialLimit.allowed || !accountLimit.allowed) {
+      return rateLimitResponse(Math.max(
+        ipLimit.retryAfterSeconds,
+        credentialLimit.retryAfterSeconds,
+        accountLimit.retryAfterSeconds,
+      ))
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !password || password.length > 200) {
@@ -63,11 +83,12 @@ export async function POST(request: NextRequest) {
     const token = generateToken(user)
     await Promise.all([
       ...(ip ? [resetRateLimit('admin-login-ip', ip)] : []),
-      resetRateLimit('admin-login-email', emailKey),
+      resetRateLimit('admin-login-credential', credentialKey),
+      resetRateLimit('admin-login-account', emailKey),
     ])
 
     const response = NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
-    response.cookies.set('admin-token', token, {
+    response.cookies.set(adminCookieName(), token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

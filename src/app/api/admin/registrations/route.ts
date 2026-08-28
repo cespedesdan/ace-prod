@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { adminCookieName } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
 import { privateJson } from '@/lib/private-response'
 
 function isAdmin(request: NextRequest) {
-  const token = request.cookies.get('admin-token')?.value
+  const token = request.cookies.get(adminCookieName())?.value
   const payload = token ? verifyToken(token) : null
   return payload?.role === 'ADMIN'
 }

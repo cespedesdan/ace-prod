@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { FaceitApiError, getFaceitChampionship } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
 import { privateJson } from '@/lib/private-response'
@@ -10,7 +11,7 @@ import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 export const runtime = 'nodejs'
 
 function isAdmin(request: NextRequest) {
-  const token = request.cookies.get('admin-token')?.value
+  const token = request.cookies.get(adminCookieName())?.value
   return Boolean(token && verifyToken(token)?.role === 'ADMIN')
 }
 
@@ -69,6 +70,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const invalidOrigin = requireSameOrigin(request)
+  if (invalidOrigin) return invalidOrigin
   if (!isAdmin(request)) return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
 
   try {
@@ -139,6 +142,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const invalidOrigin = requireSameOrigin(request)
+  if (invalidOrigin) return invalidOrigin
   if (!isAdmin(request)) return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
 
   try {
