@@ -15,7 +15,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-1',
     title: 'Copa Ace 1',
-    logo: '/hall-of-fame/logos/copa-ace-1.png',
+    logo: '/hall-of-fame/logos/copa-ace-1.webp',
     champion: 'Kamía Orgánosi',
     runnerUp: 'Zebus UFTM',
     description: 'A primeira edição da Copa Ace marcou o início da tradição do campeonato.',
@@ -24,7 +24,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-2',
     title: 'Copa Ace 2',
-    logo: '/hall-of-fame/logos/copa-ace-2-5.png',
+    logo: '/hall-of-fame/logos/copa-ace-2-5.webp',
     champion: 'PoucoPapo',
     runnerUp: 'Wizard',
     description: 'A segunda edição consolidou a Copa Ace como um dos principais torneios da estrutura.',
@@ -33,7 +33,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-3',
     title: 'Copa Ace 3',
-    logo: '/hall-of-fame/logos/copa-ace-2-5.png',
+    logo: '/hall-of-fame/logos/copa-ace-2-5.webp',
     champion: 'WorkHard eSports',
     runnerUp: 'Wizard Gaming',
     description: 'A terceira edição trouxe mais competitividade e reforçou a relevância do torneio.',
@@ -42,7 +42,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-4',
     title: 'Copa Ace 4',
-    logo: '/hall-of-fame/logos/copa-ace-2-5.png',
+    logo: '/hall-of-fame/logos/copa-ace-2-5.webp',
     champion: 'Jaguares Astro',
     runnerUp: 'Brasa Gaming',
     description: 'Mais uma edição histórica, com uma disputa intensa entre os times do campeonato.',
@@ -51,7 +51,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-5',
     title: 'Copa Ace 5',
-    logo: '/hall-of-fame/logos/copa-ace-2-5.png',
+    logo: '/hall-of-fame/logos/copa-ace-2-5.webp',
     champion: 'Madness',
     runnerUp: 'Totale Gaming Academy',
     description: 'A quinta edição consolidou a Copa Ace como referência em performances e rivalidades.',
@@ -60,7 +60,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-6',
     title: 'Copa Ace 6',
-    logo: '/hall-of-fame/logos/copa-ace-6-7.png',
+    logo: '/hall-of-fame/logos/copa-ace-6-7.webp',
     champion: 'Blackhat',
     runnerUp: 'Barcelona de 2007',
     description: 'A sexta edição trouxe novos nomes e reforçou o espírito competitivo do evento.',
@@ -69,7 +69,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-7',
     title: 'Copa Ace 7',
-    logo: '/hall-of-fame/logos/copa-ace-6-7.png',
+    logo: '/hall-of-fame/logos/copa-ace-6-7.webp',
     date: '18 de fevereiro de 2025',
     champion: 'Chape e-Sports',
     runnerUp: 'Mystic',
@@ -79,7 +79,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-8',
     title: 'Copa Ace 8',
-    logo: '/hall-of-fame/logos/copa-ace-8.png',
+    logo: '/hall-of-fame/logos/copa-ace-8.webp',
     date: '26 de maio de 2025',
     champion: 'Chape e-Sports',
     runnerUp: "Don't Crash",
@@ -89,7 +89,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'ace-clutch',
     title: 'Ace Clutch 1',
-    logo: '/hall-of-fame/logos/ace-clutch.png',
+    logo: '/hall-of-fame/logos/ace-clutch.webp',
     date: '6 de setembro de 2025',
     champion: 'New Icons',
     runnerUp: 'AMIGOS DO SDR',
@@ -99,7 +99,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'ace-clutch-2',
     title: 'Ace Clutch 2',
-    logo: '/hall-of-fame/logos/ace-clutch.png',
+    logo: '/hall-of-fame/logos/ace-clutch.webp',
     date: '27 de setembro de 2025',
     champion: 'NOX CLAN',
     runnerUp: 'Last AuAu',
@@ -109,7 +109,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-9',
     title: 'Copa Ace 9',
-    logo: '/hall-of-fame/logos/copa-ace-9.png',
+    logo: '/hall-of-fame/logos/copa-ace-9.webp',
     date: '7 de novembro de 2025',
     champion: 'GodNation',
     runnerUp: 'Lamba Esports',
@@ -119,7 +119,7 @@ export const hallOfFameEditions: HallOfFameEdition[] = [
   {
     slug: 'copa-ace-10',
     title: 'Copa Ace 10',
-    logo: '/hall-of-fame/logos/copa-ace-10.png',
+    logo: '/hall-of-fame/logos/copa-ace-10.webp',
     date: '20 de agosto',
     champion: 'Em disputa',
     runnerUp: 'A definir',

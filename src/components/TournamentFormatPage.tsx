@@ -13,7 +13,7 @@ import type {
   TournamentArchive,
 } from '@/data/tournamentArchives'
 
-function TeamLogo({ team, size = 34 }: { team: ArchiveTeam; size?: number }) {
+function TeamLogo({ team, size = 34, priority = false }: { team: ArchiveTeam; size?: number; priority?: boolean }) {
   if (!team.logo) {
     return (
       <span className="grid shrink-0 place-items-center rounded-sm bg-slate-700 font-black text-white" style={{ width: size, height: size, fontSize: Math.max(9, size * 0.26) }}>
@@ -24,7 +24,7 @@ function TeamLogo({ team, size = 34 }: { team: ArchiveTeam; size?: number }) {
 
   return (
     <span className={`${team.darkLogo ? 'team-logo-surface-dark' : 'team-logo-surface'} relative block shrink-0 overflow-hidden rounded-sm`} style={{ width: size, height: size }}>
-      <Image src={team.logo} alt={`Logo ${team.name}`} fill sizes={`${size}px`} className="object-contain p-1" />
+      <Image src={team.logo} alt={`Logo ${team.name}`} fill sizes={`${size}px`} priority={priority} className="object-contain p-1" />
     </span>
   )
 }
@@ -83,7 +83,7 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
               <div className="absolute right-0 top-0 h-24 w-24 bg-orange-500/10 blur-2xl" />
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-400">{data.championLabel}</p>
               <div className="mt-3 flex items-center gap-5">
-                <div className="grid h-24 w-24 place-items-center bg-white p-3 shadow-xl"><TeamLogo team={data.champion} size={72} /></div>
+                <div className="grid h-24 w-24 place-items-center bg-white p-3 shadow-xl"><TeamLogo team={data.champion} size={72} priority /></div>
                 <div><Trophy className="mb-2 text-orange-400" size={24} /><h2 className="text-2xl font-black">{data.champion.name}</h2><p className="mt-1 text-sm text-slate-400">{data.championRun}</p></div>
               </div>
             </div>
@@ -134,7 +134,7 @@ function Facts({ data }: { data: TournamentArchive }) {
 
 function FinalStandings({ standings, teamCount }: { standings: Array<{ place: string; team: ArchiveTeam }>; teamCount: number }) {
   return (
-    <section id="classificacao" className="tournament-panel">
+    <section id="classificacao" className="deferred-render tournament-panel">
       <header className="tournament-panel-header flex items-center justify-between px-5 py-4">
         <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-400">Resultado oficial</p><h2 className="mt-1 text-xl font-black uppercase">Classificação final</h2></div>
         <span className="hidden text-xs font-bold text-slate-400 sm:block">{teamCount} participantes</span>
@@ -173,7 +173,7 @@ function ResultFooter({ data }: { data: TournamentArchive }) {
 function BracketLane({ title, eyebrow, subtitle, rounds, footer }: { title: string; eyebrow: string; subtitle: string; rounds: ArchiveRound[]; footer?: ReactNode }) {
   const columns = rounds.length >= 4 ? 'min-w-[1240px] grid-cols-4' : rounds.length === 3 ? 'min-w-[920px] grid-cols-3' : 'min-w-[620px] grid-cols-2'
   return (
-    <section className="tournament-panel">
+    <section className="deferred-render tournament-panel">
       <header className="tournament-panel-header flex flex-col justify-between gap-2 px-5 py-4 sm:flex-row sm:items-center">
         <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-400">{eyebrow}</p><h2 className="mt-1 text-xl font-black uppercase">{title}</h2></div>
         <span className="text-xs font-bold text-slate-400">{subtitle}</span>
@@ -197,7 +197,7 @@ export function GroupRoundRobinTournamentPage({ data }: { data: GroupRoundRobinA
   return (
     <TournamentShell data={data} tabs={[{ href: '#resumo', label: 'Resumo' }, { href: '#grupos', label: 'Fase de grupos' }, { href: '#mata-mata', label: 'Mata-mata' }]}>
       <Summary data={data} />
-      <section id="grupos">
+      <section id="grupos" className="deferred-render">
         <div className="mb-4 flex items-end justify-between gap-4"><div><p className="tournament-section-eyebrow">Primeira fase</p><h2 className="tournament-section-title">Fase de grupos</h2></div><span className="hidden text-xs font-bold text-slate-500 sm:block">{data.groupSubtitle}</span></div>
         <div className="grid gap-5 xl:grid-cols-2">
           {data.groups.map((group) => (
@@ -231,7 +231,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
   return (
     <TournamentShell data={data} tabs={[{ href: '#resumo', label: 'Resumo' }, { href: '#grupos', label: 'Fase de grupos' }, { href: '#mata-mata', label: 'Mata-mata' }]}>
       <Summary data={data} />
-      <section id="grupos">
+      <section id="grupos" className="deferred-render">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div><p className="tournament-section-eyebrow">Primeira fase</p><h2 className="tournament-section-title">Fase de grupos</h2></div>
           <span className="hidden text-xs font-bold text-slate-500 sm:block">{data.groupSubtitle}</span>
@@ -302,7 +302,7 @@ export function DoubleEliminationTournamentPage({ data }: { data: DoubleEliminat
       <div id="chaveamento" className="space-y-8">
         <BracketLane title="Chave superior" eyebrow="Dupla eliminação" subtitle={data.upperSubtitle} rounds={data.upperRounds} />
         <BracketLane title="Chave inferior" eyebrow="Dupla eliminação" subtitle={data.lowerSubtitle} rounds={data.lowerRounds} />
-        <section className="tournament-panel">
+        <section className="deferred-render tournament-panel">
           <header className="tournament-panel-header flex items-center justify-between px-5 py-4"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-400">Decisão do título</p><h2 className="mt-1 text-xl font-black uppercase">Grande final · MD3</h2></div><Trophy className="text-orange-400" size={26} /></header>
           <div className="grid gap-8 bg-slate-100 p-6 lg:grid-cols-[1fr_340px] lg:items-center"><div className="flex items-center gap-5"><div className="grid h-14 w-14 place-items-center bg-orange-500 text-white"><Medal size={28} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Resultado final</p><p className="mt-1 text-xl font-black text-slate-900">{data.resultText}</p></div></div><MatchCard match={data.grandFinal} /></div>
           <div className="flex flex-col justify-between gap-3 border-t border-slate-200 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center"><span>Placares e posições preservados conforme a chave oficial.</span><div className="flex flex-wrap gap-3 font-bold"><SourceLinks data={data} /></div></div>

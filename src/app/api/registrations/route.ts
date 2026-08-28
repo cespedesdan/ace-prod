@@ -6,8 +6,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { FaceitApiError, getFaceitTeam } from '@/lib/faceit'
 import { consumeRateLimit, getClientIp } from '@/lib/rate-limit'
+import { registrationClaimKey } from '@/lib/registration-claim'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
-import { normalizeRegistrationImage } from '@/lib/registration-upload'
+import { normalizeRegistrationImage, NormalizedImageTooLargeError } from '@/lib/registration-upload'
 import { readFormDataWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
@@ -65,7 +66,10 @@ async function validateUpload(value: FormDataEntryValue | null, allowedTypes: Re
       ? buffer
       : await normalizeRegistrationImage(buffer, extension)
     return { file: value, extension, buffer: normalizedBuffer }
-  } catch {
+  } catch (error) {
+    if (error instanceof NormalizedImageTooLargeError) {
+      return `${label} deve ter no máximo 10 MB após o processamento.`
+    }
     return 'Não foi possível validar o conteúdo de ' + label.toLowerCase() + '.'
   }
 }
@@ -166,10 +170,7 @@ export async function POST(request: NextRequest) {
     if (typeof proofUpload === 'string') return errorResponse(proofUpload)
 
     const existingTeam = await prisma.registration.findFirst({
-      where: {
-        tournament: 'Copa Ace 10',
-        OR: [{ teamNameNormalized }, { faceitTeamId: faceitTeam.teamId }],
-      },
+      where: { claimKey: registrationClaimKey('Copa Ace 10', faceitTeam.teamId) },
       select: { id: true },
     })
     if (existingTeam) {
@@ -194,6 +195,7 @@ export async function POST(request: NextRequest) {
       data: {
         id,
         protocol,
+        claimKey: registrationClaimKey('Copa Ace 10', faceitTeam.teamId),
         teamFaceitUrl,
         faceitTeamId: faceitTeam.teamId,
         faceitTeamNickname: faceitTeam.nickname,

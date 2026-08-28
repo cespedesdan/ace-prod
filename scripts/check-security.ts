@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import sharp from 'sharp'
-import { normalizeRegistrationImage } from '../src/lib/registration-upload'
+import { normalizeRegistrationImage, NormalizedImageTooLargeError } from '../src/lib/registration-upload'
+import { MAX_REGISTRATION_FILE_SIZE } from '../src/lib/registration-shared'
+import { registrationClaimKey } from '../src/lib/registration-claim'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
@@ -9,6 +11,7 @@ import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parse
 import { parseYouTubeVideoId } from '../src/lib/youtube'
 
 const identifier = randomUUID()
+const claimTestIds: string[] = []
 
 async function main() {
   try {
@@ -49,6 +52,74 @@ async function main() {
     )
     assert.equal((await sharp(normalizedImage).metadata()).format, 'png')
     assert.equal(normalizedImage.includes(Buffer.from('untrusted-trailer')), false)
+
+    const noisyPixels = randomBytes(4_500 * 4_500 * 3)
+    const expandingImage = await sharp(noisyPixels, {
+      raw: { width: 4_500, height: 4_500, channels: 3 },
+    }).jpeg({ quality: 45 }).toBuffer()
+    assert.ok(expandingImage.length < MAX_REGISTRATION_FILE_SIZE)
+    await assert.rejects(
+      normalizeRegistrationImage(expandingImage, 'jpg'),
+      (error) => error instanceof NormalizedImageTooLargeError,
+    )
+
+    const redFrame = Buffer.alloc(2 * 2 * 3)
+    const blueFrame = Buffer.alloc(2 * 2 * 3)
+    for (let offset = 0; offset < redFrame.length; offset += 3) {
+      redFrame[offset] = 255
+      blueFrame[offset + 2] = 255
+    }
+    const animatedGif = await sharp(Buffer.concat([redFrame, blueFrame]), {
+      raw: { width: 2, height: 4, channels: 3, pageHeight: 2 },
+    }).gif({ loop: 0, delay: [100, 100] }).toBuffer()
+    const animatedWebp = await sharp(animatedGif, { animated: true }).webp().toBuffer()
+    await assert.rejects(
+      normalizeRegistrationImage(animatedWebp, 'webp'),
+      /Animated images are not supported/,
+    )
+
+    const oversizedPixelImage = await sharp({
+      create: { width: 5_001, height: 5_000, channels: 3, background: '#ff0000' },
+    }).jpeg({ quality: 10 }).toBuffer()
+    await assert.rejects(
+      normalizeRegistrationImage(oversizedPixelImage, 'jpg'),
+      /Input image exceeds pixel limit/,
+    )
+
+    const faceitClaimId = randomUUID()
+    const claimKey = registrationClaimKey('Copa Ace 10', faceitClaimId)
+    assert.equal(registrationClaimKey('Copa Ace 10', null, 'Legacy Team'), 'copa ace 10:name:legacy team')
+    const registrationData = (status: 'PENDING' | 'REJECTED', activeClaimKey: string | null) => {
+      const id = randomUUID()
+      claimTestIds.push(id)
+      return {
+        id,
+        protocol: 'SECURITY-' + id,
+        tournament: 'Copa Ace 10',
+        claimKey: activeClaimKey,
+        teamFaceitUrl: 'https://www.faceit.com/pt/teams/' + faceitClaimId,
+        faceitTeamId: faceitClaimId,
+        teamName: 'Security Test Team',
+        teamNameNormalized: 'security test team',
+        teamTag: 'SEC',
+        representativeName: 'Security Test',
+        representativeEmail: 'security@example.invalid',
+        representativePhone: '11999999999',
+        discoverySource: 'security-test',
+        logoPath: id + '/logo.png',
+        logoOriginalName: 'logo.png',
+        paymentProofPath: id + '/proof.png',
+        paymentProofOriginalName: 'proof.png',
+        status,
+      }
+    }
+    await prisma.registration.create({ data: registrationData('REJECTED', null) })
+    await prisma.registration.create({ data: registrationData('REJECTED', null) })
+    await prisma.registration.create({ data: registrationData('PENDING', claimKey) })
+    await assert.rejects(
+      prisma.registration.create({ data: registrationData('PENDING', claimKey) }),
+      (error: unknown) => error instanceof Error && 'code' in error && error.code === 'P2002',
+    )
 
     const faceitTeamId = '6204037c-30e6-408b-8aaa-dd8219860b4b'
     assert.equal(parseFaceitTeamId(`https://www.faceit.com/pt/teams/${faceitTeamId}/ace`), faceitTeamId)
@@ -102,6 +173,7 @@ async function main() {
 
     console.log('Security checks passed.')
   } finally {
+    await prisma.registration.deleteMany({ where: { id: { in: claimTestIds } } })
     await resetRateLimit('security-check', identifier)
     await prisma.$disconnect()
   }
