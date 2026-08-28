@@ -28,6 +28,21 @@ function cspReportRequest(body: string, headers: Record<string, string> = {}) {
   })
 }
 
+function proxiedCspReportRequest(body: string, headers: Record<string, string> = {}) {
+  return new NextRequest('http://127.0.0.1:8001/api/security/csp-report', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/csp-report',
+      Origin: cspReportOrigin,
+      'X-Forwarded-Host': 'aceprodutora.com.br',
+      'X-Forwarded-Proto': 'https',
+      'Sec-Fetch-Site': 'same-origin',
+      ...headers,
+    },
+    body,
+  })
+}
+
 async function checkCspReportCollector() {
   const legacyReport = JSON.stringify({
     'csp-report': {
@@ -61,6 +76,25 @@ async function checkCspReportCollector() {
       Origin: 'https://attacker.example',
       'Sec-Fetch-Site': 'cross-site',
     }))).status, 403)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport, {
+      Origin: 'https://attacker.example',
+      'Sec-Fetch-Site': 'cross-site',
+    }))).status, 403)
+    assert.equal((await collectCspReport(cspReportRequest(legacyReport, {
+      'X-Forwarded-Host': 'aceprodutora.com.br',
+    }))).status, 403)
+    assert.equal((await collectCspReport(cspReportRequest(legacyReport, {
+      'X-Forwarded-Proto': 'https',
+    }))).status, 403)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport, {
+      'X-Forwarded-Host': 'aceprodutora.com.br, attacker.example',
+    }))).status, 403)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport, {
+      'X-Forwarded-Host': 'aceprodutora.com.br/path',
+    }))).status, 403)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport, {
+      'X-Forwarded-Proto': 'https, http',
+    }))).status, 403)
     assert.equal((await collectCspReport(cspReportRequest(legacyReport, {
       'Content-Type': 'application/json',
     }))).status, 415)
@@ -70,20 +104,7 @@ async function checkCspReportCollector() {
     assert.equal((await collectCspReport(cspReportRequest('{'))).status, 400)
 
     assert.equal((await collectCspReport(cspReportRequest(legacyReport))).status, 204)
-    assert.equal((await collectCspReport(new NextRequest(
-      'http://127.0.0.1:8001/api/security/csp-report',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/csp-report',
-          Origin: cspReportOrigin,
-          Host: 'aceprodutora.com.br',
-          'X-Forwarded-Proto': 'https',
-          'Sec-Fetch-Site': 'same-origin',
-        },
-        body: legacyReport,
-      },
-    ))).status, 204)
+    assert.equal((await collectCspReport(proxiedCspReportRequest(legacyReport))).status, 204)
     assert.equal((await collectCspReport(cspReportRequest(reportingApiReport, {
       'Content-Type': 'application/reports+json',
     }))).status, 204)

@@ -110,6 +110,31 @@ export function isSupportedCspReportContentType(value: string | null) {
   return contentType === 'application/csp-report' || contentType === 'application/reports+json'
 }
 
+function requestOrigin(request: Request) {
+  const forwardedProtocol = request.headers.get('x-forwarded-proto')
+  const forwardedHost = request.headers.get('x-forwarded-host')
+
+  if (!forwardedProtocol && !forwardedHost) return new URL(request.url).origin
+  if (
+    !forwardedProtocol ||
+    !forwardedHost ||
+    forwardedProtocol.includes(',') ||
+    forwardedHost.includes(',')
+  ) return null
+
+  const protocol = forwardedProtocol.trim().toLowerCase()
+  const host = forwardedHost.trim()
+  if ((protocol !== 'http' && protocol !== 'https') || !host) return null
+
+  try {
+    const url = new URL(`${protocol}://${host}`)
+    if (url.username || url.password || url.pathname !== '/' || url.search || url.hash) return null
+    return url.origin
+  } catch {
+    return null
+  }
+}
+
 export function cspReportOrigin(request: Request) {
   const origin = request.headers.get('origin')
   if (!origin) return null
@@ -124,18 +149,8 @@ export function cspReportOrigin(request: Request) {
   const fetchSite = request.headers.get('sec-fetch-site')
   if (fetchSite && fetchSite !== 'same-origin') return null
 
-  const acceptedOrigins = new Set([new URL(request.url).origin])
-  const host = request.headers.get('host')
-  const forwardedProtocol = request.headers.get('x-forwarded-proto')?.split(',', 1)[0]?.trim()
-  if (host && (forwardedProtocol === 'http' || forwardedProtocol === 'https')) {
-    try {
-      acceptedOrigins.add(new URL(`${forwardedProtocol}://${host}`).origin)
-    } catch {
-      return null
-    }
-  }
-
-  return acceptedOrigins.has(origin) ? origin : null
+  const expectedOrigin = requestOrigin(request)
+  return expectedOrigin === origin ? origin : null
 }
 
 export function sanitizeCspReports(payload: unknown, expectedOrigin: string): SanitizedCspReport[] {
