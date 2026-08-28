@@ -6,7 +6,7 @@ import { CopaAce10Schedule } from '@/components/CopaAce10Schedule'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Agenda Copa Ace 10 | Ace Produtora',

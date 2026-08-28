@@ -18,19 +18,19 @@ export const aceClutch1FaceitUrl = 'https://www.faceit.com/en/championship/df04d
 const roomUrl = (id: string) => `https://www.faceit.com/en/cs2/room/${id}`
 
 export const aceClutch1Teams = {
-  lunatics: { name: 'Lunatics', shortName: 'LUN', logo: '/hall-of-fame/ace-clutch-1/lunatics.png' },
-  galorynhos: { name: 'GALORYNHOS', shortName: 'GAL', logo: '/hall-of-fame/ace-clutch-1/galorynhos.png' },
-  godsDestiny: { name: 'Gods Destiny', shortName: 'GD', logo: '/hall-of-fame/ace-clutch-1/gods-destiny.png' },
-  xiiiServers: { name: 'XIII SERVERS', shortName: 'XIII', logo: '/hall-of-fame/ace-clutch-1/xiii-servers.jpg' },
-  ufmg: { name: 'UFMG Red Fenix', shortName: 'UFMG', logo: '/hall-of-fame/ace-clutch-1/ufmg-red-fenix.png' },
-  scrouls: { name: 'Scrouls', shortName: 'SCR', logo: '/hall-of-fame/ace-clutch-1/scrouls.png' },
-  spaceKings: { name: 'Space Kings', shortName: 'SK', logo: '/hall-of-fame/ace-clutch-1/space-kings.png' },
-  newIcons: { name: 'New Icons', shortName: 'NI', logo: '/hall-of-fame/ace-clutch-1/new-icons.png' },
-  nightfury: { name: 'NIGHTFURY', shortName: 'NF', logo: '/hall-of-fame/ace-clutch-1/nightfury.png' },
-  pedra: { name: 'PEDRA', shortName: 'PDR', logo: '/hall-of-fame/ace-clutch-1/pedra.png' },
+  lunatics: { name: 'Lunatics', shortName: 'LUN', logo: '/hall-of-fame/ace-clutch-1/lunatics.webp' },
+  galorynhos: { name: 'GALORYNHOS', shortName: 'GAL', logo: '/hall-of-fame/ace-clutch-1/galorynhos.webp' },
+  godsDestiny: { name: 'Gods Destiny', shortName: 'GD', logo: '/hall-of-fame/ace-clutch-1/gods-destiny.webp' },
+  xiiiServers: { name: 'XIII SERVERS', shortName: 'XIII', logo: '/hall-of-fame/ace-clutch-1/xiii-servers.webp' },
+  ufmg: { name: 'UFMG Red Fenix', shortName: 'UFMG', logo: '/hall-of-fame/ace-clutch-1/ufmg-red-fenix.webp' },
+  scrouls: { name: 'Scrouls', shortName: 'SCR', logo: '/hall-of-fame/ace-clutch-1/scrouls.webp' },
+  spaceKings: { name: 'Space Kings', shortName: 'SK', logo: '/hall-of-fame/ace-clutch-1/space-kings.webp' },
+  newIcons: { name: 'New Icons', shortName: 'NI', logo: '/hall-of-fame/ace-clutch-1/new-icons.webp' },
+  nightfury: { name: 'NIGHTFURY', shortName: 'NF', logo: '/hall-of-fame/ace-clutch-1/nightfury.webp' },
+  pedra: { name: 'PEDRA', shortName: 'PDR', logo: '/hall-of-fame/ace-clutch-1/pedra.webp' },
   amigos: { name: 'AMIGOS DO SDR', shortName: 'SDR' },
-  dragonsWhite: { name: 'Dragons White', shortName: 'DW', logo: '/hall-of-fame/ace-clutch-1/dragons-white.png' },
-  azureBears: { name: 'Azure Bears', shortName: 'AB', logo: '/hall-of-fame/ace-clutch-1/azure-bears.png' },
+  dragonsWhite: { name: 'Dragons White', shortName: 'DW', logo: '/hall-of-fame/ace-clutch-1/dragons-white.webp' },
+  azureBears: { name: 'Azure Bears', shortName: 'AB', logo: '/hall-of-fame/ace-clutch-1/azure-bears.webp' },
   bye: { name: 'Bye', shortName: '—' },
 } satisfies Record<string, AceClutch1Team>
 

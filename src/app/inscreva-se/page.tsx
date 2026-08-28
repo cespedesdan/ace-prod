@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import RegistrationForm from '@/components/RegistrationForm'
+import RegistrationClosed from '@/components/RegistrationClosed'
 
 export const metadata: Metadata = {
-  title: 'Inscreva-se na Copa Ace 10 | Ace Produtora',
-  description: 'Inscrição oficial de equipes para a décima edição da Copa Ace.',
+  title: 'Inscrições encerradas — Copa Ace 10 | Ace Produtora',
+  description: 'Informações da décima edição da Copa Ace após o encerramento das inscrições.',
 }
 
 export default function RegistrationPage() {
-  return <RegistrationForm />
+  return <RegistrationClosed />
 }
