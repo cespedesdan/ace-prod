@@ -1,3 +1,4 @@
+@import url("/copa-ace-10/deferred-v1.css");
 @reference "../theme.css";
 @import "tailwindcss/utilities" source(none);
 @source "./page.tsx";

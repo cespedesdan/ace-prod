@@ -4,79 +4,37 @@ import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
 const deferredSelector = '.deferred-render, .deferred-render-compact'
-const stylesheetLoads = new Map<string, Promise<void>>()
-
-function loadStylesheet(href: string) {
-  const pending = stylesheetLoads.get(href)
-  if (pending) return pending
-
-  const existing = document.querySelector<HTMLLinkElement>(`link[rel="stylesheet"][href="${CSS.escape(href)}"]`)
-  if (existing?.sheet) return Promise.resolve()
-
-  const link = existing ?? document.createElement('link')
-  const load = new Promise<void>((resolve) => {
-    link.addEventListener('load', () => resolve(), { once: true })
-    link.addEventListener('error', () => resolve(), { once: true })
-  })
-  stylesheetLoads.set(href, load)
-
-  if (!existing) {
-    link.rel = 'stylesheet'
-    link.href = href
-    document.head.appendChild(link)
-  }
-
-  return load
-}
 
 export function ClientPerformance() {
   const pathname = usePathname()
 
   useEffect(() => {
     const sections = document.querySelectorAll<HTMLElement>(deferredSelector)
-    const stylesheets = new Set<string>()
-    sections.forEach((section) => {
-      const stylesheet = section.closest<HTMLElement>('[data-deferred-stylesheet]')?.dataset.deferredStylesheet
-      if (stylesheet) stylesheets.add(stylesheet)
-    })
-
     if (!('IntersectionObserver' in window)) {
-      let cancelled = false
-      void Promise.all([...stylesheets].map(loadStylesheet)).then(() => {
-        if (cancelled) return
-        sections.forEach((section) => {
-          section.dataset.renderVisible = 'true'
-          section.style.contentVisibility = 'visible'
-        })
+      sections.forEach((section) => {
+        section.dataset.renderVisible = 'true'
+        section.style.contentVisibility = 'visible'
       })
-      return () => { cancelled = true }
+      return
     }
 
     let observer: IntersectionObserver | null = null
     const revealSection = (section: HTMLElement) => {
       observer?.unobserve(section)
-      const stylesheet = section.closest<HTMLElement>('[data-deferred-stylesheet]')?.dataset.deferredStylesheet
-      const reveal = () => { section.dataset.renderVisible = 'true' }
-      if (!stylesheet) {
-        reveal()
-        return Promise.resolve()
-      }
-      return loadStylesheet(stylesheet).then(reveal)
+      section.dataset.renderVisible = 'true'
     }
 
     const revealForFragment = (target: HTMLElement, behavior: ScrollBehavior | 'instant') => {
-      void Promise.all([...stylesheets].map(loadStylesheet)).then(() => {
-        // Materialize preceding containers so the target's final position is
-        // stable, while native lazy loading keeps unrelated images deferred.
-        sections.forEach((section) => { section.style.contentVisibility = 'visible' })
-        const targetSection = target.closest<HTMLElement>(deferredSelector)
-        if (targetSection) {
-          observer?.unobserve(targetSection)
-          targetSection.dataset.renderVisible = 'true'
-        }
-        void document.documentElement.offsetHeight
-        requestAnimationFrame(() => target.scrollIntoView({ behavior: behavior as ScrollBehavior, block: 'start' }))
-      })
+      // Materialize preceding containers so the target's final position is
+      // stable, while native lazy loading keeps unrelated images deferred.
+      sections.forEach((section) => { section.style.contentVisibility = 'visible' })
+      const targetSection = target.closest<HTMLElement>(deferredSelector)
+      if (targetSection) {
+        observer?.unobserve(targetSection)
+        targetSection.dataset.renderVisible = 'true'
+      }
+      void document.documentElement.offsetHeight
+      requestAnimationFrame(() => target.scrollIntoView({ behavior: behavior as ScrollBehavior, block: 'start' }))
     }
 
     const navigateToFragment = (event: MouseEvent) => {
@@ -123,7 +81,7 @@ export function ClientPerformance() {
     document.addEventListener('selectionchange', revealSelectedMatch)
     observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
-        if (entry.isIntersecting) void revealSection(entry.target as HTMLElement)
+        if (entry.isIntersecting) revealSection(entry.target as HTMLElement)
       }
     }, { rootMargin: '100px 0px' })
     sections.forEach((section) => observer?.observe(section))
