@@ -43,10 +43,14 @@ JWT_SECRET=CHAVE_ALEATORIA_COM_PELO_MENOS_32_CARACTERES
 ADMIN_EMAIL=EMAIL_PRIVADO_DO_ADMINISTRADOR
 ADMIN_PASSWORD=
 FACEIT_API_KEY=CHAVE_PRIVADA_DA_FACEIT
+FACEIT_OAUTH_CLIENT_ID=CLIENT_ID_DA_FACEIT
+FACEIT_OAUTH_CLIENT_SECRET=CLIENT_SECRET_DA_FACEIT
+FACEIT_OAUTH_REDIRECT_URI=https://aceprodutora.com.br/api/faceit/ownership/callback
+FACEIT_OAUTH_COOKIE_SECRET=OUTRA_CHAVE_ALEATORIA_COM_PELO_MENOS_32_CARACTERES
 TRUST_PROXY=true
 ```
 
-`TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. A chave FACEIT nunca deve usar o prefixo `NEXT_PUBLIC_`.
+Crie um cliente OAuth2 no FACEIT App Studio com a mesma URL de retorno configurada acima. O formulário usa Authorization Code com PKCE e somente aceita a inscrição quando a conta autenticada ainda é a líder do time informado. `TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. As chaves FACEIT nunca devem usar o prefixo `NEXT_PUBLIC_`.
 
 ## 2. Instalar e preparar o banco
 
@@ -118,7 +122,7 @@ sudo systemctl reload caddy
 sudo systemctl status caddy --no-pager
 ```
 
-O Caddyfile inclui HTTPS automático, redirecionamento HTTP, compressão, limite de 23 MiB, HSTS e proxy para `127.0.0.1:8001`.
+O Caddyfile inclui HTTPS automático, redireciona todo acesso de `www.aceprodutora.com.br` para o domínio raiz, aplica compressão, limite de 23 MiB, HSTS e proxy para `127.0.0.1:8001`. O domínio raiz canônico mantém os cookies `__Host-` do OAuth FACEIT no mesmo host do início ao retorno da autenticação.
 
 Teste externamente:
 
@@ -128,10 +132,13 @@ curl -I https://aceprodutora.com.br
 curl -I https://www.aceprodutora.com.br
 ```
 
+O último comando deve responder com redirecionamento permanente para a mesma rota e query string em `https://aceprodutora.com.br`.
+
 ## Proteções ativas
 
 - Prisma sem SQL bruto nas rotas de inscrição e administração.
 - Chave FACEIT utilizada somente no servidor.
+- Prova de controle do time por OAuth2 da FACEIT, vinculada à conta líder e válida por 15 minutos.
 - Consultas públicas à FACEIT limitadas por IP em produção.
 - Elencos e campeonatos armazenados como snapshots, com sincronização manual.
 - Corpo das inscrições limitado a 22 MiB e arquivos individuais a 10 MiB.

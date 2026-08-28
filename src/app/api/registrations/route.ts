@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { FaceitApiError, getFaceitTeam } from '@/lib/faceit'
+import { getFaceitCookieOptions, getFaceitOAuthCookieNames, verifyFaceitOwnershipProof } from '@/lib/faceit-ownership'
 import { consumeRateLimit, getClientIp } from '@/lib/rate-limit'
 import { registrationClaimKey } from '@/lib/registration-claim'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
@@ -74,6 +75,13 @@ export async function POST(request: NextRequest) {
   let registrationDirectory = ''
 
   try {
+    const ownershipCookieName = getFaceitOAuthCookieNames().ownership
+    const ownershipToken = request.cookies.get(ownershipCookieName)?.value
+    const ownership = ownershipToken ? verifyFaceitOwnershipProof(ownershipToken) : null
+    if (!ownership) {
+      return errorResponse('Confirme o time entrando com a conta FACEIT do líder antes de enviar a inscrição.', 403)
+    }
+
     const contentType = request.headers.get('content-type') || ''
     if (!contentType.includes('multipart/form-data')) {
       return errorResponse('Envie os dados pelo formulário de inscrição.')
@@ -128,6 +136,11 @@ export async function POST(request: NextRequest) {
     }
     if (faceitTeam.members.length < 5) {
       return errorResponse('O time precisa ter pelo menos cinco membros na FACEIT.')
+    }
+    const currentLeader = faceitTeam.members.find((member) => member.isLeader)
+    if (ownership.teamId !== faceitTeam.teamId || !currentLeader ||
+        ownership.playerId !== currentLeader.playerId.toLowerCase()) {
+      return errorResponse('A confirmação FACEIT não corresponde ao líder atual deste time.', 403)
     }
     if (teamTag.length < 2 || teamTag.length > 10) {
       return errorResponse('A sigla deve ter entre 2 e 10 caracteres.')
@@ -219,11 +232,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       protocol,
       message: 'Inscrição enviada com sucesso.',
     })
+    response.cookies.set(ownershipCookieName, '', getFaceitCookieOptions(0))
+    return response
   } catch (error) {
     if (registrationDirectory) {
       await rm(registrationDirectory, { recursive: true, force: true }).catch(() => undefined)
