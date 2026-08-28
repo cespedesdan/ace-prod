@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { CalendarDays, ChevronLeft, ExternalLink, Gamepad2, Medal, ShieldCheck, Swords, Trophy, Users } from 'lucide-react'
+import { IntentLink } from './IntentLink'
 import type {
   ArchiveMatch,
   ArchiveRound,
@@ -13,7 +13,12 @@ import type {
   TournamentArchive,
 } from '@/data/tournamentArchives'
 
-function TeamLogo({ team, size = 34, priority = false }: { team: ArchiveTeam; size?: number; priority?: boolean }) {
+function optimizedLogoSrc(src: string, size: number) {
+  const width = size <= 32 ? 64 : size <= 48 ? 96 : size <= 64 ? 128 : 256
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=60`
+}
+
+function TeamLogo({ team, size = 34, deferred = false }: { team: ArchiveTeam; size?: number; deferred?: boolean }) {
   if (!team.logo) {
     return (
       <span className="grid shrink-0 place-items-center rounded-sm bg-slate-700 font-black text-white" style={{ width: size, height: size, fontSize: Math.max(9, size * 0.26) }}>
@@ -22,9 +27,18 @@ function TeamLogo({ team, size = 34, priority = false }: { team: ArchiveTeam; si
     )
   }
 
+  if (deferred) {
+    return (
+      <span className={`${team.darkLogo ? 'team-logo-surface-dark' : 'team-logo-surface'} relative block shrink-0 overflow-hidden rounded-sm`} style={{ width: size, height: size }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={optimizedLogoSrc(team.logo, size)} alt={`Logo ${team.name}`} width={size} height={size} decoding="async" loading="lazy" className="h-full w-full object-contain p-1" />
+      </span>
+    )
+  }
+
   return (
     <span className={`${team.darkLogo ? 'team-logo-surface-dark' : 'team-logo-surface'} relative block shrink-0 overflow-hidden rounded-sm`} style={{ width: size, height: size }}>
-      <Image src={team.logo} alt={`Logo ${team.name}`} fill sizes={`${size}px`} priority={priority} className="object-contain p-1" />
+      <Image src={team.logo} alt={`Logo ${team.name}`} width={size} height={size} quality={60} className="h-full w-full object-contain p-1" />
     </span>
   )
 }
@@ -37,16 +51,16 @@ function MatchCard({ match }: { match: ArchiveMatch }) {
       {(match.label || match.bestOf) && (
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
           <span>{match.label || 'Confronto'}</span>
-          {match.bestOf && <span className="inline-flex items-center gap-1">MD{match.bestOf}{match.href && <ExternalLink size={10} />}</span>}
+          {match.bestOf && <span>MD{match.bestOf}{match.href && <span aria-hidden="true"> ↗</span>}</span>}
         </div>
       )}
       <div className={`flex items-center gap-2 px-3 py-2.5 ${aWon ? 'bg-orange-50' : ''}`}>
-        <TeamLogo team={match.teamA} size={25} />
+        <TeamLogo team={match.teamA} size={25} deferred />
         <span className={`min-w-0 flex-1 truncate text-sm ${aWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamA.name}</span>
         <span className={`text-base font-black tabular-nums ${aWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreA}</span>
       </div>
       <div className={`flex items-center gap-2 border-t border-slate-100 px-3 py-2.5 ${bWon ? 'bg-orange-50' : ''}`}>
-        <TeamLogo team={match.teamB} size={25} />
+        <TeamLogo team={match.teamB} size={25} deferred />
         <span className={`min-w-0 flex-1 truncate text-sm ${bWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamB.name}</span>
         <span className={`text-base font-black tabular-nums ${bWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreB}</span>
       </div>
@@ -63,15 +77,15 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
     <main className="tournament-page">
       <section className="tournament-hero">
         <div className="tournament-container py-6">
-          <Link href="/hall-of-fame" className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">
+          <IntentLink href="/hall-of-fame" className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">
             <ChevronLeft size={16} /> Hall da Fama
-          </Link>
+          </IntentLink>
 
           <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div>
               <div className="tournament-kicker mb-3 flex items-center gap-2"><span className="h-2 w-2 bg-orange-500" /> Arquivo oficial · {data.edition}</div>
               <h1 className="text-4xl font-black uppercase tracking-tight sm:text-6xl">{data.title}</h1>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-300">{data.description}</p>
+              <p className="lcp-text mt-4 max-w-2xl text-base leading-relaxed text-slate-300">{data.description}</p>
               <div className="mt-7 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-300">
                 <span className="flex items-center gap-2"><CalendarDays size={16} className="text-orange-400" /> {data.date}</span>
                 <span className="flex items-center gap-2"><Gamepad2 size={16} className="text-orange-400" /> Counter-Strike 2</span>
@@ -80,10 +94,10 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
             </div>
 
             <div className="relative overflow-hidden border border-white/10 bg-white/5 p-5">
-              <div className="absolute right-0 top-0 h-24 w-24 bg-orange-500/10 blur-2xl" />
+              <div className="absolute right-0 top-0 h-24 w-24 bg-[radial-gradient(circle,rgb(249_115_22_/_16%),transparent_70%)]" />
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-400">{data.championLabel}</p>
               <div className="mt-3 flex items-center gap-5">
-                <div className="grid h-24 w-24 place-items-center bg-white p-3 shadow-xl"><TeamLogo team={data.champion} size={72} priority /></div>
+                <div className="grid h-24 w-24 place-items-center bg-white p-3 shadow-xl"><TeamLogo team={data.champion} size={72} /></div>
                 <div><Trophy className="mb-2 text-orange-400" size={24} /><h2 className="text-2xl font-black">{data.champion.name}</h2><p className="mt-1 text-sm text-slate-400">{data.championRun}</p></div>
               </div>
             </div>
@@ -102,10 +116,10 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
 
 function Summary({ data }: { data: TournamentArchive }) {
   return (
-    <section id="resumo" className="grid gap-4 md:grid-cols-4">
+    <section id="resumo" className="deferred-render grid gap-4 md:grid-cols-4">
       {data.summary.map((item) => (
         <article key={`${item.place}-${item.team.name}`} className="tournament-stat-card">
-          <div className="mb-4 flex items-start justify-between"><TeamLogo team={item.team} size={52} /><span className="text-2xl font-black text-slate-300">{item.place}</span></div>
+          <div className="mb-4 flex items-start justify-between"><TeamLogo team={item.team} size={52} deferred /><span className="text-2xl font-black text-slate-300">{item.place}</span></div>
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">{item.label}</p>
           <h3 className="mt-1 font-black text-slate-900">{item.team.name}</h3>
         </article>
@@ -143,7 +157,7 @@ function FinalStandings({ standings, teamCount }: { standings: Array<{ place: st
         {standings.map((standing) => (
           <div key={`${standing.place}-${standing.team.name}`} className="flex items-center gap-4 bg-white p-4">
             <span className="w-16 text-center text-base font-black text-orange-600">{standing.place}</span>
-            <TeamLogo team={standing.team} size={40} />
+            <TeamLogo team={standing.team} size={40} deferred />
             <span className="font-black text-slate-900">{standing.team.name}</span>
           </div>
         ))}
@@ -210,7 +224,7 @@ export function GroupRoundRobinTournamentPage({ data }: { data: GroupRoundRobinA
                     {group.standings.map((standing) => (
                       <tr key={standing.team.name} className={standing.qualified ? 'bg-orange-50/60' : ''}>
                         <td className="relative px-3 py-3 text-center font-black text-slate-500">{standing.qualified && <span className="absolute inset-y-0 left-0 w-1 bg-orange-500" />}{standing.position}</td>
-                        <td className="px-3 py-3"><div className="flex items-center gap-3"><TeamLogo team={standing.team} size={30} /><span className="font-bold text-slate-800">{standing.team.name}</span>{standing.qualified && <span className="ml-auto text-[9px] font-black uppercase text-orange-600">Classificado</span>}</div></td>
+                        <td className="px-3 py-3"><div className="flex items-center gap-3"><TeamLogo team={standing.team} size={30} deferred /><span className="font-bold text-slate-800">{standing.team.name}</span>{standing.qualified && <span className="ml-auto text-[9px] font-black uppercase text-orange-600">Classificado</span>}</div></td>
                         <td className="px-3 py-3 text-center font-bold tabular-nums text-slate-700">{standing.record}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.wins}</td>
                         <td className={`px-3 py-3 text-center font-bold tabular-nums ${standing.roundDiff > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{standing.roundDiff > 0 ? '+' : ''}{standing.roundDiff}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.rounds ?? '—'}</td>
                       </tr>
@@ -231,7 +245,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
   return (
     <TournamentShell data={data} tabs={[{ href: '#resumo', label: 'Resumo' }, { href: '#grupos', label: 'Fase de grupos' }, { href: '#mata-mata', label: 'Mata-mata' }]}>
       <Summary data={data} />
-      <section id="grupos" className="deferred-render">
+      <section id="grupos" className="deferred-render" style={{ containIntrinsicSize: 'auto 4590px' }}>
         <div className="mb-4 flex items-end justify-between gap-4">
           <div><p className="tournament-section-eyebrow">Primeira fase</p><h2 className="tournament-section-title">Fase de grupos</h2></div>
           <span className="hidden text-xs font-bold text-slate-500 sm:block">{data.groupSubtitle}</span>
@@ -271,7 +285,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
                   <div className="grid gap-3 sm:grid-cols-2">
                     {group.qualifiers.map((team, index) => (
                       <div key={team.name} className="flex items-center gap-3 border border-slate-200 bg-white p-3">
-                        <span className="text-xs font-black text-orange-600">{index + 1}º</span><TeamLogo team={team} size={32} /><span className="min-w-0 truncate text-sm font-black text-slate-900">{team.name}</span>
+                        <span className="text-xs font-black text-orange-600">{index + 1}º</span><TeamLogo team={team} size={32} deferred /><span className="min-w-0 truncate text-sm font-black text-slate-900">{team.name}</span>
                       </div>
                     ))}
                   </div>

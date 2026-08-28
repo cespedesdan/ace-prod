@@ -25,7 +25,7 @@ const phases = [
 
 export function CopaAce10Schedule() {
   return (
-    <section id="cronograma" className="deferred-render tournament-panel">
+    <section id="cronograma" className="tournament-panel">
       <header className="tournament-panel-header flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
         <div>
           <p className="tournament-kicker">Copa ACE 10</p>

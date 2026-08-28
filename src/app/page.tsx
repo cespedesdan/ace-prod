@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import './home.css'
 import { Hero } from '@/components/Hero'
 import { RankingTable } from '@/components/RankingTable'
 import { YouTubeLivePlayer } from '@/components/YouTubeLivePlayer'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
+import { publicLiveStreamId, publicTournament } from '@/lib/public-content'
 
 export const revalidate = 60
 
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
 
 async function getFaceitStandings() {
   const championship = await prisma.faceitChampionship.findUnique({
-    where: { tournament: 'Copa Ace 10' },
+    where: { tournament: publicTournament },
     select: { teamsJson: true, matchesJson: true, syncedAt: true },
   })
   if (!championship) return null
@@ -36,11 +38,11 @@ async function getFaceitStandings() {
 export default async function HomePage() {
   const [championship, liveStream] = await Promise.all([
     getFaceitStandings(),
-    prisma.liveStream.findUnique({ where: { id: 'home' } }),
+    prisma.liveStream.findUnique({ where: { id: publicLiveStreamId } }),
   ])
 
   return (
-    <div className="min-h-screen">
+    <div className="home-page min-h-screen">
       <Hero />
       {liveStream?.visibleOnHome && (
         <section className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8" aria-labelledby="live-title">
@@ -56,7 +58,7 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="deferred-render mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 border-l-4 border-copa-cyan pl-5">
           <p className="brand-kicker mb-2">Competição atual</p>
           <h2 className="text-3xl font-bold uppercase text-white">Classificação Copa ACE 10</h2>

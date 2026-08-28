@@ -1,12 +1,9 @@
-'use client'
-
 import Image from 'next/image'
-import { CalendarClock, CalendarDays, CheckCircle2, ExternalLink, Gamepad2, Radio } from 'lucide-react'
-import { useState } from 'react'
+import { CalendarClock, CheckCircle2, Gamepad2, Radio } from 'lucide-react'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
+import { ScheduleFilters } from './ScheduleFilters'
 
 const firstRoundMatches = Array.from({ length: 8 }, (_, index) => index + 1)
-const roundOptions = [1, 2, 3, 4, 5]
 const finishedStatuses = new Set(['finished', 'cancelled'])
 const dayFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' })
 
@@ -24,13 +21,6 @@ const sections = {
   upcoming: { title: 'Próximas partidas', eyebrow: 'Em breve', icon: CalendarClock, empty: 'Nenhuma próxima partida publicada.' },
   finished: { title: 'Partidas finalizadas', eyebrow: 'Resultados', icon: CheckCircle2, empty: 'Nenhuma partida finalizada.' },
 } as const
-
-const filters: Array<{ value: ScheduleFilter; label: string }> = [
-  { value: 'all', label: 'Todas' },
-  { value: 'today', label: 'Hoje' },
-  { value: 'upcoming', label: 'Próximas' },
-  { value: 'finished', label: 'Finalizadas' },
-]
 
 function matchDate(timestamp: number | null) {
   return timestamp
@@ -73,17 +63,17 @@ function TeamLogo({ team }: { team?: FaceitMatch['teams'][number] }) {
   return (
     <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden border border-white/15 bg-[#100a15] text-xs font-black text-copa-cyan">
       {team?.avatarUrl
-        ? <Image src={team.avatarUrl} alt="" fill sizes="44px" className="object-contain p-1" />
+        ? <Image src={team.avatarUrl} alt="" width={44} height={44} className="h-full w-full object-contain p-1" />
         : team?.name.slice(0, 2).toUpperCase() || '?'}
     </span>
   )
 }
 
-function MatchCard({ match }: { match: FaceitMatch }) {
+function MatchCard({ match, bucket }: { match: FaceitMatch; bucket: Exclude<ScheduleFilter, 'all'> }) {
   const matchTeams = match.teams.length ? match.teams.slice(0, 2) : [undefined, undefined]
 
   return (
-    <article className="border bg-[#2a1b34] p-4 shadow-[0_0_0_1px_#806592,0_16px_34px_rgba(0,0,0,.35)]">
+    <article data-schedule-match data-bucket={bucket} data-round={match.round ?? ''} className="border bg-[#2a1b34] p-4 shadow-[0_0_0_1px_#806592,0_16px_34px_rgba(0,0,0,.35)]">
       <div className="flex items-center justify-between border-b border-white/15 pb-3">
         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-copa-cyan">
           {match.round !== null ? `Rodada ${match.round}` : 'Rodada a definir'}{match.group !== null ? ` · Grupo ${match.group}` : ''}
@@ -106,9 +96,9 @@ function MatchCard({ match }: { match: FaceitMatch }) {
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-white/15 pt-3 text-xs font-bold text-slate-300">
-        <time className="inline-flex items-center gap-1.5"><CalendarDays size={14} /> {matchDate(match.scheduledAt)}</time>
+        <time>{matchDate(match.scheduledAt)}</time>
         {match.faceitUrl
-          ? <a href={match.faceitUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-copa-cyan hover:underline">{statusLabel(match.status)} <ExternalLink size={12} /></a>
+          ? <a href={match.faceitUrl} target="_blank" rel="noreferrer" className="text-copa-cyan hover:underline">{statusLabel(match.status)} <span aria-hidden="true">↗</span></a>
           : <span>{statusLabel(match.status)}</span>}
       </div>
     </article>
@@ -119,7 +109,7 @@ function PlaceholderCards() {
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {firstRoundMatches.map((match) => (
-        <article key={match} className="border bg-[#2a1b34] p-4 shadow-[0_0_0_1px_#806592,0_16px_34px_rgba(0,0,0,.35)]">
+        <article key={match} data-schedule-placeholder data-bucket="upcoming" data-round="1" className="border bg-[#2a1b34] p-4 shadow-[0_0_0_1px_#806592,0_16px_34px_rgba(0,0,0,.35)]">
           <div className="flex items-center justify-between border-b border-white/15 pb-3"><p className="text-[10px] font-black uppercase tracking-[0.15em] text-copa-cyan">Rodada 1</p><span className="bg-cyan-400/10 px-2 py-1 text-[10px] font-black text-copa-cyan">MD1</span></div>
           <div className="flex items-center justify-between py-6 text-sm font-black text-slate-300"><span>A definir</span><span className="text-copa-cyan">VS</span><span>A definir</span></div>
           <div className="border-t border-white/15 pt-3 text-xs font-bold text-slate-300">Horário a definir · Jogo {match}</div>
@@ -130,11 +120,13 @@ function PlaceholderCards() {
 }
 
 export function ScheduleList({ championship }: { championship: ChampionshipSchedule }) {
-  const [filter, setFilter] = useState<ScheduleFilter>('all')
-  const [round, setRound] = useState('all')
-  const matches = (championship?.matches ?? []).filter((match) => round === 'all' || match.round === Number(round))
+  const matches = championship?.matches ?? []
   const organized = organizeSchedule(matches)
-  const visibleSections = (['today', 'upcoming', 'finished'] as const).filter((key) => filter === 'all' || filter === key)
+  const matchMeta = matches.length
+    ? (['today', 'upcoming', 'finished'] as const).flatMap((bucket) =>
+        organized[bucket].map((match) => ({ bucket, round: match.round })),
+      )
+    : firstRoundMatches.map(() => ({ bucket: 'upcoming' as const, round: 1 }))
 
   return (
     <section id="jogos" className="tournament-panel overflow-hidden">
@@ -146,37 +138,24 @@ export function ScheduleList({ championship }: { championship: ChampionshipSched
         </div>
       </header>
 
-      <div className="flex flex-col gap-3 border-b border-cyan-400/20 bg-[#170f1e] p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar partidas por período">
-          {filters.map((item) => {
-            const count = item.value === 'all' ? matches.length : organized[item.value].length
-            return <button key={item.value} type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)} className={`border px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] transition ${filter === item.value ? 'border-copa-cyan bg-copa-cyan text-[#1c1124]' : 'border-slate-500 text-slate-200 hover:border-copa-cyan hover:text-white'}`}>{item.label} <span className="ml-1 opacity-70">{count}</span></button>
-          })}
-        </div>
-        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
-          Rodada
-          <select value={round} onChange={(event) => setRound(event.target.value)} className="border border-white/15 bg-[#21152a] px-3 py-2 text-xs font-bold text-white outline-none focus:border-copa-cyan">
-            <option value="all">Todas (1–5)</option>
-            {roundOptions.map((value) => <option key={value} value={value}>Rodada {value}</option>)}
-          </select>
-        </label>
-      </div>
+      <ScheduleFilters matches={matchMeta} />
 
-      {visibleSections.map((key) => {
+      {(['today', 'upcoming', 'finished'] as const).map((key) => {
         const section = sections[key]
         const Icon = section.icon
         const sectionMatches = organized[key]
         return (
-          <section key={key} className="deferred-render border-b border-cyan-400/15 bg-[#100a15]/60 p-4 last:border-b-0 sm:p-5" aria-labelledby={`schedule-${key}`}>
+          <section key={key} data-schedule-section={key} className="deferred-render border-b border-cyan-400/15 bg-[#100a15]/60 p-4 last:border-b-0 sm:p-5" aria-labelledby={`schedule-${key}`}>
             <header className="mb-4 flex items-end justify-between gap-3">
               <div><p className="tournament-section-eyebrow inline-flex items-center gap-2"><Icon size={14} /> {section.eyebrow}</p><h3 id={`schedule-${key}`} className="mt-1 text-lg font-black uppercase text-white">{section.title}</h3></div>
-              <span className="text-xs font-black text-copa-cyan">{sectionMatches.length}</span>
+              <span data-schedule-count={key} className="text-xs font-black text-copa-cyan">{sectionMatches.length}</span>
             </header>
             {sectionMatches.length
-              ? <div className="grid gap-3 md:grid-cols-2">{sectionMatches.map((match) => <MatchCard key={match.matchId} match={match} />)}</div>
-              : key === 'upcoming' && !championship?.matches.length && (round === 'all' || round === '1')
-                ? <PlaceholderCards />
-                : <p className="border border-dashed border-slate-500 bg-[#21152a] px-4 py-6 text-center text-sm font-bold text-slate-300">{section.empty}</p>}
+              ? <div className="grid gap-3 md:grid-cols-2">{sectionMatches.map((match) => <MatchCard key={match.matchId} match={match} bucket={key} />)}</div>
+              : key === 'upcoming' && !championship?.matches.length
+                ? <><PlaceholderCards /><p hidden data-schedule-empty={key} className="border border-dashed border-slate-500 bg-[#21152a] px-4 py-6 text-center text-sm font-bold text-slate-300">{section.empty}</p></>
+                : <p data-schedule-empty={key} className="border border-dashed border-slate-500 bg-[#21152a] px-4 py-6 text-center text-sm font-bold text-slate-300">{section.empty}</p>}
+            {sectionMatches.length > 0 && <p hidden data-schedule-empty={key} className="border border-dashed border-slate-500 bg-[#21152a] px-4 py-6 text-center text-sm font-bold text-slate-300">{section.empty}</p>}
           </section>
         )
       })}

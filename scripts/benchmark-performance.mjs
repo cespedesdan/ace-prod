@@ -4,6 +4,9 @@ import { join } from 'node:path'
 
 const baseUrl = (process.env.PERF_BASE_URL || 'http://127.0.0.1:8001').replace(/\/$/, '')
 const numberOfRuns = Number.parseInt(process.env.PERF_RUNS || '5', 10)
+const minimumScore = process.env.PERF_MIN_SCORE === undefined
+  ? null
+  : Number.parseInt(process.env.PERF_MIN_SCORE, 10)
 const label = (process.env.PERF_LABEL || new Date().toISOString()).replace(/[^a-zA-Z0-9_-]/g, '-')
 const outputDirectory = join(process.cwd(), '.performance-reports', label)
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
@@ -18,6 +21,10 @@ const routes = routePaths.map((path) => ({
 
 if (!Number.isInteger(numberOfRuns) || numberOfRuns < 1) {
   throw new Error('PERF_RUNS must be a positive integer')
+}
+
+if (minimumScore !== null && (!Number.isInteger(minimumScore) || minimumScore < 0 || minimumScore > 100)) {
+  throw new Error('PERF_MIN_SCORE must be an integer between 0 and 100')
 }
 
 if (routes.length === 0 || routes.some(({ path }) => !path.startsWith('/'))) {
@@ -73,3 +80,11 @@ const summary = routes.map((route) => {
 
 console.table(summary)
 console.log(`Reports: ${outputDirectory}`)
+
+if (minimumScore !== null) {
+  const failures = summary.filter(({ score }) => score < minimumScore)
+  if (failures.length > 0) {
+    console.error(`Performance score gate failed (minimum ${minimumScore}): ${failures.map(({ route, score }) => `${route}=${score}`).join(', ')}`)
+    process.exitCode = 1
+  }
+}

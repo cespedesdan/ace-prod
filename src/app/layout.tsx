@@ -1,22 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import { Poppins } from 'next/font/google'
-import localFont from 'next/font/local'
+import './critical-fonts.css'
 import './globals.css'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
-  variable: '--font-poppins',
-  display: 'swap',
-})
-
-const nippo = localFont({
-  src: './fonts/Nippo-Variable.woff2',
-  variable: '--font-nippo',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: 'Ace Produtora',
@@ -34,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${poppins.variable} ${nippo.variable} min-h-screen bg-gray-900 text-white`}>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className="min-h-screen bg-gray-900 text-white">
         <div className="flex flex-col min-h-screen">
           <Navbar />
           <main className="flex-1">

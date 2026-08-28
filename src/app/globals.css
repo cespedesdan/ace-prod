@@ -1,6 +1,15 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@reference "./theme.css";
+@source "./layout.tsx";
+@source "../components/Footer.tsx";
+@source "../components/Logo.tsx";
+@source "../components/Logotipo.tsx";
+@source "../components/Navbar.tsx";
+@source "../components/NavigationLinks.tsx";
 
 :root {
+  --font-poppins: "Ace Poppins Critical";
+  --font-nippo: "Ace Display Critical";
   --ace-cyan: #53b29b;
   --ace-copa: #00ffbe;
   --ace-smoke: #1c1124;
@@ -52,21 +61,6 @@
   --color-slate-950: var(--ace-night);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-poppins);
-  --font-display: var(--font-nippo);
-  --color-ace-cyan: var(--ace-cyan);
-  --color-copa-cyan: var(--ace-copa);
-  --color-smoke: var(--ace-smoke);
-  --color-ace-night: var(--ace-night);
-  --color-ace-panel: var(--ace-panel);
-  --color-clutch-pink: var(--ace-pink);
-  --color-ct-blue: var(--ace-blue);
-  --color-tr-orange: var(--ace-orange);
-}
-
 * {
   border-color: var(--ace-border);
 }
@@ -90,6 +84,7 @@ h2,
 h3,
 .font-display {
   font-family: var(--font-nippo), var(--font-poppins), sans-serif;
+  font-weight: 700;
   font-variation-settings: "wght" 700;
 }
 
@@ -99,6 +94,13 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+/* The brand uses a two-weight Poppins system so browsers never synthesize extra faces. */
+.font-semibold,
+.font-extrabold,
+.font-black {
+  font-weight: 700 !important;
 }
 
 ::selection {
@@ -136,7 +138,7 @@ textarea {
 .brand-kicker {
   color: var(--ace-copa);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -149,7 +151,7 @@ textarea {
   background: var(--ace-copa);
   padding: 0.75rem 1.25rem;
   color: var(--ace-smoke);
-  font-weight: 800;
+  font-weight: 700;
   transition: background 150ms ease, transform 150ms ease;
 }
 
@@ -231,7 +233,7 @@ textarea {
 .tournament-section-eyebrow {
   color: var(--tournament-accent);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -240,7 +242,7 @@ textarea {
   margin-top: 0.25rem;
   color: white;
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.025em;
   text-transform: uppercase;
 }
@@ -254,7 +256,7 @@ textarea {
   border-top: 1px solid rgb(255 255 255 / 10%);
   color: #ad9fb4;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -351,7 +353,7 @@ textarea {
   padding: 0.75rem 1.25rem;
   color: var(--ace-smoke);
   font-size: 0.875rem;
-  font-weight: 800;
+  font-weight: 700;
   transition: background 150ms ease;
 }
 
@@ -395,11 +397,58 @@ textarea {
   .deferred-render-compact {
     contain-intrinsic-size: auto 150px;
   }
+
+  .site-footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 400px;
+  }
+
+  @media (max-width: 639px) {
+    .deferred-render-compact {
+      contain-intrinsic-size: auto 306px;
+    }
+  }
 }
 
-a[data-navigation-pending="true"] {
+.desktop-navigation {
+  display: none;
+}
+
+.mobile-navigation {
+  display: block;
+}
+
+a[data-navigation-pending] {
   cursor: progress;
-  opacity: 0.72;
+  opacity: 0.65;
+}
+
+.mobile-navigation > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktop-navigation {
+    display: flex;
+  }
+
+  .mobile-navigation {
+    display: none;
+  }
+}
+
+body:has(.home-page) .nav-link-home,
+body:has(.schedule-page) .nav-link-schedule,
+body:has(.news-page) .nav-link-news,
+body:has(.hall-of-fame-page) .nav-link-hall-of-fame,
+body:has(.tournament-page:not(.copa-ace-10-page):not(.schedule-page)) .nav-link-hall-of-fame {
+  background: rgb(0 255 190 / 10%);
+  color: var(--ace-copa);
+}
+
+body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
+  background: linear-gradient(135deg, #ffe0a0, #edb64d);
+  box-shadow: 0 0 24px rgb(217 154 40 / 30%);
 }
 
 /* Copa ACE 10 — commemorative edition. Intentionally scoped to this page. */
@@ -409,7 +458,7 @@ a[data-navigation-pending="true"] {
   background: linear-gradient(135deg, #ffd276, #d99a28);
   color: #170c05 !important;
   font-family: var(--font-nippo), var(--font-poppins), sans-serif !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   letter-spacing: 0.03em;
   box-shadow: 0 0 0 1px rgb(255 210 118 / 12%), 0 8px 24px rgb(217 154 40 / 14%);
   clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
@@ -420,669 +469,4 @@ a[data-navigation-pending="true"] {
   background: linear-gradient(135deg, #ffe0a0, #edb64d);
   box-shadow: 0 0 24px rgb(217 154 40 / 30%);
   transform: translateY(-1px);
-}
-
-.tournament-page.copa-ace-10-page {
-  --tournament-accent: #d99a28;
-  --tournament-accent-dark: #865612;
-  --tournament-hero: #050403;
-  --tournament-panel-header: #170c05;
-  --color-orange-50: rgb(217 154 40 / 8%);
-  --color-orange-400: #ffd276;
-  --color-orange-500: #d99a28;
-  --color-orange-600: #d99a28;
-  background:
-    radial-gradient(circle at 8% 18%, rgb(134 86 18 / 18%), transparent 30rem),
-    radial-gradient(circle at 92% 52%, rgb(217 154 40 / 7%), transparent 34rem),
-    linear-gradient(180deg, #050403, #120a04 46rem, #050403);
-  color: #f7f4ee;
-}
-
-.copa-ace-10-page .copa10-hero {
-  border-bottom-color: #d99a28;
-  background:
-    linear-gradient(90deg, rgb(5 4 3 / 98%) 0%, rgb(23 12 5 / 94%) 48%, rgb(5 4 3 / 72%) 100%),
-    repeating-linear-gradient(118deg, transparent 0 54px, rgb(255 210 118 / 2%) 55px 56px),
-    #050403;
-}
-
-.copa-ace-10-page .copa10-hero::after {
-  display: none;
-}
-
-.copa10-hero-glow {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 82% 48%, rgb(217 154 40 / 24%), transparent 24rem),
-    radial-gradient(circle at 12% 0%, rgb(255 210 118 / 9%), transparent 20rem);
-  pointer-events: none;
-}
-
-.copa10-logo-lockup img {
-  width: auto;
-  height: 2.8rem;
-  object-fit: contain;
-}
-
-.copa-ace-10-page .copa10-hero h1 span {
-  display: block;
-  color: #ffd276;
-  text-shadow: 0 0 35px rgb(217 154 40 / 20%);
-}
-
-.copa10-facts {
-  overflow: hidden;
-  border: 1px solid rgb(217 154 40 / 28%);
-  background: rgb(255 210 118 / 13%);
-}
-
-.copa10-facts > div {
-  min-height: 5.2rem;
-  background: rgb(5 4 3 / 84%);
-  padding: 0.9rem 1rem;
-}
-
-.copa10-facts strong,
-.copa10-facts span {
-  display: block;
-}
-
-.copa10-facts strong {
-  color: #ffd276;
-  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
-  font-size: 1.15rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.copa10-facts span {
-  margin-top: 0.25rem;
-  color: #a99f96;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.copa-ace-10-page .tournament-button-primary,
-.copa10-button-secondary {
-  min-height: 3rem;
-  border-radius: 0;
-  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
-}
-
-.copa-ace-10-page .tournament-button-primary {
-  background: linear-gradient(135deg, #ffd276, #d99a28);
-  color: #050403;
-  box-shadow: 0 12px 28px rgb(217 154 40 / 18%);
-}
-
-.copa-ace-10-page .tournament-button-primary:hover {
-  background: linear-gradient(135deg, #ffe0a0, #e7ac3d);
-  box-shadow: 0 0 26px rgb(217 154 40 / 30%);
-  transform: translateY(-2px);
-}
-
-.copa10-button-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgb(217 154 40 / 62%);
-  padding: 0.75rem 1.25rem;
-  color: #f7f4ee;
-  font-size: 0.875rem;
-  font-weight: 800;
-  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
-}
-
-.copa10-button-secondary:hover {
-  border-color: #ffd276;
-  background: rgb(217 154 40 / 10%);
-  transform: translateY(-2px);
-}
-
-/* Inscrição da Copa ACE 10 — usa o mesmo vocabulário visual da página do torneio. */
-.registration-page {
-  --ace-border: rgb(217 154 40 / 38%);
-}
-
-.registration-page .registration-hero {
-  border-bottom: 1px solid rgb(217 154 40 / 35%);
-}
-
-.registration-page .registration-aside,
-.registration-page .registration-form {
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-}
-
-.registration-page .registration-aside {
-  border-color: #d99a28 !important;
-}
-
-.registration-open-badge,
-.registration-form-actions {
-  border-color: #d99a28 !important;
-}
-
-.registration-page .registration-form {
-  border: 1px solid rgb(217 154 40 / 28%);
-  background: linear-gradient(145deg, #170c05, #0c0704);
-  box-shadow: 0 24px 60px rgb(0 0 0 / 38%);
-}
-
-.registration-steps {
-  border: 1px solid rgb(217 154 40 / 28%);
-  background: #0c0704;
-  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
-}
-
-.registration-step {
-  color: #756b62;
-  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
-  letter-spacing: 0.08em;
-}
-
-.registration-step + .registration-step {
-  border-left: 1px solid rgb(217 154 40 / 22%);
-}
-
-.registration-step > span {
-  border-color: #d99a28 !important;
-  color: #ffd276;
-}
-
-.registration-step.is-active {
-  background: linear-gradient(135deg, #ffd276, #d99a28);
-  color: #050403;
-}
-
-.registration-step.is-active > span {
-  border-color: #050403 !important;
-  color: #050403;
-}
-
-.registration-step.is-complete {
-  color: #ffd276;
-}
-
-.registration-step.is-complete:hover {
-  background: rgb(217 154 40 / 10%);
-}
-
-.registration-upload {
-  border-color: rgb(217 154 40 / 38%);
-  background: rgb(5 4 3 / 42%);
-}
-
-.registration-upload:hover {
-  border-color: #ffd276;
-  background: rgb(217 154 40 / 7%);
-}
-
-.registration-form input:not([type="file"]):not([type="checkbox"]),
-.registration-form select,
-.registration-form textarea {
-  border-color: rgb(217 154 40 / 48%) !important;
-}
-
-.registration-form input:not([type="file"]):not([type="checkbox"]):focus,
-.registration-form select:focus,
-.registration-form textarea:focus {
-  border-color: #ffd276 !important;
-}
-
-.registration-upload .bg-slate-800 {
-  background: rgba(217, 155, 40, 0.425) !important;
-}
-
-.registration-payment-card {
-  background: linear-gradient(145deg, rgb(217 154 40 / 10%), rgb(5 4 3 / 54%));
-}
-
-.copa10-coin-stage {
-  position: relative;
-  min-height: 31rem;
-  display: grid;
-  place-items: center;
-}
-
-.copa10-coin-orbit {
-  position: absolute;
-  width: 86%;
-  aspect-ratio: 1;
-  border: 1px solid rgb(255 210 118 / 22%);
-  border-radius: 50%;
-  box-shadow: 0 0 80px rgb(217 154 40 / 13%), inset 0 0 60px rgb(217 154 40 / 8%);
-}
-
-.copa10-coin {
-  position: relative;
-  z-index: 1;
-  width: min(41rem, 115%);
-  height: auto;
-  filter: drop-shadow(0 30px 45px rgb(0 0 0 / 62%));
-  animation: copa10-float 6s ease-in-out infinite;
-}
-
-.copa10-slots-badge {
-  position: absolute;
-  right: 0;
-  bottom: 2.5rem;
-  z-index: 2;
-  width: 10.5rem;
-  border-left: 3px solid #d99a28;
-  background: rgb(5 4 3 / 92%);
-  padding: 0.9rem 1rem;
-  box-shadow: 0 16px 38px rgb(0 0 0 / 45%);
-  backdrop-filter: blur(8px);
-}
-
-.copa10-slots-badge span,
-.copa10-slots-badge p {
-  color: #a99f96;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.copa10-slots-badge strong {
-  display: block;
-  margin-block: 0.15rem;
-  color: #ffd276;
-  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
-  font-size: 2.2rem;
-  line-height: 1;
-}
-
-.copa10-slots-badge small {
-  color: #d8d8d8;
-  font-size: 1rem;
-}
-
-.copa-ace-10-page .tournament-tabs {
-  border-top-color: rgb(217 154 40 / 24%);
-}
-
-.copa-ace-10-page .tournament-stat-card,
-.copa-ace-10-page .tournament-panel {
-  border-color: rgb(217 154 40 / 24%);
-  background: linear-gradient(145deg, #170c05, #0c0704);
-  box-shadow: 0 18px 48px rgb(0 0 0 / 30%);
-}
-
-.copa-ace-10-page .tournament-stat-card {
-  border-top-color: #d99a28;
-  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
-}
-
-.copa-ace-10-page .tournament-stat-card:hover {
-  border-color: #d99a28;
-  transform: translateY(-3px);
-  box-shadow: 0 20px 42px rgb(217 154 40 / 10%);
-}
-
-.copa-ace-10-page .tournament-panel-header {
-  border-bottom: 1px solid rgb(217 154 40 / 22%);
-  background: #170c05;
-}
-
-.copa-ace-10-page .tournament-panel .bg-white {
-  background: #100a06;
-}
-
-.copa-ace-10-page .tournament-panel .bg-slate-50,
-.copa-ace-10-page .tournament-panel .bg-slate-100 {
-  background: #0a0705;
-}
-
-.copa-ace-10-page .tournament-panel .bg-slate-200 {
-  background: rgb(217 154 40 / 20%);
-}
-
-.copa-ace-10-page .tournament-panel .text-slate-900,
-.copa-ace-10-page .tournament-panel .text-slate-800,
-.copa-ace-10-page .tournament-panel .text-slate-700 {
-  color: #f7f4ee;
-}
-
-.copa-ace-10-page .tournament-panel .text-slate-600,
-.copa-ace-10-page .tournament-panel .text-slate-500 {
-  color: #b9afa7;
-}
-
-.copa10-prize-panel {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  min-height: 15rem;
-  align-items: center;
-  justify-content: space-between;
-  overflow: hidden;
-  border: 1px solid rgb(255 210 118 / 34%);
-  background:
-    linear-gradient(112deg, rgb(58 33 10 / 98%), rgb(23 12 5 / 96%) 58%, rgb(5 4 3 / 98%)),
-    #170c05;
-  padding: clamp(1.5rem, 5vw, 4rem);
-  box-shadow: inset 0 0 80px rgb(217 154 40 / 8%), 0 24px 60px rgb(0 0 0 / 28%);
-  clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 34px 100%, 0 calc(100% - 34px));
-}
-
-.copa10-prize-panel::before {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: repeating-linear-gradient(120deg, transparent 0 65px, rgb(255 210 118 / 3%) 66px 67px);
-  content: "";
-}
-
-.copa10-prize-panel h2 {
-  margin-top: 0.2rem;
-  color: #ffd276;
-  font-size: clamp(3.5rem, 9vw, 7rem);
-  line-height: 0.95;
-  letter-spacing: -0.04em;
-}
-
-.copa10-prize-breakdown {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 800;
-}
-
-.copa10-prize-breakdown strong {
-  margin-right: 0.35rem;
-  color: #ffd276;
-}
-
-.copa10-prize-panel p:last-child {
-  margin-top: 0.75rem;
-  color: #d8d8d8;
-}
-
-.copa10-prize-panel > svg {
-  flex: 0 0 auto;
-  color: #d99a28;
-  filter: drop-shadow(0 0 28px rgb(217 154 40 / 34%));
-}
-
-.copa10-registration-panel {
-  display: grid;
-  gap: 1.5rem;
-  align-items: center;
-  border: 1px solid rgb(217 154 40 / 28%);
-  border-left: 4px solid #d99a28;
-  background: linear-gradient(105deg, #170c05, #080503);
-  padding: 1.5rem;
-}
-
-.copa10-registration-panel h2 {
-  margin-top: 0.2rem;
-  color: #f7f4ee;
-  font-size: 1.25rem;
-  text-transform: uppercase;
-}
-
-.copa10-registration-panel p:last-child {
-  margin-top: 0.5rem;
-  color: #b9afa7;
-  font-size: 0.875rem;
-}
-
-.swiss-stage {
-  overflow: hidden;
-  border: 1px solid rgb(217 154 40 / 34%);
-  background:
-    linear-gradient(112deg, rgb(58 33 10 / 98%), rgb(23 12 5 / 96%) 58%, rgb(5 4 3 / 98%)),
-    #170c05;
-  box-shadow: inset 0 0 120px rgb(0 0 0 / 55%), 0 24px 60px rgb(0 0 0 / 24%);
-}
-
-.swiss-stage-header {
-  display: grid;
-  gap: 1rem;
-  align-items: center;
-  border-bottom: 1px solid rgb(217 154 40 / 22%);
-  padding: 1.25rem;
-}
-
-.swiss-stage-header p,
-.swiss-stage-header strong,
-.swiss-rules {
-  color: #c8c4bd;
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.swiss-stage-header h3 {
-  margin-top: 0.15rem;
-  color: #ffd276;
-  font-size: clamp(1.7rem, 4vw, 2.6rem);
-  line-height: 0.95;
-  text-transform: uppercase;
-}
-
-.swiss-rules {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.swiss-rules span {
-  border: 1px solid rgb(255 255 255 / 10%);
-  padding: 0.45rem 0.6rem;
-}
-
-.swiss-rules span:first-child b { color: #38d99b; }
-.swiss-rules span:last-child b { color: #ff5a62; }
-
-.swiss-flow-scroll {
-  overflow-x: auto;
-  outline: none;
-  scrollbar-color: #d99a28 #0b0905;
-}
-
-.swiss-flow-scroll:focus-visible {
-  box-shadow: inset 0 0 0 2px #ffd276;
-}
-
-.swiss-flow {
-  display: grid;
-  min-width: 73rem;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: center;
-  gap: 2rem;
-  padding: 2rem 1.5rem;
-}
-
-.swiss-round {
-  min-width: 0;
-}
-
-.swiss-round-content {
-  display: flex;
-  min-height: 45rem;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.swiss-pools {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.swiss-pool {
-  min-width: 0;
-}
-
-.swiss-pool-label {
-  display: flex;
-  height: 1.25rem;
-  align-items: center;
-  color: #ffd276;
-  font-size: 0.76rem;
-  font-weight: 950;
-}
-
-.swiss-pool-matches {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.swiss-match {
-  display: grid;
-  min-height: 3.8rem;
-  grid-template-columns: minmax(0, 1fr) 2.9rem minmax(0, 1fr);
-  align-items: center;
-  gap: 0.35rem;
-  border-left: 3px solid #ffd276;
-  background: #020202;
-  padding: 0.25rem 0.35rem;
-  transition: filter 140ms ease, transform 140ms ease;
-}
-
-.swiss-match[href]:hover {
-  filter: brightness(1.18);
-  transform: translateY(-1px);
-}
-
-.swiss-match.is-placeholder {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  border-left-color: rgb(255 208 126 / 28%);
-}
-
-.swiss-team-mark {
-  position: relative;
-  display: grid;
-  width: 3.25rem;
-  height: 3.25rem;
-  place-items: center;
-  justify-self: start;
-  overflow: hidden;
-  background: rgb(255 255 255 / 3%);
-  color: rgb(255 255 255 / 22%);
-}
-
-.swiss-team-mark:last-child {
-  justify-self: end;
-}
-
-.swiss-team-mark img { object-fit: contain; padding: 0.15rem; }
-.swiss-team-mark svg { width: 1.45rem; height: 1.45rem; stroke-width: 1.4; }
-
-.swiss-score {
-  display: grid;
-  min-height: 2rem;
-  place-items: center;
-  background: #ffd276;
-  color: #050403;
-  font-size: 0.78rem;
-  font-weight: 950;
-}
-
-.swiss-outcome {
-  display: grid;
-  min-height: 4rem;
-  grid-template-columns: 4.2rem minmax(0, 1fr);
-  align-items: center;
-  border-top: 3px solid;
-  padding: 0.35rem 0.5rem;
-}
-
-.swiss-outcome[data-tone="advance"] { border-color: #4be38a; background: #05602d; }
-.swiss-outcome[data-tone="eliminate"] { border-color: #ff4f5e; background: #85000d; }
-
-.swiss-outcome > header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.swiss-outcome > header svg { width: 1.3rem; height: 1.3rem; }
-.swiss-outcome > header strong { font-size: 0.82rem; font-weight: 950; }
-
-.swiss-outcome > div {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-}
-
-.swiss-outcome .swiss-team-mark { width: 2.7rem; height: 2.7rem; flex: 0 0 2.7rem; }
-.swiss-outcome small { color: rgb(255 255 255 / 40%); font-weight: 900; }
-
-.registration-regulation-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgb(217 154 40 / 62%);
-  padding: 0.75rem 1.25rem;
-  color: #f7f4ee;
-  font-size: 0.875rem;
-  font-weight: 800;
-  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
-}
-
-@keyframes copa10-float {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50% { transform: translateY(-10px) rotate(1deg); }
-}
-
-@media (min-width: 640px) {
-  .copa10-registration-panel {
-    grid-template-columns: 1fr auto;
-  }
-
-  .swiss-stage-header {
-    grid-template-columns: auto 1fr auto;
-  }
-}
-
-@media (max-width: 1023px) {
-  .copa10-coin-stage {
-    min-height: 24rem;
-  }
-
-  .copa10-coin {
-    width: min(32rem, 90vw);
-  }
-}
-
-@media (max-width: 639px) {
-  .copa10-logo-lockup img {
-    height: 2rem;
-  }
-
-  .copa10-coin-stage {
-    min-height: 20rem;
-  }
-
-  .copa10-coin {
-    animation: none;
-    filter: drop-shadow(0 18px 28px rgb(0 0 0 / 50%));
-  }
-
-  .copa10-slots-badge {
-    right: 0.25rem;
-    bottom: 0;
-  }
-
-  .copa10-prize-panel > svg {
-    position: absolute;
-    right: 1.5rem;
-    opacity: 0.2;
-  }
 }

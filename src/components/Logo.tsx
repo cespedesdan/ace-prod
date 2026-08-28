@@ -6,10 +6,11 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
   variant?: 'brand' | 'neutral'
   priority?: boolean
+  fetchPriority?: 'high' | 'low' | 'auto'
   sizes?: string
 }
 
-export function Logo({ className, size = 'md', variant = 'neutral', priority = false, sizes }: LogoProps) {
+export function Logo({ className, size = 'md', variant = 'neutral', priority = false, fetchPriority, sizes }: LogoProps) {
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
@@ -25,8 +26,10 @@ export function Logo({ className, size = 'md', variant = 'neutral', priority = f
         width={1024}
         height={1024}
         sizes={imageSizes}
+        quality={70}
         className="w-full h-full object-contain"
         priority={priority}
+        fetchPriority={fetchPriority}
       />
     </div>
   )

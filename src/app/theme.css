@@ -1,0 +1,16 @@
+@reference "tailwindcss/theme";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+  --font-display: var(--font-nippo);
+  --color-ace-cyan: var(--ace-cyan);
+  --color-copa-cyan: var(--ace-copa);
+  --color-smoke: var(--ace-smoke);
+  --color-ace-night: var(--ace-night);
+  --color-ace-panel: var(--ace-panel);
+  --color-clutch-pink: var(--ace-pink);
+  --color-ct-blue: var(--ace-blue);
+  --color-tr-orange: var(--ace-orange);
+}

@@ -24,6 +24,7 @@ export function Logotipo({ className, size = 'md', variant = 'neutral', priority
         width={1339}
         height={557}
         sizes={imageSizes}
+        quality={70}
         className="w-full h-full object-contain"
         priority={priority}
       />

@@ -106,7 +106,7 @@ function TeamMark({ team }: { team?: DisplayTeam }) {
   return (
     <span className="swiss-team-mark" title={team?.name}>
       {team?.avatarUrl
-        ? <Image src={team.avatarUrl} alt={team.name} fill sizes="56px" />
+        ? <Image src={team.avatarUrl} alt={team.name} width={56} height={56} />
         : <Shield aria-hidden="true" />}
     </span>
   )

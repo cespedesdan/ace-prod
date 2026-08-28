@@ -57,7 +57,7 @@ export default async function HallOfFameEditionPage({ params }: EditionPageProps
             Edição especial
           </p>
           <h1 className="text-3xl font-bold text-white mb-4">{edition.title}</h1>
-          <p className="text-gray-300 mb-6">{edition.description}</p>
+          <p className="lcp-text text-gray-300 mb-6">{edition.description}</p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <div className="bg-gray-900/70 rounded-xl p-6 border border-gray-700">

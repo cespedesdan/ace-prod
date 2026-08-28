@@ -1,6 +1,6 @@
 import { ArrowRight, CalendarDays } from 'lucide-react'
-import { Logo } from './Logo'
 import { IntentLink } from './IntentLink'
+import { Logo } from './Logo'
 
 export function Hero() {
   return (
@@ -9,7 +9,7 @@ export function Hero() {
       <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1fr_380px] lg:items-center lg:px-8 lg:py-24">
         <div>
           <p className="brand-kicker">Competição que conecta</p>
-          <h1 className="mt-4 max-w-4xl text-5xl font-bold uppercase leading-[0.95] tracking-tight text-white sm:text-7xl">
+          <h1 className="lcp-text mt-4 max-w-4xl text-5xl font-bold uppercase leading-[0.95] tracking-tight text-white sm:text-7xl">
             O jogo começa aqui
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-white/75 sm:text-lg">
@@ -26,7 +26,7 @@ export function Hero() {
         </div>
 
         <div className="mx-auto grid h-72 w-72 place-items-center border border-white/15 bg-smoke/45 p-12 sm:h-80 sm:w-80 sm:backdrop-blur">
-          <Logo size="lg" variant="neutral" className="h-40 w-40" sizes="160px" priority />
+          <Logo size="lg" variant="neutral" className="h-40 w-40" sizes="160px" fetchPriority="low" />
         </div>
       </div>
     </section>

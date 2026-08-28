@@ -1,0 +1,349 @@
+@import url("/copa-ace-10/deferred-v1.css");
+@reference "../theme.css";
+@import "tailwindcss/utilities" source(none);
+@source "./page.tsx";
+@source "./loading.tsx";
+@source "../../components/CopaAce10Faceit.tsx";
+@source "../../components/CopaAce10Page.tsx";
+@source "../../components/CopaAce10Schedule.tsx";
+@source "../../components/CopaAce10Swiss.tsx";
+
+.tournament-page.copa-ace-10-page {
+  --tournament-accent: #d99a28;
+  --tournament-accent-dark: #865612;
+  --tournament-hero: #050403;
+  --tournament-panel-header: #170c05;
+  --color-orange-50: rgb(217 154 40 / 8%);
+  --color-orange-400: #ffd276;
+  --color-orange-500: #d99a28;
+  --color-orange-600: #d99a28;
+  background:
+    radial-gradient(circle at 8% 18%, rgb(134 86 18 / 18%), transparent 30rem),
+    radial-gradient(circle at 92% 52%, rgb(217 154 40 / 7%), transparent 34rem),
+    linear-gradient(180deg, #050403, #120a04 46rem, #050403);
+  color: #f7f4ee;
+}
+
+.copa-ace-10-page .copa10-hero {
+  border-bottom-color: #d99a28;
+  background:
+    linear-gradient(90deg, rgb(5 4 3 / 98%) 0%, rgb(23 12 5 / 94%) 48%, rgb(5 4 3 / 72%) 100%),
+    repeating-linear-gradient(118deg, transparent 0 54px, rgb(255 210 118 / 2%) 55px 56px),
+    #050403;
+}
+
+.copa-ace-10-page .copa10-hero::after {
+  display: none;
+}
+
+.copa10-hero-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 82% 48%, rgb(217 154 40 / 24%), transparent 24rem),
+    radial-gradient(circle at 12% 0%, rgb(255 210 118 / 9%), transparent 20rem);
+  pointer-events: none;
+}
+
+.copa10-logo-lockup img {
+  width: auto;
+  height: 2.8rem;
+  object-fit: contain;
+}
+
+.copa-ace-10-page .copa10-hero h1 span {
+  display: block;
+  color: #ffd276;
+  text-shadow: 0 0 35px rgb(217 154 40 / 20%);
+}
+
+.copa10-facts {
+  overflow: hidden;
+  border: 1px solid rgb(217 154 40 / 28%);
+  background: rgb(255 210 118 / 13%);
+}
+
+/* This containment must arrive before the deferred Swiss layout. Otherwise
+   mobile Chrome can widen its layout viewport as the 73rem bracket appears. */
+.swiss-stage,
+.swiss-flow-scroll {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.swiss-stage {
+  overflow: hidden;
+}
+
+.swiss-flow-scroll {
+  overflow-x: auto;
+  contain: inline-size;
+}
+
+.swiss-flow {
+  min-width: 0;
+}
+
+.copa10-facts > div {
+  min-height: 5.2rem;
+  background: rgb(5 4 3 / 84%);
+  padding: 0.9rem 1rem;
+}
+
+.copa10-facts strong,
+.copa10-facts span {
+  display: block;
+}
+
+.copa10-facts strong {
+  color: #ffd276;
+  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.copa10-facts span {
+  margin-top: 0.25rem;
+  color: #a99f96;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.copa-ace-10-page .tournament-button-primary,
+.copa10-button-secondary {
+  min-height: 3rem;
+  border-radius: 0;
+  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+
+.copa-ace-10-page .tournament-button-primary {
+  background: linear-gradient(135deg, #ffd276, #d99a28);
+  color: #050403;
+  box-shadow: 0 12px 28px rgb(217 154 40 / 18%);
+}
+
+.copa-ace-10-page .tournament-button-primary:hover {
+  background: linear-gradient(135deg, #ffe0a0, #e7ac3d);
+  box-shadow: 0 0 26px rgb(217 154 40 / 30%);
+  transform: translateY(-2px);
+}
+
+.copa10-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(217 154 40 / 62%);
+  padding: 0.75rem 1.25rem;
+  color: #f7f4ee;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.copa10-button-secondary:hover {
+  border-color: #ffd276;
+  background: rgb(217 154 40 / 10%);
+  transform: translateY(-2px);
+}
+
+/* Inscrição da Copa ACE 10 — usa o mesmo vocabulário visual da página do torneio. */
+.registration-page {
+  --ace-border: rgb(217 154 40 / 38%);
+}
+
+.registration-page .registration-hero {
+  border-bottom: 1px solid rgb(217 154 40 / 35%);
+}
+
+.registration-page .registration-aside {
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+
+.registration-page .registration-aside {
+  border-color: #d99a28 !important;
+}
+
+.registration-open-badge {
+  border-color: #d99a28 !important;
+}
+
+.copa10-coin-stage {
+  position: relative;
+  min-height: 31rem;
+  display: grid;
+  place-items: center;
+}
+
+.copa10-coin-orbit {
+  position: absolute;
+  width: 86%;
+  aspect-ratio: 1;
+  border: 1px solid rgb(255 210 118 / 22%);
+  border-radius: 50%;
+  box-shadow: 0 0 80px rgb(217 154 40 / 13%), inset 0 0 60px rgb(217 154 40 / 8%);
+}
+
+.copa10-coin {
+  position: relative;
+  z-index: 1;
+  width: min(41rem, 115%);
+  height: auto;
+  filter: drop-shadow(0 30px 45px rgb(0 0 0 / 62%));
+  animation: copa10-float 6s ease-in-out infinite;
+}
+
+.copa10-slots-badge {
+  position: absolute;
+  right: 0;
+  bottom: 2.5rem;
+  z-index: 2;
+  width: 10.5rem;
+  border-left: 3px solid #d99a28;
+  background: rgb(5 4 3 / 92%);
+  padding: 0.9rem 1rem;
+  box-shadow: 0 16px 38px rgb(0 0 0 / 45%);
+  backdrop-filter: blur(8px);
+}
+
+.copa10-slots-badge span,
+.copa10-slots-badge p {
+  color: #a99f96;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.copa10-slots-badge strong {
+  display: block;
+  margin-block: 0.15rem;
+  color: #ffd276;
+  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.copa10-slots-badge small {
+  color: #d8d8d8;
+  font-size: 1rem;
+}
+
+.copa-ace-10-page .tournament-tabs {
+  border-top-color: rgb(217 154 40 / 24%);
+}
+
+.copa-ace-10-page .tournament-stat-card,
+.copa-ace-10-page .tournament-panel {
+  border-color: rgb(217 154 40 / 24%);
+  background: linear-gradient(145deg, #170c05, #0c0704);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 30%);
+}
+
+.copa-ace-10-page .tournament-stat-card {
+  border-top-color: #d99a28;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.copa-ace-10-page .tournament-stat-card:hover {
+  border-color: #d99a28;
+  transform: translateY(-3px);
+  box-shadow: 0 20px 42px rgb(217 154 40 / 10%);
+}
+
+.copa-ace-10-page .tournament-panel-header {
+  border-bottom: 1px solid rgb(217 154 40 / 22%);
+  background: #170c05;
+}
+
+.copa-ace-10-page .tournament-panel .bg-white {
+  background: #100a06;
+}
+
+.copa-ace-10-page .tournament-panel .bg-slate-50,
+.copa-ace-10-page .tournament-panel .bg-slate-100 {
+  background: #0a0705;
+}
+
+.copa-ace-10-page .tournament-panel .bg-slate-200 {
+  background: rgb(217 154 40 / 20%);
+}
+
+.copa-ace-10-page .tournament-panel .text-slate-900,
+.copa-ace-10-page .tournament-panel .text-slate-800,
+.copa-ace-10-page .tournament-panel .text-slate-700 {
+  color: #f7f4ee;
+}
+
+.copa-ace-10-page .tournament-panel .text-slate-600,
+.copa-ace-10-page .tournament-panel .text-slate-500 {
+  color: #b9afa7;
+}
+
+
+@keyframes copa10-float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@media (min-width: 640px) {
+  .copa10-registration-panel {
+    grid-template-columns: 1fr auto;
+  }
+
+  .swiss-stage-header {
+    grid-template-columns: auto 1fr auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .swiss-flow {
+    min-width: 73rem;
+  }
+}
+
+@media (max-width: 1023px) {
+  .copa10-coin-stage {
+    min-height: 24rem;
+  }
+
+  .copa10-coin {
+    width: min(32rem, 90vw);
+  }
+}
+
+@media (max-width: 639px) {
+  .copa-ace-10-page .copa10-hero h1 span {
+    text-shadow: none;
+  }
+
+  .copa10-logo-lockup img {
+    height: 2rem;
+  }
+
+  .copa10-coin-stage {
+    min-height: 20rem;
+    margin-top: 3rem;
+  }
+
+  .copa10-coin {
+    animation: none;
+    filter: none;
+  }
+
+  .copa10-slots-badge {
+    right: 0.25rem;
+    bottom: 0;
+  }
+
+  .copa10-prize-panel > svg {
+    position: absolute;
+    right: 1.5rem;
+    opacity: 0.2;
+  }
+}

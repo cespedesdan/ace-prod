@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { buildFaceitSwissStandings } from '@/lib/faceit'
 
@@ -51,7 +50,10 @@ export function RankingTable({
                   <div className="flex items-center gap-3">
                     <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden border border-white/10 bg-white/5 text-[10px] text-copa-cyan" aria-hidden="true">
                       {logos.get(standing.teamId)
-                        ? <Image src={logos.get(standing.teamId)!} alt="" fill sizes="32px" className="object-contain p-0.5" />
+                        ? <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={`/_next/image?url=${encodeURIComponent(logos.get(standing.teamId)!)}&w=64&q=75`} alt="" width={32} height={32} decoding="async" loading="lazy" className="h-full w-full object-contain p-0.5" />
+                          </>
                         : standing.name.slice(0, 2).toUpperCase()}
                     </span>
                     <span>{standing.name}</span>

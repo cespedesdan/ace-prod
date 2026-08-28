@@ -1,0 +1,98 @@
+@reference "../theme.css";
+@import "tailwindcss/utilities" source(none);
+@source "./page.tsx";
+@source "../../components/RegistrationClosed.tsx";
+
+.tournament-page.copa-ace-10-page {
+  --tournament-accent: #d99a28;
+  --tournament-accent-dark: #865612;
+  --tournament-hero: #050403;
+  --tournament-panel-header: #170c05;
+  color: #f7f4ee;
+  background:
+    radial-gradient(circle at 8% 18%, rgb(134 86 18 / 18%), transparent 30rem),
+    linear-gradient(180deg, #050403, #120a04 46rem, #050403);
+}
+
+.copa-ace-10-page .copa10-hero {
+  border-bottom-color: #d99a28;
+  background:
+    linear-gradient(90deg, rgb(5 4 3 / 98%) 0%, rgb(23 12 5 / 94%) 48%, rgb(5 4 3 / 72%) 100%),
+    #050403;
+}
+
+.copa-ace-10-page .copa10-hero::after {
+  display: none;
+}
+
+.copa10-hero-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 82% 48%, rgb(217 154 40 / 24%), transparent 24rem),
+    radial-gradient(circle at 12% 0%, rgb(255 210 118 / 9%), transparent 20rem);
+  pointer-events: none;
+}
+
+.copa10-logo-lockup img {
+  width: auto;
+  height: 2.8rem;
+  object-fit: contain;
+}
+
+.copa-ace-10-page .copa10-hero h1 span {
+  display: block;
+  color: #ffd276;
+  text-shadow: 0 0 35px rgb(217 154 40 / 20%);
+}
+
+.copa10-button-secondary {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(217 154 40 / 62%);
+  border-radius: 0;
+  padding: 0.75rem 1.25rem;
+  color: #f7f4ee;
+  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.copa10-button-secondary:hover {
+  border-color: #ffd276;
+  background: rgb(217 154 40 / 10%);
+  transform: translateY(-2px);
+}
+
+.registration-page {
+  --ace-border: rgb(217 154 40 / 38%);
+}
+
+.registration-page .registration-hero {
+  border-bottom: 1px solid rgb(217 154 40 / 35%);
+}
+
+.registration-page .registration-aside {
+  border-color: #d99a28 !important;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+
+.registration-open-badge {
+  border-color: #d99a28 !important;
+}
+
+@media (max-width: 639px) {
+  .copa-ace-10-page .copa10-hero h1 span {
+    text-shadow: none;
+  }
+
+  .copa10-logo-lockup img {
+    height: 2rem;
+  }
+}

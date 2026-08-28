@@ -1,10 +1,10 @@
-import Link from 'next/link'
 import { Instagram, Mail } from 'lucide-react'
 import { Logotipo } from './Logotipo'
+import { IntentLink } from './IntentLink'
 
 export function Footer() {
   return (
-    <footer className="deferred-render border-t border-ace-cyan/20 bg-smoke">
+    <footer className="site-footer border-t border-ace-cyan/20 bg-smoke">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
@@ -19,9 +19,9 @@ export function Footer() {
           <div>
             <p className="brand-kicker mb-4">Navegação</p>
             <ul className="space-y-3 text-sm">
-              <li><Link href="/" className="text-gray-400 transition hover:text-copa-cyan">Home</Link></li>
-              <li><Link href="/schedule" className="text-gray-400 transition hover:text-copa-cyan">Agenda</Link></li>
-              <li><Link href="/hall-of-fame" className="text-gray-400 transition hover:text-copa-cyan">Hall da Fama</Link></li>
+              <li><IntentLink href="/" className="text-gray-400 transition hover:text-copa-cyan">Home</IntentLink></li>
+              <li><IntentLink href="/schedule" className="text-gray-400 transition hover:text-copa-cyan">Agenda</IntentLink></li>
+              <li><IntentLink href="/hall-of-fame" className="text-gray-400 transition hover:text-copa-cyan">Hall da Fama</IntentLink></li>
             </ul>
           </div>
 
