@@ -5,6 +5,7 @@ import { ScheduleList } from '@/components/ScheduleList'
 import { CopaAce10Schedule } from '@/components/CopaAce10Schedule'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
+import './schedule.css'
 
 export const revalidate = 60
 
@@ -37,7 +38,7 @@ export default async function SchedulePage() {
   const faceitSchedule = await getFaceitSchedule()
 
   return (
-    <main className="tournament-page">
+    <main className="schedule-page tournament-page">
       <section className="tournament-hero">
         <div className="tournament-container py-6">
           <Link href="/copa-ace-10" className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">

@@ -9,7 +9,7 @@ export default function RegistrationClosed() {
         <div className="tournament-container relative grid gap-8 py-10 lg:grid-cols-[1fr_380px] lg:py-14">
           <div>
             <div className="copa10-logo-lockup">
-              <Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} sizes="(min-width: 1024px) 583px, 90vw" priority />
+              <Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} sizes="(min-width: 1024px) 583px, 90vw" />
             </div>
             <div className="registration-open-badge mt-7 inline-flex items-center gap-2 border bg-[#8f0000] px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-[#ffd276]">
               <span className="h-2 w-2 bg-[#ffd276]" /> Inscrições encerradas

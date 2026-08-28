@@ -7,13 +7,14 @@ import { Footer } from '@/components/Footer'
 
 const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
+  weight: ['400', '700'],
   variable: '--font-poppins',
   display: 'swap',
 })
 
 const nippo = localFont({
   src: './fonts/Nippo-Variable.woff2',
+  weight: '700',
   variable: '--font-nippo',
   display: 'swap',
 })

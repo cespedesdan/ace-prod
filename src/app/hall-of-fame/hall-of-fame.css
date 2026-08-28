@@ -1,0 +1,7 @@
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "./page.tsx";
+@source "../../components/HallOfFameList.tsx";
+@source "../../components/Footer.tsx";
+@source "../../components/Logo.tsx";
+@source "../../components/Logotipo.tsx";
+@source "../../components/Navbar.tsx";

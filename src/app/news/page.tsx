@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NewsList } from '@/components/NewsList'
+import './news.css'
 
 async function getNews() {
   try {
@@ -20,7 +21,7 @@ export default async function NewsPage() {
   const news = await getNews()
 
   return (
-    <div className="min-h-screen">
+    <div className="news-page min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 border-l-4 border-copa-cyan pl-5">
           <p className="brand-kicker mb-2">Central de conteúdo</p>

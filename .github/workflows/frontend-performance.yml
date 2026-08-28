@@ -1,0 +1,76 @@
+name: Performance do frontend
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/frontend-performance.yml'
+      - 'next.config.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'public/**'
+      - 'scripts/benchmark-performance.mjs'
+      - 'src/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-performance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    name: Lighthouse mobile (99+)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      JWT_SECRET: github-actions-performance-only-0123456789abcdef0123456789abcdef
+      ADMIN_EMAIL: performance@example.invalid
+      TRUST_PROXY: 'false'
+
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Preparar banco de teste
+        run: |
+          npm run db:generate
+          npm run db:migrate
+
+      - name: Gerar build de producao
+        run: npm run build
+
+      - name: Medir todas as paginas publicas
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm start > /tmp/ace-next.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..60}; do
+            if curl --fail --silent --output /dev/null http://127.0.0.1:8001/; then
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/ace-next.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          PERF_LABEL=ci-${{ github.run_id }} \
+          PERF_RUNS=5 \
+          PERF_MIN_SCORE=99 \
+          PERF_ROUTES='/,/copa-ace-10,/schedule,/news,/inscreva-se,/hall-of-fame,/hall-of-fame/copa-ace-1,/hall-of-fame/copa-ace-2,/hall-of-fame/copa-ace-3,/hall-of-fame/copa-ace-4,/hall-of-fame/copa-ace-5,/hall-of-fame/copa-ace-6,/hall-of-fame/copa-ace-7,/hall-of-fame/copa-ace-8,/hall-of-fame/ace-clutch,/hall-of-fame/ace-clutch-2,/hall-of-fame/copa-ace-9' \
+          npm run perf:audit

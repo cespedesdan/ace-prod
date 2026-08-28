@@ -8,6 +8,7 @@ const nextConfig = {
   distDir: process.env.ANALYZE === 'true' ? '.next-analyze' : '.next',
   poweredByHeader: false,
   experimental: {
+    inlineCss: true,
     reactCompiler: true,
   },
   images: {

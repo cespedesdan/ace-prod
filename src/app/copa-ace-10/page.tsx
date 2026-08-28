@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import CopaAce10Page from '@/components/CopaAce10Page'
+import './copa-ace-10.css'
 
 export const revalidate = 60
 

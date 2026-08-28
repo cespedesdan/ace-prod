@@ -8,6 +8,7 @@ import {
   GroupRoundRobinTournamentPage,
   SingleEliminationTournamentPage,
 } from '@/components/TournamentFormatPage'
+import './archive.css'
 
 export const dynamicParams = false
 

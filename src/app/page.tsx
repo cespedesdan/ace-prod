@@ -4,6 +4,7 @@ import { RankingTable } from '@/components/RankingTable'
 import { YouTubeLivePlayer } from '@/components/YouTubeLivePlayer'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
+import './home.css'
 
 export const revalidate = 60
 
@@ -40,7 +41,7 @@ export default async function HomePage() {
   ])
 
   return (
-    <div className="min-h-screen">
+    <div className="home-page min-h-screen">
       <Hero />
       {liveStream?.visibleOnHome && (
         <section className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8" aria-labelledby="live-title">

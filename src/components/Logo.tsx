@@ -25,6 +25,7 @@ export function Logo({ className, size = 'md', variant = 'neutral', priority = f
         width={1024}
         height={1024}
         sizes={imageSizes}
+        quality={70}
         className="w-full h-full object-contain"
         priority={priority}
       />

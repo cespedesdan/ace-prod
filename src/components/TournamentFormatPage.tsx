@@ -13,7 +13,7 @@ import type {
   TournamentArchive,
 } from '@/data/tournamentArchives'
 
-function TeamLogo({ team, size = 34, priority = false }: { team: ArchiveTeam; size?: number; priority?: boolean }) {
+function TeamLogo({ team, size = 34 }: { team: ArchiveTeam; size?: number }) {
   if (!team.logo) {
     return (
       <span className="grid shrink-0 place-items-center rounded-sm bg-slate-700 font-black text-white" style={{ width: size, height: size, fontSize: Math.max(9, size * 0.26) }}>
@@ -24,7 +24,7 @@ function TeamLogo({ team, size = 34, priority = false }: { team: ArchiveTeam; si
 
   return (
     <span className={`${team.darkLogo ? 'team-logo-surface-dark' : 'team-logo-surface'} relative block shrink-0 overflow-hidden rounded-sm`} style={{ width: size, height: size }}>
-      <Image src={team.logo} alt={`Logo ${team.name}`} fill sizes={`${size}px`} priority={priority} className="object-contain p-1" />
+      <Image src={team.logo} alt={`Logo ${team.name}`} fill sizes={`${size}px`} quality={60} className="object-contain p-1" />
     </span>
   )
 }
@@ -63,7 +63,7 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
     <main className="tournament-page">
       <section className="tournament-hero">
         <div className="tournament-container py-6">
-          <Link href="/hall-of-fame" className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">
+          <Link href="/hall-of-fame" prefetch={false} className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">
             <ChevronLeft size={16} /> Hall da Fama
           </Link>
 
@@ -83,7 +83,7 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
               <div className="absolute right-0 top-0 h-24 w-24 bg-orange-500/10 blur-2xl" />
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-400">{data.championLabel}</p>
               <div className="mt-3 flex items-center gap-5">
-                <div className="grid h-24 w-24 place-items-center bg-white p-3 shadow-xl"><TeamLogo team={data.champion} size={72} priority /></div>
+                <div className="grid h-24 w-24 place-items-center bg-white p-3 shadow-xl"><TeamLogo team={data.champion} size={72} /></div>
                 <div><Trophy className="mb-2 text-orange-400" size={24} /><h2 className="text-2xl font-black">{data.champion.name}</h2><p className="mt-1 text-sm text-slate-400">{data.championRun}</p></div>
               </div>
             </div>

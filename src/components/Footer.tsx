@@ -19,9 +19,9 @@ export function Footer() {
           <div>
             <p className="brand-kicker mb-4">Navegação</p>
             <ul className="space-y-3 text-sm">
-              <li><Link href="/" className="text-gray-400 transition hover:text-copa-cyan">Home</Link></li>
-              <li><Link href="/schedule" className="text-gray-400 transition hover:text-copa-cyan">Agenda</Link></li>
-              <li><Link href="/hall-of-fame" className="text-gray-400 transition hover:text-copa-cyan">Hall da Fama</Link></li>
+              <li><Link href="/" prefetch={false} className="text-gray-400 transition hover:text-copa-cyan">Home</Link></li>
+              <li><Link href="/schedule" prefetch={false} className="text-gray-400 transition hover:text-copa-cyan">Agenda</Link></li>
+              <li><Link href="/hall-of-fame" prefetch={false} className="text-gray-400 transition hover:text-copa-cyan">Hall da Fama</Link></li>
             </ul>
           </div>
 

@@ -1,4 +1,9 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "./layout.tsx";
+@source "../components/Footer.tsx";
+@source "../components/Logo.tsx";
+@source "../components/Logotipo.tsx";
+@source "../components/Navbar.tsx";
 
 :root {
   --ace-cyan: #53b29b;
@@ -402,6 +407,42 @@ a[data-navigation-pending="true"] {
   opacity: 0.72;
 }
 
+.desktop-navigation {
+  display: none;
+}
+
+.mobile-navigation {
+  display: block;
+}
+
+.mobile-navigation > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktop-navigation {
+    display: flex;
+  }
+
+  .mobile-navigation {
+    display: none;
+  }
+}
+
+body:has(.home-page) .nav-link-home,
+body:has(.schedule-page) .nav-link-schedule,
+body:has(.news-page) .nav-link-news,
+body:has(.hall-of-fame-page) .nav-link-hall-of-fame,
+body:has(.tournament-page:not(.copa-ace-10-page):not(.schedule-page)) .nav-link-hall-of-fame {
+  background: rgb(0 255 190 / 10%);
+  color: var(--ace-copa);
+}
+
+body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
+  background: linear-gradient(135deg, #ffe0a0, #edb64d);
+  box-shadow: 0 0 24px rgb(217 154 40 / 30%);
+}
+
 /* Copa ACE 10 — commemorative edition. Intentionally scoped to this page. */
 .copa10-nav-button {
   border: 1px solid #d99a28;
@@ -554,8 +595,7 @@ a[data-navigation-pending="true"] {
   border-bottom: 1px solid rgb(217 154 40 / 35%);
 }
 
-.registration-page .registration-aside,
-.registration-page .registration-form {
+.registration-page .registration-aside {
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
 }
 
@@ -563,84 +603,8 @@ a[data-navigation-pending="true"] {
   border-color: #d99a28 !important;
 }
 
-.registration-open-badge,
-.registration-form-actions {
+.registration-open-badge {
   border-color: #d99a28 !important;
-}
-
-.registration-page .registration-form {
-  border: 1px solid rgb(217 154 40 / 28%);
-  background: linear-gradient(145deg, #170c05, #0c0704);
-  box-shadow: 0 24px 60px rgb(0 0 0 / 38%);
-}
-
-.registration-steps {
-  border: 1px solid rgb(217 154 40 / 28%);
-  background: #0c0704;
-  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
-}
-
-.registration-step {
-  color: #756b62;
-  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
-  letter-spacing: 0.08em;
-}
-
-.registration-step + .registration-step {
-  border-left: 1px solid rgb(217 154 40 / 22%);
-}
-
-.registration-step > span {
-  border-color: #d99a28 !important;
-  color: #ffd276;
-}
-
-.registration-step.is-active {
-  background: linear-gradient(135deg, #ffd276, #d99a28);
-  color: #050403;
-}
-
-.registration-step.is-active > span {
-  border-color: #050403 !important;
-  color: #050403;
-}
-
-.registration-step.is-complete {
-  color: #ffd276;
-}
-
-.registration-step.is-complete:hover {
-  background: rgb(217 154 40 / 10%);
-}
-
-.registration-upload {
-  border-color: rgb(217 154 40 / 38%);
-  background: rgb(5 4 3 / 42%);
-}
-
-.registration-upload:hover {
-  border-color: #ffd276;
-  background: rgb(217 154 40 / 7%);
-}
-
-.registration-form input:not([type="file"]):not([type="checkbox"]),
-.registration-form select,
-.registration-form textarea {
-  border-color: rgb(217 154 40 / 48%) !important;
-}
-
-.registration-form input:not([type="file"]):not([type="checkbox"]):focus,
-.registration-form select:focus,
-.registration-form textarea:focus {
-  border-color: #ffd276 !important;
-}
-
-.registration-upload .bg-slate-800 {
-  background: rgba(217, 155, 40, 0.425) !important;
-}
-
-.registration-payment-card {
-  background: linear-gradient(145deg, rgb(217 154 40 / 10%), rgb(5 4 3 / 54%));
 }
 
 .copa10-coin-stage {

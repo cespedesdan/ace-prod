@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import RegistrationClosed from '@/components/RegistrationClosed'
+import './registration.css'
 
 export const metadata: Metadata = {
   title: 'Inscrições encerradas — Copa Ace 10 | Ace Produtora',

@@ -64,7 +64,7 @@ export default async function CopaAce10Page() {
           <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_.95fr]">
             <div className="relative z-10">
               <div className="copa10-logo-lockup">
-                <Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} priority />
+                <Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} />
               </div>
               <p className="tournament-kicker mt-7">10ª edição · inscrições abertas</p>
               <h1 className="mt-3 max-w-3xl text-5xl uppercase leading-[0.92] tracking-[-0.04em] sm:text-7xl xl:text-[5.4rem]">
@@ -94,15 +94,19 @@ export default async function CopaAce10Page() {
 
             <div className="copa10-coin-stage" aria-label="Moeda comemorativa da Copa ACE 10">
               <div className="copa10-coin-orbit" aria-hidden="true" />
-              <Image
-                src="/copa-ace-10/moeda-10.webp"
-                alt="Moeda dourada da décima edição da Copa ACE"
-                width={1356}
-                height={1400}
-                sizes="(min-width: 1024px) 45vw, 90vw"
-                priority
-                className="copa10-coin"
-              />
+              <picture>
+                <source media="(max-width: 1023px)" srcSet="/copa-ace-10/moeda-10-mobile.webp" type="image/webp" />
+                <Image
+                  src="/copa-ace-10/moeda-10.webp"
+                  alt="Moeda dourada da décima edição da Copa ACE"
+                  width={1356}
+                  height={1400}
+                  sizes="45vw"
+                  loading="eager"
+                  fetchPriority="low"
+                  className="copa10-coin"
+                />
+              </picture>
               {SHOW_CONFIRMED_SLOTS_BADGE && (
                 <div className="copa10-slots-badge">
                   <span>Vagas confirmadas</span>
@@ -206,13 +210,13 @@ export default async function CopaAce10Page() {
           </div>
           <div className="flex flex-col justify-between gap-4 border-t border-slate-200 p-5 sm:flex-row sm:items-center">
             <div className="flex items-center gap-4"><div className="grid h-12 w-12 place-items-center tournament-accent-bg text-[#050403]"><Swords size={23} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Primeira rodada</p><p className="mt-1 font-black text-slate-900">Pareamentos e horários a definir</p></div></div>
-            <Link href="/schedule" className="inline-flex items-center gap-2 text-sm font-black tournament-accent-text">Consultar agenda <ArrowRight size={16} /></Link>
+            <Link href="/schedule" prefetch={false} className="inline-flex items-center gap-2 text-sm font-black tournament-accent-text">Consultar agenda <ArrowRight size={16} /></Link>
           </div>
         </section>
 
         <section id="inscricao" className="deferred-render copa10-registration-panel">
           <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center border border-[#d99a28]/50 text-[#ffd276]"><CalendarDays size={23} /></div><div><p className="tournament-section-eyebrow">Inscrições abertas</p><h2>Monte seu elenco para a Copa ACE 10</h2><p>5 titulares, até 2 reservas e 1 coach, com logo e comprovante de pagamento.</p></div></div>
-          <Link href="/inscreva-se" className="tournament-button-primary">Inscrever equipe <ArrowRight size={16} /></Link>
+          <Link href="/inscreva-se" prefetch={false} className="tournament-button-primary">Inscrever equipe <ArrowRight size={16} /></Link>
         </section>
       </div>
     </main>
