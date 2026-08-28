@@ -1,8 +1,10 @@
 import { revalidatePath } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { verifyToken } from '@/lib/auth'
 import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
+import { registrationClaimKey } from '@/lib/registration-claim'
 
 const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED'] as const
 type AllowedStatus = (typeof allowedStatuses)[number]
@@ -28,26 +30,49 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   }
 
   const status = body.status as AllowedStatus
-  const updated = await prisma.$transaction(async (tx) => {
-    const registration = await tx.registration.findFirst({
-      where: { id, tournament: 'Copa Ace 10' },
-      select: { id: true, status: true },
-    })
-    if (!registration) return null
-
-    if (status === 'APPROVED' && registration.status !== 'APPROVED') {
-      const approvedCount = await tx.registration.count({
-        where: { tournament: 'Copa Ace 10', status: 'APPROVED' },
+  let updated
+  try {
+    updated = await prisma.$transaction(async (tx) => {
+      const registration = await tx.registration.findFirst({
+        where: { id, tournament: 'Copa Ace 10' },
+        select: {
+          id: true,
+          status: true,
+          tournament: true,
+          faceitTeamId: true,
+          teamNameNormalized: true,
+        },
       })
-      if (approvedCount >= 16) return 'full' as const
-    }
+      if (!registration) return null
 
-    return tx.registration.update({
-      where: { id },
-      data: { status },
-      select: { id: true, status: true, updatedAt: true },
+      if (status === 'APPROVED' && registration.status !== 'APPROVED') {
+        const approvedCount = await tx.registration.count({
+          where: { tournament: 'Copa Ace 10', status: 'APPROVED' },
+        })
+        if (approvedCount >= 16) return 'full' as const
+      }
+
+      return tx.registration.update({
+        where: { id },
+        data: {
+          status,
+          claimKey: status === 'REJECTED'
+            ? null
+            : registrationClaimKey(
+                registration.tournament,
+                registration.faceitTeamId,
+                registration.teamNameNormalized,
+              ),
+        },
+        select: { id: true, status: true, updatedAt: true },
+      })
     })
-  })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'Já existe uma inscrição ativa para esta equipe.' }, { status: 409 })
+    }
+    throw error
+  }
 
   if (!updated) {
     return NextResponse.json({ error: 'Inscrição não encontrada' }, { status: 404 })

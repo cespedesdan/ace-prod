@@ -100,6 +100,7 @@ model HallOfFame {
 model Registration {
   id                       String             @id @default(cuid())
   protocol                 String             @unique
+  claimKey                 String?            @unique
   tournament               String             @default("Copa Ace 10")
   teamFaceitUrl            String
   faceitTeamId             String?
@@ -125,8 +126,6 @@ model Registration {
   updatedAt                DateTime           @updatedAt
   players                  RegistrationPlayer[]
 
-  @@unique([tournament, teamNameNormalized])
-  @@unique([tournament, faceitTeamId])
   @@index([tournament, status])
   @@map("registrations")
 }

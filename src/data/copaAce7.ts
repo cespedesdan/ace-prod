@@ -1,22 +1,22 @@
 import type { Team } from '@/data/copaAce9'
 
 export const copaAce7Teams = {
-  notrade: { name: 'NoTrade eSports', shortName: 'NT', logo: '/hall-of-fame/copa-ace-7/notrade.png' },
-  newLegends: { name: 'New Legends', shortName: 'NL', logo: '/hall-of-fame/copa-ace-7/new-legends.png' },
-  astus: { name: 'Astus Esports', shortName: 'AST', logo: '/hall-of-fame/copa-ace-7/astus.png' },
+  notrade: { name: 'NoTrade eSports', shortName: 'NT', logo: '/hall-of-fame/copa-ace-7/notrade.webp' },
+  newLegends: { name: 'New Legends', shortName: 'NL', logo: '/hall-of-fame/copa-ace-7/new-legends.webp' },
+  astus: { name: 'Astus Esports', shortName: 'AST', logo: '/hall-of-fame/copa-ace-7/astus.webp' },
   atlanta: { name: 'Atlanta E-sports', shortName: 'ATL', logo: '/hall-of-fame/copa-ace-7/atlanta.webp' },
   ezclan: { name: 'eZClan e-Sports', shortName: 'EZ', logo: '/hall-of-fame/copa-ace-7/ezclan.webp' },
-  panther: { name: 'Panther Esports', shortName: 'PTH', logo: '/hall-of-fame/copa-ace-7/panther.png' },
-  minerva: { name: 'Minerva', shortName: 'MIN', logo: '/hall-of-fame/copa-ace-7/minerva.png' },
-  chape: { name: 'Chape e-Sports', shortName: 'CHAPE', logo: '/hall-of-fame/copa-ace-7/chape.jpg' },
-  enigma: { name: 'ENIGMA', shortName: 'ENI', logo: '/hall-of-fame/copa-ace-7/enigma.png' },
+  panther: { name: 'Panther Esports', shortName: 'PTH', logo: '/hall-of-fame/copa-ace-7/panther.webp' },
+  minerva: { name: 'Minerva', shortName: 'MIN', logo: '/hall-of-fame/copa-ace-7/minerva.webp' },
+  chape: { name: 'Chape e-Sports', shortName: 'CHAPE', logo: '/hall-of-fame/copa-ace-7/chape.webp' },
+  enigma: { name: 'ENIGMA', shortName: 'ENI', logo: '/hall-of-fame/copa-ace-7/enigma.webp' },
   corolla: { name: 'Corolla Peak', shortName: 'CP', logo: '/hall-of-fame/copa-ace-7/corolla-peak.webp' },
-  shu: { name: 'Shu Passeios', shortName: 'SHU', logo: '/hall-of-fame/copa-ace-7/shu-passeios.png' },
-  twp: { name: 'TWP', shortName: 'TWP', logo: '/hall-of-fame/copa-ace-7/twp.png' },
+  shu: { name: 'Shu Passeios', shortName: 'SHU', logo: '/hall-of-fame/copa-ace-7/shu-passeios.webp' },
+  twp: { name: 'TWP', shortName: 'TWP', logo: '/hall-of-fame/copa-ace-7/twp.webp' },
   mystic: { name: 'Mystic', shortName: 'MYS', logo: '/hall-of-fame/copa-ace-7/mystic.webp', darkLogo: true },
-  paradox: { name: 'Paradox', shortName: 'PDX', logo: '/hall-of-fame/copa-ace-7/paradox.png' },
-  churras: { name: 'Churras Academy', shortName: 'CHA', logo: '/hall-of-fame/copa-ace-7/churras-academy.png' },
-  azure: { name: 'Azure Bears', shortName: 'AB', logo: '/hall-of-fame/copa-ace-7/azure-bears.png' },
+  paradox: { name: 'Paradox', shortName: 'PDX', logo: '/hall-of-fame/copa-ace-7/paradox.webp' },
+  churras: { name: 'Churras Academy', shortName: 'CHA', logo: '/hall-of-fame/copa-ace-7/churras-academy.webp' },
+  azure: { name: 'Azure Bears', shortName: 'AB', logo: '/hall-of-fame/copa-ace-7/azure-bears.webp' },
 } satisfies Record<string, Team>
 
 export const copaAce7Groups = [
