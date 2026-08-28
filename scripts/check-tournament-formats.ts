@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { copaAce8Teams } from '../src/data/copaAce8'
 import { copaAce7Teams } from '../src/data/copaAce7'
+import { hallOfFameEditions } from '../src/data/hallOfFame'
 import { tournamentArchives } from '../src/data/tournamentArchives'
 import { buildFaceitSwissStandings, type FaceitChampionshipSnapshot } from '../src/lib/faceit'
 import { buildSwissRounds } from '../src/components/CopaAce10Swiss'
@@ -12,6 +13,18 @@ const copa8 = tournamentArchives['copa-ace-8']
 const copa7 = tournamentArchives['copa-ace-7']
 const clutch1 = tournamentArchives['ace-clutch']
 const clutch2 = tournamentArchives['ace-clutch-2']
+
+function collectLogoPaths(value: unknown, paths = new Set<string>()) {
+  if (!value || typeof value !== 'object') return paths
+  if ('logo' in value && typeof value.logo === 'string') paths.add(value.logo)
+  for (const child of Array.isArray(value) ? value : Object.values(value)) collectLogoPaths(child, paths)
+  return paths
+}
+
+const archiveLogoPaths = collectLogoPaths(tournamentArchives)
+for (const edition of hallOfFameEditions) archiveLogoPaths.add(edition.logo)
+assert.ok(archiveLogoPaths.size >= 70)
+assert.ok([...archiveLogoPaths].every((logo) => logo.endsWith('.webp') && existsSync(`public${logo}`)))
 
 assert.equal(copa9.format, 'GROUP_ROUND_ROBIN_SINGLE_ELIMINATION')
 assert.ok(copa9.playoffRounds.every((round) => round.matches.every((match) => match.bestOf === 3)))

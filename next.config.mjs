@@ -1,3 +1,9 @@
+import createBundleAnalyzer from '@next/bundle-analyzer'
+
+const withBundleAnalyzer = createBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+})
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -15,7 +21,28 @@ const contentSecurityPolicy = [
 ].join('; ')
 
 const nextConfig = {
+  distDir: process.env.ANALYZE === 'true' ? '.next-analyze' : '.next',
   poweredByHeader: false,
+  experimental: {
+    reactCompiler: true,
+  },
+  images: {
+    minimumCacheTTL: 86400,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'distribution.faceit-cdn.net',
+        pathname: '/images/**',
+        search: '',
+      },
+      {
+        protocol: 'https',
+        hostname: 'assets.faceit-cdn.net',
+        pathname: '/**',
+        search: '',
+      },
+    ],
+  },
   async headers() {
     return [{
       source: '/(.*)',
@@ -30,4 +57,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withBundleAnalyzer(nextConfig)

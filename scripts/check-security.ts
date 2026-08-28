@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { registrationClaimKey } from '../src/lib/registration-claim'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
@@ -7,6 +8,7 @@ import { FaceitApiError, getFaceitChampionship, parseFaceitChampionshipId, parse
 import { parseYouTubeVideoId } from '../src/lib/youtube'
 
 const identifier = randomUUID()
+const claimTestIds: string[] = []
 
 async function main() {
   try {
@@ -36,6 +38,41 @@ async function main() {
     await assert.rejects(
       readRequestBody(oversizedRequest, 3),
       (error) => error instanceof RequestBodyTooLargeError,
+    )
+
+    const faceitClaimId = randomUUID()
+    const claimKey = registrationClaimKey('Copa Ace 10', faceitClaimId)
+    assert.equal(registrationClaimKey('Copa Ace 10', null, 'Legacy Team'), 'copa ace 10:name:legacy team')
+    const registrationData = (status: 'PENDING' | 'REJECTED', activeClaimKey: string | null) => {
+      const id = randomUUID()
+      claimTestIds.push(id)
+      return {
+        id,
+        protocol: 'SECURITY-' + id,
+        tournament: 'Copa Ace 10',
+        claimKey: activeClaimKey,
+        teamFaceitUrl: 'https://www.faceit.com/pt/teams/' + faceitClaimId,
+        faceitTeamId: faceitClaimId,
+        teamName: 'Security Test Team',
+        teamNameNormalized: 'security test team',
+        teamTag: 'SEC',
+        representativeName: 'Security Test',
+        representativeEmail: 'security@example.invalid',
+        representativePhone: '11999999999',
+        discoverySource: 'security-test',
+        logoPath: id + '/logo.png',
+        logoOriginalName: 'logo.png',
+        paymentProofPath: id + '/proof.png',
+        paymentProofOriginalName: 'proof.png',
+        status,
+      }
+    }
+    await prisma.registration.create({ data: registrationData('REJECTED', null) })
+    await prisma.registration.create({ data: registrationData('REJECTED', null) })
+    await prisma.registration.create({ data: registrationData('PENDING', claimKey) })
+    await assert.rejects(
+      prisma.registration.create({ data: registrationData('PENDING', claimKey) }),
+      (error: unknown) => error instanceof Error && 'code' in error && error.code === 'P2002',
     )
 
     const faceitTeamId = '6204037c-30e6-408b-8aaa-dd8219860b4b'
@@ -90,6 +127,7 @@ async function main() {
 
     console.log('Security checks passed.')
   } finally {
+    await prisma.registration.deleteMany({ where: { id: { in: claimTestIds } } })
     await resetRateLimit('security-check', identifier)
     await prisma.$disconnect()
   }
