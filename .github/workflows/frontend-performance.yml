@@ -46,6 +46,7 @@ jobs:
         run: |
           npm run db:generate
           npm run db:migrate
+          PERFORMANCE_FIXTURES=true npm run perf:seed
 
       - name: Gerar build de producao
         run: npm run build

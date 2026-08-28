@@ -10,14 +10,14 @@ const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '700'],
   variable: '--font-poppins',
-  display: 'swap',
+  display: 'optional',
 })
 
 const nippo = localFont({
   src: './fonts/Nippo-Variable.woff2',
   weight: '700',
   variable: '--font-nippo',
-  display: 'swap',
+  display: 'optional',
 })
 
 export const metadata: Metadata = {

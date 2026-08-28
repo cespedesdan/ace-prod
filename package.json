@@ -14,6 +14,7 @@
     "build": "next build",
     "analyze": "cross-env ANALYZE=true next build",
     "perf:audit": "node scripts/benchmark-performance.mjs",
+    "perf:seed": "node scripts/seed-performance.mjs",
     "start": "next start -H 127.0.0.1 -p 8001",
     "lint": "eslint",
     "check": "npm run lint && tsc --noEmit && npm run test:security && npm run test:headers && npm run test:tournaments",

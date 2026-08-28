@@ -1,3 +1,4 @@
+@reference "../theme.css";
 @import "tailwindcss" source(none);
 @source "./page.tsx";
 @source "./[slug]/page.tsx";
