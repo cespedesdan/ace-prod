@@ -8,6 +8,8 @@
 @source "../components/NavigationLinks.tsx";
 
 :root {
+  --font-poppins: "Ace Poppins Critical";
+  --font-nippo: "Ace Nippo Critical";
   --ace-cyan: #53b29b;
   --ace-copa: #00ffbe;
   --ace-smoke: #1c1124;
@@ -82,6 +84,7 @@ h2,
 h3,
 .font-display {
   font-family: var(--font-nippo), var(--font-poppins), sans-serif;
+  font-weight: 700;
   font-variation-settings: "wght" 700;
 }
 
