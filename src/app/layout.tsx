@@ -1,16 +1,9 @@
 import type { Metadata, Viewport } from 'next'
-import localFont from 'next/font/local'
 import './critical-fonts.css'
 import './globals.css'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
-import { ClientPerformance } from '@/components/ClientPerformance'
-
-const nippo = localFont({
-  src: './fonts/Nippo-Variable.woff2',
-  variable: '--font-nippo',
-  display: 'swap',
-})
+import { IntentPrefetch } from '@/components/IntentPrefetch'
 
 export const metadata: Metadata = {
   title: 'Ace Produtora',
@@ -32,8 +25,8 @@ export default function RootLayout({
       <head>
         <noscript><style>{'img[data-deferred-src]{display:none!important}'}</style></noscript>
       </head>
-      <body className={`${nippo.variable} min-h-screen bg-gray-900 text-white`}>
-        <ClientPerformance />
+      <body className="min-h-screen bg-gray-900 text-white">
+        <IntentPrefetch />
         <div className="flex flex-col min-h-screen">
           <Navbar />
           <main className="flex-1">

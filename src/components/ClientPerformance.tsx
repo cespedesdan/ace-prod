@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
-const intentSelector = 'a[data-intent-prefetch][href]'
 const deferredSelector = '.deferred-render, .deferred-render-compact'
 const stylesheetLoads = new Map<string, Promise<void>>()
 
@@ -47,42 +46,26 @@ function loadStylesheet(href: string) {
 
 export function ClientPerformance() {
   const pathname = usePathname()
-  const router = useRouter()
-
-  useEffect(() => {
-    const prefetched = new WeakSet<HTMLAnchorElement>()
-    const prefetchLink = (event: Event) => {
-      const target = event.target instanceof Element ? event.target.closest(intentSelector) : null
-      if (!(target instanceof HTMLAnchorElement) || prefetched.has(target)) return
-
-      const url = new URL(target.href, window.location.href)
-      if (url.origin !== window.location.origin) return
-
-      prefetched.add(target)
-      router.prefetch(`${url.pathname}${url.search}`)
-    }
-
-    document.addEventListener('pointerover', prefetchLink, { passive: true })
-    document.addEventListener('focusin', prefetchLink)
-    document.addEventListener('touchstart', prefetchLink, { passive: true })
-
-    return () => {
-      document.removeEventListener('pointerover', prefetchLink)
-      document.removeEventListener('focusin', prefetchLink)
-      document.removeEventListener('touchstart', prefetchLink)
-    }
-  }, [router])
 
   useEffect(() => {
     const sections = document.querySelectorAll<HTMLElement>(deferredSelector)
     const standaloneImages = document.querySelectorAll<HTMLImageElement>('img[data-deferred-standalone]')
     if (!('IntersectionObserver' in window)) {
+      let cancelled = false
+      const stylesheets = new Set<string>()
       sections.forEach((section) => {
-        activateDeferredImages(section)
-        section.dataset.renderVisible = 'true'
+        const stylesheet = section.closest<HTMLElement>('[data-deferred-stylesheet]')?.dataset.deferredStylesheet
+        if (stylesheet) stylesheets.add(stylesheet)
       })
-      standaloneImages.forEach((image) => activateDeferredImages(image.parentElement ?? document))
-      return
+      void Promise.all([...stylesheets].map(loadStylesheet)).then(() => {
+        if (cancelled) return
+        sections.forEach((section) => {
+          activateDeferredImages(section)
+          section.dataset.renderVisible = 'true'
+        })
+        standaloneImages.forEach((image) => activateDeferredImages(image.parentElement ?? document))
+      })
+      return () => { cancelled = true }
     }
 
     let observer: IntersectionObserver | null = null

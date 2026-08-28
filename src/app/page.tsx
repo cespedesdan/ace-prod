@@ -3,6 +3,7 @@ import './home.css'
 import { Hero } from '@/components/Hero'
 import { RankingTable } from '@/components/RankingTable'
 import { YouTubeLivePlayer } from '@/components/YouTubeLivePlayer'
+import { ClientPerformance } from '@/components/ClientPerformance'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
 import { publicLiveStreamId, publicTournament } from '@/lib/public-content'
@@ -43,6 +44,7 @@ export default async function HomePage() {
 
   return (
     <div className="home-page min-h-screen">
+      <ClientPerformance />
       <Hero />
       {liveStream?.visibleOnHome && (
         <section className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8" aria-labelledby="live-title">

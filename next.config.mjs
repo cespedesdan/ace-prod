@@ -50,9 +50,6 @@ const nextConfig = {
   },
   async headers() {
     return [{
-      source: '/fonts/:font*',
-      headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
-    }, {
       source: '/copa-ace-10/deferred-v1.css',
       headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
     }, {

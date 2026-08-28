@@ -9,6 +9,7 @@
 
 :root {
   --font-poppins: "Ace Poppins Critical";
+  --font-nippo: "Ace Display Critical";
   --ace-cyan: #53b29b;
   --ace-copa: #00ffbe;
   --ace-smoke: #1c1124;
@@ -395,6 +396,11 @@ textarea {
 
   .deferred-render-compact {
     contain-intrinsic-size: auto 150px;
+  }
+
+  .site-footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 400px;
   }
 
   @media (max-width: 639px) {
