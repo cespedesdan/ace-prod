@@ -142,7 +142,6 @@ textarea {
 
 .lcp-text {
   contain: layout paint;
-  transform: translateZ(0);
 }
 
 .brand-button-primary {

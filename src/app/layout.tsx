@@ -8,16 +8,16 @@ import { ClientPerformance } from '@/components/ClientPerformance'
 
 const poppins = Poppins({
   subsets: ['latin'],
-  weight: '400',
+  weight: ['400', '700'],
   variable: '--font-poppins',
-  display: 'optional',
+  display: 'swap',
 })
 
 const nippo = localFont({
   src: './fonts/Nippo-Variable.woff2',
   weight: '700',
   variable: '--font-nippo',
-  display: 'optional',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {

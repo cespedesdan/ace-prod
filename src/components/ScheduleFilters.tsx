@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 type ScheduleBucket = 'today' | 'upcoming' | 'finished'
 type ScheduleFilter = 'all' | ScheduleBucket
@@ -18,6 +18,7 @@ const roundOptions = [1, 2, 3, 4, 5]
 export function ScheduleFilters({ matches }: { matches: MatchMeta[] }) {
   const [filter, setFilter] = useState<ScheduleFilter>('all')
   const [round, setRound] = useState('all')
+  const initialized = useRef(false)
   const counts = useMemo(() => {
     const selected = matches.filter((match) => round === 'all' || match.round === Number(round))
     return {
@@ -31,10 +32,15 @@ export function ScheduleFilters({ matches }: { matches: MatchMeta[] }) {
   useEffect(() => {
     const root = document.getElementById('jogos')
     if (!root) return
+    const preserveInitialDeferredState = !initialized.current && filter === 'all' && round === 'all'
 
     for (const section of root.querySelectorAll<HTMLElement>('[data-schedule-section]')) {
       const bucket = section.dataset.scheduleSection as ScheduleBucket
-      section.hidden = filter !== 'all' && filter !== bucket
+      if (!preserveInitialDeferredState) {
+        const visible = filter === 'all' || filter === bucket
+        section.hidden = !visible
+        if (visible) section.dataset.renderVisible = 'true'
+      }
 
       let visibleMatches = 0
       for (const card of section.querySelectorAll<HTMLElement>('[data-schedule-match]')) {
@@ -54,6 +60,7 @@ export function ScheduleFilters({ matches }: { matches: MatchMeta[] }) {
       const count = section.querySelector<HTMLElement>('[data-schedule-count]')
       if (count) count.textContent = String(counts[bucket])
     }
+    initialized.current = true
   }, [counts, filter, round])
 
   return (
