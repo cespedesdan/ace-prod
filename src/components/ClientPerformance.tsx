@@ -89,14 +89,14 @@ export function ClientPerformance() {
       return loadStylesheet(stylesheet).then(reveal)
     }
 
-    const revealForFragment = (target: HTMLElement, behavior: ScrollBehavior) => {
+    const revealForFragment = (target: HTMLElement, behavior: ScrollBehavior | 'instant') => {
       void Promise.all([...sections].map(revealSection)).then(() => {
         // Let the browser calculate the final section heights before scrolling.
         // The deferred stylesheet must be loaded first so the wide Swiss bracket
         // is contained while mobile Chrome performs this layout.
         sections.forEach((section) => { section.style.contentVisibility = 'visible' })
         void document.documentElement.offsetHeight
-        requestAnimationFrame(() => target.scrollIntoView({ behavior, block: 'start' }))
+        requestAnimationFrame(() => target.scrollIntoView({ behavior: behavior as ScrollBehavior, block: 'start' }))
       })
     }
 
@@ -116,14 +116,21 @@ export function ClientPerformance() {
 
     const revealBeforeMatch = (event: Event) => {
       const target = event.target instanceof Element ? event.target.closest<HTMLElement>(deferredSelector) : null
-      if (target) revealForFragment(target, 'auto')
+      if (target) revealForFragment(target, 'instant')
     }
 
+    let matchScrollTimer: number | undefined
     const revealSelectedMatch = () => {
       const node = document.getSelection()?.anchorNode
       const element = node instanceof Element ? node : node?.parentElement
       const target = element?.closest<HTMLElement>(deferredSelector)
-      if (target && target.dataset.renderVisible !== 'true') revealForFragment(target, 'auto')
+      if (!target || target.dataset.renderVisible === 'true') return
+
+      revealForFragment(target, 'instant')
+      window.clearTimeout(matchScrollTimer)
+      matchScrollTimer = window.setTimeout(() => {
+        if (element?.isConnected) element.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'center' })
+      }, 250)
     }
 
     document.addEventListener('click', navigateToFragment)
@@ -138,12 +145,18 @@ export function ClientPerformance() {
     }, { rootMargin: '100px 0px' })
 
     sections.forEach((section) => observer.observe(section))
-    const initialTarget = document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
-    if (initialTarget) revealForFragment(initialTarget, 'auto')
+    let initialTarget: HTMLElement | null = null
+    try {
+      initialTarget = document.getElementById(decodeURIComponent(window.location.hash.slice(1)))
+    } catch {
+      // Ignore malformed fragments instead of breaking the shared client shell.
+    }
+    if (initialTarget) revealForFragment(initialTarget, 'instant')
     return () => {
       document.removeEventListener('click', navigateToFragment)
       document.removeEventListener('beforematch', revealBeforeMatch)
       document.removeEventListener('selectionchange', revealSelectedMatch)
+      window.clearTimeout(matchScrollTimer)
       observer?.disconnect()
     }
   }, [pathname])

@@ -71,7 +71,7 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
             <div>
               <div className="tournament-kicker mb-3 flex items-center gap-2"><span className="h-2 w-2 bg-orange-500" /> Arquivo oficial · {data.edition}</div>
               <h1 className="text-4xl font-black uppercase tracking-tight sm:text-6xl">{data.title}</h1>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-300">{data.description}</p>
+              <p className="lcp-text mt-4 max-w-2xl text-base leading-relaxed text-slate-300">{data.description}</p>
               <div className="mt-7 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-300">
                 <span className="flex items-center gap-2"><CalendarDays size={16} className="text-orange-400" /> {data.date}</span>
                 <span className="flex items-center gap-2"><Gamepad2 size={16} className="text-orange-400" /> Counter-Strike 2</span>

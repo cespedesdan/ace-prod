@@ -15,7 +15,7 @@ export default function RegistrationClosed() {
               <span className="h-2 w-2 bg-[#ffd276]" /> Inscrições encerradas
             </div>
             <h1 className="mt-5 text-4xl font-black uppercase tracking-tight sm:text-6xl">Inscrições encerradas <span>na Copa ACE 10</span></h1>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">As inscrições desta edição foram encerradas. Consulte o regulamento e acompanhe a competição pela agenda.</p>
+            <p className="lcp-text mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">As inscrições desta edição foram encerradas. Consulte o regulamento e acompanhe a competição pela agenda.</p>
             <div className="mt-7 flex flex-wrap gap-3 text-xs font-bold text-slate-300">
               <span className="inline-flex items-center gap-2 bg-white/5 px-3 py-2"><UsersRound size={15} className="text-[#ffd276]" /> 16 equipes</span>
               <span className="inline-flex items-center gap-2 bg-white/5 px-3 py-2"><LockKeyhole size={15} className="text-[#ffd276]" /> Inscrições encerradas</span>

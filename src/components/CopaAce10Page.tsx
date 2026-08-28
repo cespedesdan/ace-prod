@@ -68,7 +68,7 @@ export default async function CopaAce10Page() {
                 <Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} />
               </div>
               <p className="tournament-kicker mt-7">10ª edição · inscrições abertas</p>
-              <h1 className="mt-3 max-w-3xl text-5xl uppercase leading-[0.92] tracking-[-0.04em] sm:text-7xl xl:text-[5.4rem]">
+              <h1 className="lcp-text mt-3 max-w-3xl text-5xl uppercase leading-[0.92] tracking-[-0.04em] sm:text-7xl xl:text-[5.4rem]">
                 A maior Copa ACE <span>de todos os tempos</span>
               </h1>
               <p className="mt-6 max-w-xl text-base leading-relaxed text-[#d8d8d8]">
