@@ -6,7 +6,11 @@
 	}
 }
 
-aceprodutora.com.br, www.aceprodutora.com.br {
+www.aceprodutora.com.br {
+	redir https://aceprodutora.com.br{uri} permanent
+}
+
+aceprodutora.com.br {
 	encode zstd gzip
 
 	request_body {

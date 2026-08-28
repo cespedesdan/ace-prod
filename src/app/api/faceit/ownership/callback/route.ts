@@ -33,16 +33,22 @@ export async function GET(request: NextRequest) {
   const providerError = request.nextUrl.searchParams.get('error')
 
   let response: NextResponse
+  let clearStateCookie = false
   try {
-    if (providerError) {
-      response = redirectWithError('access_denied')
-    } else if (!stateToken || !returnedState || returnedState.length > 256 || !code || code.length > 2048) {
+    if (!stateToken || !returnedState || returnedState.length > 256) {
       response = redirectWithError('invalid_callback')
     } else {
       const state = verifyFaceitOAuthState(stateToken, returnedState)
       if (!state) {
         response = redirectWithError('invalid_state')
+      } else if (providerError) {
+        clearStateCookie = true
+        response = redirectWithError('access_denied')
+      } else if (!code || code.length > 2048) {
+        clearStateCookie = true
+        response = redirectWithError('invalid_callback')
       } else {
+        clearStateCookie = true
         const playerId = await exchangeFaceitAuthorizationCode(code, state.verifier)
         const team = await getFaceitTeam(`https://www.faceit.com/pt/teams/${state.teamId}`)
         const leader = team.members.find((member) => member.isLeader)
@@ -69,6 +75,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  response.cookies.set(cookieNames.state, '', getFaceitCookieOptions(0))
+  if (clearStateCookie) {
+    response.cookies.set(cookieNames.state, '', getFaceitCookieOptions(0))
+  }
   return response
 }

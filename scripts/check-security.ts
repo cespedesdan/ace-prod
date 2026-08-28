@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { NextRequest } from 'next/server'
+import { registrationClaimKey } from '../src/lib/registration-claim'
 import { prisma } from '../src/lib/prisma'
 import { consumeRateLimit, resetRateLimit } from '../src/lib/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError } from '../src/lib/request-body'
@@ -9,12 +11,15 @@ import {
   createFaceitAuthorization,
   createFaceitOwnershipProof,
   exchangeFaceitAuthorizationCode,
+  getFaceitOAuthCookieNames,
+  getRegistrationReturnUrl,
   verifyFaceitOAuthState,
   verifyFaceitOwnershipProof,
 } from '../src/lib/faceit-ownership'
 import { parseYouTubeVideoId } from '../src/lib/youtube'
 
 const identifier = randomUUID()
+const claimTestIds: string[] = []
 
 async function main() {
   try {
@@ -46,6 +51,41 @@ async function main() {
       (error) => error instanceof RequestBodyTooLargeError,
     )
 
+    const faceitClaimId = randomUUID()
+    const claimKey = registrationClaimKey('Copa Ace 10', faceitClaimId)
+    assert.equal(registrationClaimKey('Copa Ace 10', null, 'Legacy Team'), 'copa ace 10:name:legacy team')
+    const registrationData = (status: 'PENDING' | 'REJECTED', activeClaimKey: string | null) => {
+      const id = randomUUID()
+      claimTestIds.push(id)
+      return {
+        id,
+        protocol: 'SECURITY-' + id,
+        tournament: 'Copa Ace 10',
+        claimKey: activeClaimKey,
+        teamFaceitUrl: 'https://www.faceit.com/pt/teams/' + faceitClaimId,
+        faceitTeamId: faceitClaimId,
+        teamName: 'Security Test Team',
+        teamNameNormalized: 'security test team',
+        teamTag: 'SEC',
+        representativeName: 'Security Test',
+        representativeEmail: 'security@example.invalid',
+        representativePhone: '11999999999',
+        discoverySource: 'security-test',
+        logoPath: id + '/logo.png',
+        logoOriginalName: 'logo.png',
+        paymentProofPath: id + '/proof.png',
+        paymentProofOriginalName: 'proof.png',
+        status,
+      }
+    }
+    await prisma.registration.create({ data: registrationData('REJECTED', null) })
+    await prisma.registration.create({ data: registrationData('REJECTED', null) })
+    await prisma.registration.create({ data: registrationData('PENDING', claimKey) })
+    await assert.rejects(
+      prisma.registration.create({ data: registrationData('PENDING', claimKey) }),
+      (error: unknown) => error instanceof Error && 'code' in error && error.code === 'P2002',
+    )
+
     const faceitTeamId = '6204037c-30e6-408b-8aaa-dd8219860b4b'
     assert.equal(parseFaceitTeamId(`https://www.faceit.com/pt/teams/${faceitTeamId}/ace`), faceitTeamId)
     assert.throws(
@@ -62,7 +102,7 @@ async function main() {
     process.env.FACEIT_OAUTH_COOKIE_SECRET = 'test-faceit-cookie-secret-that-is-long-enough'
     process.env.FACEIT_OAUTH_CLIENT_ID = 'faceit-client-id'
     process.env.FACEIT_OAUTH_CLIENT_SECRET = 'faceit-client-secret'
-    process.env.FACEIT_OAUTH_REDIRECT_URI = 'http://localhost:8001/api/faceit/ownership/callback'
+    process.env.FACEIT_OAUTH_REDIRECT_URI = 'https://aceprodutora.com.br/api/faceit/ownership/callback'
     try {
       const authorization = createFaceitAuthorization(faceitTeamId)
       const authorizationUrl = new URL(authorization.authorizationUrl)
@@ -70,6 +110,12 @@ async function main() {
       assert.equal(authorizationUrl.searchParams.get('response_type'), 'code')
       assert.equal(authorizationUrl.searchParams.get('code_challenge_method'), 'S256')
       assert.equal(authorizationUrl.searchParams.get('scope'), 'openid profile')
+      assert.equal(
+        authorizationUrl.searchParams.get('redirect_uri'),
+        'https://aceprodutora.com.br/api/faceit/ownership/callback',
+      )
+      assert.equal(getRegistrationReturnUrl().origin, 'https://aceprodutora.com.br')
+      assert.equal(getFaceitOAuthCookieNames(true).state, '__Host-ace-faceit-oauth-state')
       const state = authorizationUrl.searchParams.get('state') || ''
       assert.equal(verifyFaceitOAuthState(authorization.stateToken, `${state}-tampered`), null)
       const verifiedState = verifyFaceitOAuthState(authorization.stateToken, state)
@@ -107,6 +153,43 @@ async function main() {
       } finally {
         globalThis.fetch = oauthFetch
       }
+
+      const { GET: handleFaceitCallback } = await import('../src/app/api/faceit/ownership/callback/route')
+      const stateCookieName = getFaceitOAuthCookieNames().state
+      const deniedCallback = await handleFaceitCallback(new NextRequest(
+        `https://aceprodutora.com.br/api/faceit/ownership/callback?error=access_denied&state=${encodeURIComponent(state)}`,
+        { headers: { Cookie: `${stateCookieName}=${authorization.stateToken}` } },
+      ))
+      assert.equal(deniedCallback.status, 303)
+      assert.equal(new URL(deniedCallback.headers.get('Location') || '').searchParams.get('faceit_error'), 'access_denied')
+      assert.match(deniedCallback.headers.get('Set-Cookie') || '', /Max-Age=0/)
+
+      const invalidStateCallback = await handleFaceitCallback(new NextRequest(
+        'https://aceprodutora.com.br/api/faceit/ownership/callback?error=access_denied&state=attacker-state',
+        { headers: { Cookie: `${stateCookieName}=${authorization.stateToken}` } },
+      ))
+      assert.equal(invalidStateCallback.status, 303)
+      assert.equal(new URL(invalidStateCallback.headers.get('Location') || '').searchParams.get('faceit_error'), 'invalid_state')
+      assert.equal(invalidStateCallback.headers.get('Set-Cookie'), null)
+
+      const missingStateCallback = await handleFaceitCallback(new NextRequest(
+        'https://aceprodutora.com.br/api/faceit/ownership/callback?error=access_denied',
+        { headers: { Cookie: `${stateCookieName}=${authorization.stateToken}` } },
+      ))
+      assert.equal(missingStateCallback.status, 303)
+      assert.equal(new URL(missingStateCallback.headers.get('Location') || '').searchParams.get('faceit_error'), 'invalid_callback')
+      assert.equal(missingStateCallback.headers.get('Set-Cookie'), null)
+
+      const caddyfile = await readFile(new URL('../deploy/Caddyfile', import.meta.url), 'utf8')
+      assert.match(
+        caddyfile,
+        /www\.aceprodutora\.com\.br\s*\{\s*redir https:\/\/aceprodutora\.com\.br\{uri\} permanent\s*\}/,
+      )
+      assert.match(
+        caddyfile,
+        /aceprodutora\.com\.br\s*\{[\s\S]*reverse_proxy 127\.0\.0\.1:8001/,
+      )
+      assert.doesNotMatch(caddyfile, /aceprodutora\.com\.br,\s*www\.aceprodutora\.com\.br/)
     } finally {
       if (oauthEnvironment.cookieSecret === undefined) delete process.env.FACEIT_OAUTH_COOKIE_SECRET
       else process.env.FACEIT_OAUTH_COOKIE_SECRET = oauthEnvironment.cookieSecret
@@ -172,6 +255,7 @@ async function main() {
 
     console.log('Security checks passed.')
   } finally {
+    await prisma.registration.deleteMany({ where: { id: { in: claimTestIds } } })
     await resetRateLimit('security-check', identifier)
     await prisma.$disconnect()
   }

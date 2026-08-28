@@ -98,8 +98,8 @@ function verifyPayload(token: string) {
   }
 }
 
-export function getFaceitOAuthCookieNames() {
-  const prefix = process.env.NODE_ENV === 'production' ? '__Host-' : ''
+export function getFaceitOAuthCookieNames(isProduction = process.env.NODE_ENV === 'production') {
+  const prefix = isProduction ? '__Host-' : ''
   return {
     state: `${prefix}ace-faceit-oauth-state`,
     ownership: `${prefix}ace-faceit-ownership`,
