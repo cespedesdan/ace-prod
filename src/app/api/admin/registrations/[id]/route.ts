@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { verifyToken } from '@/lib/auth'
 import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
-import { registrationClaimKey } from '@/lib/registration-claim'
+import { registrationClaimKeys } from '@/lib/registration-claim'
 
 const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED'] as const
 type AllowedStatus = (typeof allowedStatuses)[number]
@@ -52,17 +52,19 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         if (approvedCount >= 16) return 'full' as const
       }
 
+      const activeClaims = status === 'REJECTED'
+        ? { claimKey: null, teamNameClaimKey: null }
+        : registrationClaimKeys(
+            registration.tournament,
+            registration.faceitTeamId,
+            registration.teamNameNormalized,
+          )
+
       return tx.registration.update({
         where: { id },
         data: {
           status,
-          claimKey: status === 'REJECTED'
-            ? null
-            : registrationClaimKey(
-                registration.tournament,
-                registration.faceitTeamId,
-                registration.teamNameNormalized,
-              ),
+          ...activeClaims,
         },
         select: { id: true, status: true, updatedAt: true },
       })
