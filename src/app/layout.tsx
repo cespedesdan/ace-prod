@@ -8,7 +8,7 @@ import { ClientPerformance } from '@/components/ClientPerformance'
 
 const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400', '700'],
+  weight: '400',
   variable: '--font-poppins',
   display: 'optional',
 })
