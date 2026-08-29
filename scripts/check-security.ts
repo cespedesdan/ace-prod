@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { NextRequest } from 'next/server'
 import sharp from 'sharp'
+import { POST as adminLogin } from '../src/app/api/admin/login/route'
 import { POST as submitRegistration } from '../src/app/api/registrations/route'
 import { POST as collectCspReport } from '../src/app/api/security/csp-report/route'
 import { adminCookieName, requireSameOrigin } from '../src/lib/admin-request'
@@ -26,6 +27,7 @@ import {
 } from '../src/lib/registration-input'
 
 const identifier = randomUUID()
+const adminLoginProbeEmail = `missing-${identifier}@example.com`
 const claimTestIds: string[] = []
 const cspReportOrigin = 'https://aceprodutora.com.br'
 const cspReportEndpoint = `${cspReportOrigin}/api/security/csp-report`
@@ -283,6 +285,13 @@ async function main() {
       }))?.status,
       403,
     )
+
+    const invalidLogin = await adminLogin(new NextRequest('http://localhost/api/admin/login', {
+      method: 'POST',
+      headers: { Origin: 'http://localhost', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: adminLoginProbeEmail, password: 'invalid-password' }),
+    }))
+    assert.equal(invalidLogin.status, 401)
     assert.equal(
       requireSameOrigin(new NextRequest(proxiedAdminRequest.url, {
         method: 'POST',
@@ -504,11 +513,11 @@ async function main() {
     console.log('Security checks passed.')
   } finally {
     await prisma.registration.deleteMany({ where: { id: { in: claimTestIds } } })
-    await Promise.all([
-      resetRateLimit(adminLoginTestScopes.account, 'admin@example.com'),
-      resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.1'),
-      resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.2'),
-    ])
+    await resetRateLimit(adminLoginTestScopes.account, 'admin@example.com')
+    await resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.1')
+    await resetRateLimit(adminLoginTestScopes.credential, 'admin@example.com:192.0.2.2')
+    await resetRateLimit('admin-login-credential', adminLoginProbeEmail)
+    await resetRateLimit('admin-login-account', adminLoginProbeEmail)
     await resetRateLimit('security-check', identifier)
     await prisma.$disconnect()
   }
