@@ -98,11 +98,6 @@ export type FaceitSwissStanding = {
   status: 'Classificado' | 'Eliminado' | 'Em disputa'
 }
 
-export function faceitMatchWinnerTeamId(match: FaceitChampionshipSnapshot['matches'][number]) {
-  if (match.status?.toLowerCase() !== 'finished') return null
-  return match.teams.find((team) => match.winner === team.faction || match.winner === team.teamId)?.teamId || null
-}
-
 export function buildFaceitSwissStandings(
   teams: FaceitChampionshipSnapshot['teams'],
   matches: FaceitChampionshipSnapshot['matches'],
@@ -119,8 +114,8 @@ export function buildFaceitSwissStandings(
 
   teams.forEach(standingFor)
   for (const match of matches) {
-    const winnerTeamId = faceitMatchWinnerTeamId(match)
-    if (!winnerTeamId) continue
+    const winner = match.teams.find((team) => match.winner === team.faction || match.winner === team.teamId)
+    if (!winner) continue
 
     for (const team of match.teams) {
       const standing = standingFor(team)
@@ -130,7 +125,7 @@ export function buildFaceitSwissStandings(
         .reduce((total, opponent) => total + (match.scores[opponent.faction] ?? match.scores[opponent.teamId] ?? 0), 0)
       standing.played += 1
       standing.scoreBalance += score - opponentScore
-      if (team.teamId === winnerTeamId) standing.wins += 1
+      if (team.teamId === winner.teamId) standing.wins += 1
       else standing.losses += 1
     }
   }

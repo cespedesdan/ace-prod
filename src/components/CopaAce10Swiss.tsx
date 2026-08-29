@@ -1,7 +1,6 @@
 import Image from 'next/image'
 import { Shield, ShieldCheck, ShieldX } from 'lucide-react'
 import type { CopaAce10FaceitData } from '@/components/CopaAce10Faceit'
-import { faceitMatchWinnerTeamId } from '@/lib/faceit'
 
 type Match = CopaAce10FaceitData['matches'][number]
 type Team = CopaAce10FaceitData['teams'][number]
@@ -43,6 +42,10 @@ function matchDate(timestamp: number | null) {
     : 'Horário a definir'
 }
 
+function winnerTeamId(match: Match) {
+  return match.teams.find((team) => match.winner === team.faction || match.winner === team.teamId)?.teamId || null
+}
+
 function recordOf(campaign: Campaign) {
   return `${campaign.wins}-${campaign.losses}`
 }
@@ -64,7 +67,7 @@ export function buildSwissRounds(matches: Match[], teams: Team[]) {
 
   const rounds = (Object.keys(SWISS_ROUNDS).map(Number) as RoundNumber[]).map((round) => {
     const records = [...SWISS_ROUNDS[round]] as SwissRecord[]
-    const roundMatches = matches.filter((match) => match.round === round && match.status?.toLowerCase() !== 'cancelled')
+    const roundMatches = matches.filter((match) => match.round === round)
     const matchesByRecord = new Map<SwissRecord, Match[]>(records.map((record) => [record, []]))
     const pairedTeamIds = new Set<string>()
 
@@ -83,7 +86,7 @@ export function buildSwissRounds(matches: Match[], teams: Team[]) {
     }))
 
     for (const match of roundMatches) {
-      const winnerId = faceitMatchWinnerTeamId(match)
+      const winnerId = winnerTeamId(match)
       if (!winnerId) continue
       for (const team of match.teams) {
         const campaign = campaigns.get(team.teamId) || { wins: 0, losses: 0 }

@@ -84,21 +84,6 @@ assert.deepEqual(swissStage.rounds.map(({ groups }) => groups.map(({ record }) =
 assert.equal(swissStage.rounds[0].groups[0].matches.length, 1)
 assert.deepEqual(swissStage.campaigns.get('a'), { wins: 1, losses: 0 })
 
-const terminalMatches = [1, 2, 3].map((round) => ({ ...swissMatches[0], matchId: String(round), round }))
-const cancelledTerminalMatch = {
-  ...swissMatches[0], matchId: 'cancelled', round: 4, status: 'CANCELLED', scores: { faction1: 0, faction2: 0 },
-}
-const terminalMatchesWithCancellation = [...terminalMatches, cancelledTerminalMatch]
-const terminalStandings = buildFaceitSwissStandings(swissTeams, terminalMatchesWithCancellation)
-assert.deepEqual(terminalStandings.map(({ name, wins, losses }) => ({ name, wins, losses })), [
-  { name: 'Alpha', wins: 3, losses: 0 },
-  { name: 'Bravo', wins: 0, losses: 3 },
-])
-const terminalStage = buildSwissRounds(terminalMatchesWithCancellation, swissTeams)
-assert.deepEqual(terminalStage.campaigns.get('a'), { wins: 3, losses: 0 })
-assert.deepEqual(terminalStage.campaigns.get('b'), { wins: 0, losses: 3 })
-assert.equal(terminalStage.rounds.flatMap(({ groups }) => groups.flatMap(({ matches }) => matches)).some(({ matchId }) => matchId === 'cancelled'), false)
-
 const schedule = organizeSchedule([
   { ...swissMatches[0], matchId: 'today', winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-22T19:00:00-03:00') },
   { ...swissMatches[0], matchId: 'upcoming', winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-23T19:00:00-03:00') },
