@@ -34,21 +34,19 @@ export async function POST(request: NextRequest) {
     const ip = getClientIp(request)
     const { emailKey, credentialKey } = adminLoginRateLimitIdentifiers(email, ip)
 
-    const [ipLimit, credentialLimit, accountLimit] = await Promise.all([
-      ip
-        ? consumeRateLimit({ scope: 'admin-login-ip', identifier: ip, ...ADMIN_LOGIN_SOURCE_RATE_LIMIT })
-        : Promise.resolve({ allowed: true, remaining: ADMIN_LOGIN_SOURCE_RATE_LIMIT.limit, retryAfterSeconds: 0 }),
-      consumeRateLimit({
-        scope: 'admin-login-credential',
-        identifier: credentialKey,
-        ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
-      }),
-      consumeRateLimit({
-        scope: 'admin-login-account',
-        identifier: emailKey,
-        ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
-      }),
-    ])
+    const ipLimit = ip
+      ? await consumeRateLimit({ scope: 'admin-login-ip', identifier: ip, ...ADMIN_LOGIN_SOURCE_RATE_LIMIT })
+      : { allowed: true, remaining: ADMIN_LOGIN_SOURCE_RATE_LIMIT.limit, retryAfterSeconds: 0 }
+    const credentialLimit = await consumeRateLimit({
+      scope: 'admin-login-credential',
+      identifier: credentialKey,
+      ...ADMIN_LOGIN_SOURCE_RATE_LIMIT,
+    })
+    const accountLimit = await consumeRateLimit({
+      scope: 'admin-login-account',
+      identifier: emailKey,
+      ...ADMIN_LOGIN_ACCOUNT_RATE_LIMIT,
+    })
     if (!ipLimit.allowed || !credentialLimit.allowed || !accountLimit.allowed) {
       return rateLimitResponse(Math.max(
         ipLimit.retryAfterSeconds,
@@ -81,11 +79,9 @@ export async function POST(request: NextRequest) {
     }
 
     const token = generateToken(user)
-    await Promise.all([
-      ...(ip ? [resetRateLimit('admin-login-ip', ip)] : []),
-      resetRateLimit('admin-login-credential', credentialKey),
-      resetRateLimit('admin-login-account', emailKey),
-    ])
+    if (ip) await resetRateLimit('admin-login-ip', ip)
+    await resetRateLimit('admin-login-credential', credentialKey)
+    await resetRateLimit('admin-login-account', emailKey)
 
     const response = NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
     response.cookies.set(adminCookieName(), token, {
