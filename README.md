@@ -17,6 +17,7 @@ O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snap
 - Sincronização manual do elenco FACEIT pelo painel administrativo.
 - Gerenciamento de campeonatos FACEIT com vínculos, snapshots e sincronização automática independente por edição.
 - Histórico da última sincronização automática e da última falha no painel administrativo.
+- Webhook autenticado da FACEIT como acelerador da sincronização, com reconciliação agendada como proteção contra eventos perdidos.
 - Publicação automática do snapshot em páginas integradas, atualmente na Copa ACE 10.
 - Publicação automática das equipes aprovadas na página da Copa ACE 10.
 - Autenticação administrativa com bcrypt e JWT em cookie `httpOnly`.
@@ -37,6 +38,7 @@ O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snap
 | `/admin` | Painel administrativo |
 | `/admin/inscricoes` | Aprovação e rejeição de inscrições |
 | `/admin/faceit` | Vínculo, sincronização e desvinculação de campeonatos FACEIT |
+| `/api/webhooks/faceit` | Callback autenticado para eventos da FACEIT |
 | `/admin/noticias` | Criação, edição e exclusão de notícias |
 
 ## Desenvolvimento local
@@ -57,7 +59,7 @@ O servidor de desenvolvimento escuta em todas as interfaces na porta `8001`:
 
 Em desenvolvimento, `TRUST_PROXY` deve permanecer `false`.
 
-Defina `FACEIT_API_KEY` no `.env.local` para habilitar a consulta de times. A chave é usada somente pelo servidor: não use prefixo `NEXT_PUBLIC_` e nunca a envie ao Git.
+Defina `FACEIT_API_KEY` no `.env.local` para habilitar a consulta de times. Para receber eventos, defina também `FACEIT_WEBHOOK_SECRET` com pelo menos 32 caracteres e configure o mesmo valor como cabeçalho `X-Faceit-Webhook-Secret` no App Studio da FACEIT. As chaves são usadas somente pelo servidor: não use prefixo `NEXT_PUBLIC_` e nunca as envie ao Git.
 
 ## Primeiro administrador
 
@@ -92,6 +94,7 @@ O banco e os uploads são privados e estão ignorados pelo Git. Os dois precisam
 | `npm run check` | Executa lint, TypeScript e todos os testes locais |
 | `npm run test:security` | Testa rate limit e consultas parametrizadas |
 | `npm run test:faceit-sync` | Testa sincronização manual/automática, falhas e agendamento FACEIT |
+| `npm run test:faceit-webhook` | Testa autenticação, validação e acionamento seguro por webhook |
 | `npm run test:tournaments` | Verifica formatos e regras MD1/MD3 das páginas históricas |
 | `npm run sync:faceit` | Sincroniza campeonatos FACEIT cuja atualização está pendente |
 
