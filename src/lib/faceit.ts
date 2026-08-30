@@ -1,5 +1,6 @@
 const FACEIT_API_URL = 'https://open.faceit.com/data/v4'
 const TEAM_ID_PATTERN = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
+const MAX_CHAMPIONSHIP_ITEMS = 1000
 
 type FaceitMemberResponse = {
   user_id?: unknown
@@ -170,6 +171,16 @@ function record(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }
 
+function uniqueBy<T>(items: T[], keyFor: (item: T) => string) {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    const key = keyFor(item)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 async function faceitRequest(path: string, notFoundMessage: string) {
   const apiKey = process.env.FACEIT_API_KEY
   if (!apiKey) throw new FaceitApiError('A integração com a FACEIT ainda não está configurada.', 503)
@@ -268,28 +279,32 @@ export function parseFaceitChampionshipId(value: string) {
   return championshipId.toLowerCase()
 }
 
-async function getChampionshipSubscriptions(championshipId: string) {
+async function getChampionshipItems(path: string, limit: 10 | 100, notFoundMessage: string) {
   const items: unknown[] = []
-  for (let offset = 0; offset < 100; offset += 10) {
-    const page = await faceitRequest(
-      `/championships/${encodeURIComponent(championshipId)}/subscriptions?offset=${offset}&limit=10`,
-      'Campeonato não encontrado na FACEIT.',
-    )
-    const pageItems = Array.isArray(page.items) ? page.items : []
+  for (let offset = 0; offset <= MAX_CHAMPIONSHIP_ITEMS; offset += limit) {
+    const separator = path.includes('?') ? '&' : '?'
+    const page = await faceitRequest(`${path}${separator}offset=${offset}&limit=${limit}`, notFoundMessage)
+    if (!Array.isArray(page.items)) {
+      throw new FaceitApiError('A FACEIT retornou dados inválidos para este campeonato.', 502)
+    }
+    const pageItems = page.items
+    if (items.length + pageItems.length > MAX_CHAMPIONSHIP_ITEMS) {
+      throw new FaceitApiError('O campeonato excedeu o limite seguro de itens para sincronização.', 502)
+    }
     items.push(...pageItems)
-    if (pageItems.length < 10) break
+    if (pageItems.length < limit) return items
   }
-  return items
+  throw new FaceitApiError('O campeonato excedeu o limite seguro de itens para sincronização.', 502)
 }
 
 export async function getFaceitChampionship(value: string): Promise<FaceitChampionshipSnapshot> {
   const championshipId = parseFaceitChampionshipId(value)
   const encodedId = encodeURIComponent(championshipId)
-  const [details, matchesPage, resultsPage, subscriptions] = await Promise.all([
+  const [details, matchItems, resultItems, subscriptions] = await Promise.all([
     faceitRequest(`/championships/${encodedId}`, 'Campeonato não encontrado na FACEIT.'),
-    faceitRequest(`/championships/${encodedId}/matches?type=all&offset=0&limit=100`, 'Campeonato não encontrado na FACEIT.'),
-    faceitRequest(`/championships/${encodedId}/results?offset=0&limit=100`, 'Campeonato não encontrado na FACEIT.'),
-    getChampionshipSubscriptions(championshipId),
+    getChampionshipItems(`/championships/${encodedId}/matches?type=all`, 100, 'Campeonato não encontrado na FACEIT.'),
+    getChampionshipItems(`/championships/${encodedId}/results`, 100, 'Campeonato não encontrado na FACEIT.'),
+    getChampionshipItems(`/championships/${encodedId}/subscriptions`, 10, 'Campeonato não encontrado na FACEIT.'),
   ])
 
   const returnedId = optionalString(details.championship_id) || optionalString(details.id)
@@ -298,13 +313,15 @@ export async function getFaceitChampionship(value: string): Promise<FaceitChampi
     throw new FaceitApiError('A FACEIT retornou dados inválidos para este campeonato.', 502)
   }
 
-  const teams = subscriptions.flatMap((rawSubscription) => {
+  const teams = uniqueBy(subscriptions.map((rawSubscription) => {
     const subscription = record(rawSubscription)
     const team = record(subscription.team)
     const teamId = optionalString(team.team_id)
     const teamName = optionalString(team.name)
-    if (!teamId || !teamName) return []
-    return [{
+    if (!teamId || !teamName) {
+      throw new FaceitApiError('A FACEIT retornou dados inválidos para os times deste campeonato.', 502)
+    }
+    return {
       teamId,
       name: teamName,
       nickname: optionalString(team.nickname),
@@ -316,13 +333,15 @@ export async function getFaceitChampionship(value: string): Promise<FaceitChampi
       coachPlayerId: optionalString(subscription.coach),
       rosterPlayerIds: Array.isArray(subscription.roster) ? subscription.roster.flatMap((id) => optionalString(id) || []) : [],
       substitutePlayerIds: Array.isArray(subscription.substitutes) ? subscription.substitutes.flatMap((id) => optionalString(id) || []) : [],
-    }]
-  })
+    }
+  }), (team) => team.teamId)
 
-  const matches = (Array.isArray(matchesPage.items) ? matchesPage.items : []).flatMap((rawMatch) => {
+  const matches = uniqueBy(matchItems.map((rawMatch) => {
     const match = record(rawMatch)
     const matchId = optionalString(match.match_id)
-    if (!matchId) return []
+    if (!matchId) {
+      throw new FaceitApiError('A FACEIT retornou dados inválidos para as partidas deste campeonato.', 502)
+    }
     const results = record(match.results)
     const score = record(results.score)
     const scores = Object.fromEntries(Object.entries(score).flatMap(([teamId, value]) => {
@@ -335,7 +354,7 @@ export async function getFaceitChampionship(value: string): Promise<FaceitChampi
       const teamName = optionalString(team.name) || optionalString(team.nickname)
       return teamId && teamName ? [{ faction, teamId, name: teamName, avatarUrl: optionalString(team.avatar) }] : []
     })
-    return [{
+    return {
       matchId,
       round: optionalNumber(match.round),
       group: optionalNumber(match.group),
@@ -346,10 +365,11 @@ export async function getFaceitChampionship(value: string): Promise<FaceitChampi
       winner: optionalString(results.winner),
       scores,
       teams: matchTeams,
-    }]
-  }).sort((a, b) => (a.round ?? 0) - (b.round ?? 0) || (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0))
+    }
+  }), (match) => match.matchId)
+    .sort((a, b) => (a.round ?? 0) - (b.round ?? 0) || (a.scheduledAt ?? 0) - (b.scheduledAt ?? 0))
 
-  const championshipResults = (Array.isArray(resultsPage.items) ? resultsPage.items : []).map((rawResult) => {
+  const championshipResults = resultItems.map((rawResult) => {
     const result = record(rawResult)
     const bounds = record(result.bounds)
     const placements = (Array.isArray(result.placements) ? result.placements : []).flatMap((rawPlacement) => {

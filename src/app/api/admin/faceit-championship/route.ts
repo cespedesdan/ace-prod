@@ -3,7 +3,12 @@ import { revalidatePath } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
-import { FaceitApiError, getFaceitChampionship } from '@/lib/faceit'
+import { FaceitApiError } from '@/lib/faceit'
+import {
+  FaceitSyncInProgressError,
+  setFaceitAutoSync,
+  syncFaceitChampionship,
+} from '@/lib/faceit-championship-sync'
 import { prisma } from '@/lib/prisma'
 import { privateJson } from '@/lib/private-response'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
@@ -30,6 +35,13 @@ function responseData(championship: {
   matchesJson: string
   resultsJson: string
   syncedAt: Date
+  autoSyncEnabled: boolean
+  nextAutoSyncAt: Date | null
+  lastAutoSyncAt: Date | null
+  lastAutoSyncAttemptAt: Date | null
+  lastAutoSyncFailureAt: Date | null
+  lastAutoSyncError: string | null
+  consecutiveAutoSyncFailures: number
 }) {
   return {
     tournament: championship.tournament,
@@ -46,6 +58,13 @@ function responseData(championship: {
     matches: JSON.parse(championship.matchesJson),
     results: JSON.parse(championship.resultsJson),
     syncedAt: championship.syncedAt,
+    autoSyncEnabled: championship.autoSyncEnabled,
+    nextAutoSyncAt: championship.nextAutoSyncAt,
+    lastAutoSyncAt: championship.lastAutoSyncAt,
+    lastAutoSyncAttemptAt: championship.lastAutoSyncAttemptAt,
+    lastAutoSyncFailureAt: championship.lastAutoSyncFailureAt,
+    lastAutoSyncError: championship.lastAutoSyncError,
+    consecutiveAutoSyncFailures: championship.consecutiveAutoSyncFailures,
   }
 }
 
@@ -84,41 +103,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Informe o link do campeonato na FACEIT.' }, { status: 400 })
     }
 
-    const snapshot = await getFaceitChampionship(body.faceitUrl)
-    const syncedAt = new Date()
-    const championship = await prisma.faceitChampionship.upsert({
-      where: { tournament },
-      create: {
-        tournament,
-        championshipId: snapshot.championshipId,
-        faceitUrl: snapshot.faceitUrl,
-        name: snapshot.name,
-        status: snapshot.status,
-        gameId: snapshot.gameId,
-        format: snapshot.format,
-        seedingStrategy: snapshot.seedingStrategy,
-        totalRounds: snapshot.totalRounds,
-        startsAt: snapshot.startsAt ? new Date(snapshot.startsAt) : null,
-        teamsJson: JSON.stringify(snapshot.teams),
-        matchesJson: JSON.stringify(snapshot.matches),
-        resultsJson: JSON.stringify(snapshot.results),
-        syncedAt,
-      },
-      update: {
-        championshipId: snapshot.championshipId,
-        faceitUrl: snapshot.faceitUrl,
-        name: snapshot.name,
-        status: snapshot.status,
-        gameId: snapshot.gameId,
-        format: snapshot.format,
-        seedingStrategy: snapshot.seedingStrategy,
-        totalRounds: snapshot.totalRounds,
-        startsAt: snapshot.startsAt ? new Date(snapshot.startsAt) : null,
-        teamsJson: JSON.stringify(snapshot.teams),
-        matchesJson: JSON.stringify(snapshot.matches),
-        resultsJson: JSON.stringify(snapshot.results),
-        syncedAt,
-      },
+    const championship = await syncFaceitChampionship({
+      tournament,
+      faceitUrl: body.faceitUrl,
+      trigger: 'manual',
     })
 
     revalidateTournament(tournament)
@@ -130,14 +118,46 @@ export async function POST(request: NextRequest) {
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: 'Consulta inválida.' }, { status: 400 })
     }
-    if (error instanceof FaceitApiError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+    if (error instanceof FaceitApiError || error instanceof FaceitSyncInProgressError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error instanceof FaceitApiError ? error.status : 409 },
+      )
     }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json({ error: 'Este campeonato já está vinculado a outra edição.' }, { status: 409 })
     }
     console.error('FACEIT championship sync error:', error)
     return NextResponse.json({ error: 'Não foi possível sincronizar o campeonato.' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  const invalidOrigin = requireSameOrigin(request)
+  if (invalidOrigin) return invalidOrigin
+  if (!isAdmin(request)) return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
+
+  try {
+    const body = await readJsonWithLimit<{ tournament?: unknown; autoSyncEnabled?: unknown }>(request, 1024)
+    const tournament = tournamentName(body.tournament)
+    if (!tournament || typeof body.autoSyncEnabled !== 'boolean') {
+      return NextResponse.json({ error: 'Configuração de sincronização inválida.' }, { status: 400 })
+    }
+
+    const championship = await setFaceitAutoSync(tournament, body.autoSyncEnabled)
+    return NextResponse.json({ success: true, championship: responseData(championship) })
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return NextResponse.json({ error: 'Consulta inválida.' }, { status: 413 })
+    }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: 'Consulta inválida.' }, { status: 400 })
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return NextResponse.json({ error: 'Vínculo não encontrado.' }, { status: 404 })
+    }
+    console.error('FACEIT automatic sync configuration error:', error)
+    return NextResponse.json({ error: 'Não foi possível alterar a sincronização automática.' }, { status: 500 })
   }
 }
 

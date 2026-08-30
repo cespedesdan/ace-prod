@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule Ace Produtora FACEIT championship synchronization
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=15s
+Unit=ace-prod-faceit-sync.service
+
+[Install]
+WantedBy=timers.target
