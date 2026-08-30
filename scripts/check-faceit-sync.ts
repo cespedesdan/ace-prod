@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { FaceitApiError, getFaceitChampionship } from '../src/lib/faceit'
 import {
-  FACEIT_AUTO_SYNC_ACTIVE_INTERVAL_MS,
+  FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS,
   FACEIT_AUTO_SYNC_TERMINAL_INTERVAL_MS,
   FACEIT_AUTO_SYNC_TERMINAL_WINDOW_MS,
   FaceitSyncInProgressError,
@@ -12,6 +12,7 @@ import {
   setFaceitAutoSync,
   syncFaceitChampionship,
 } from '../src/lib/faceit-championship-sync'
+import { wakeFaceitChampionshipForWebhook } from '../src/lib/faceit-webhook'
 import { prisma } from '../src/lib/prisma'
 
 const championshipId = randomUUID()
@@ -25,6 +26,7 @@ const faceitStatus = 'ongoing'
 let matchScore = 13
 let paginatedMatches = false
 let replaceLeaseDuringFetch = false
+let webhookDuringFetchAt: Date | null = null
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -45,6 +47,15 @@ function installSuccessfulFaceit() {
             autoSyncLeaseToken: 'newer-sync-owner',
             autoSyncLeaseUntil: new Date('2026-08-29T20:00:00.000Z'),
           },
+        })
+      }
+      if (webhookDuringFetchAt) {
+        const receivedAt = webhookDuringFetchAt
+        webhookDuringFetchAt = null
+        await wakeFaceitChampionshipForWebhook({
+          championshipId,
+          event: 'match_status_ready',
+          now: receivedAt,
         })
       }
       return jsonResponse({
@@ -121,7 +132,7 @@ async function main() {
   assert.equal(manual.lastAutoSyncAt, null)
   assert.equal(manual.lastAutoSyncAttemptAt, null)
   assert.equal(manual.autoSyncEnabled, true)
-  assert.equal(manual.nextAutoSyncAt?.getTime(), manualAt.getTime() + FACEIT_AUTO_SYNC_ACTIVE_INTERVAL_MS)
+  assert.equal(manual.nextAutoSyncAt?.getTime(), manualAt.getTime() + FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS)
   assert.equal(JSON.parse(manual.matchesJson)[0].scores.faction1, 13)
 
   matchScore = 14
@@ -160,6 +171,18 @@ async function main() {
   assert.equal(recovered.lastAutoSyncAt?.getTime(), automaticRecoveryAt.getTime())
   assert.equal(recovered.lastAutoSyncFailureAt?.getTime(), failureAt.getTime())
   assert.equal(recovered.consecutiveAutoSyncFailures, 0)
+
+  const concurrentSyncAt = new Date('2026-08-29T18:06:30.000Z')
+  const concurrentWebhookAt = concurrentSyncAt
+  webhookDuringFetchAt = concurrentWebhookAt
+  const afterConcurrentWebhook = await syncFaceitChampionship({
+    tournament,
+    faceitUrl,
+    trigger: 'automatic',
+    now: concurrentSyncAt,
+  })
+  assert.equal(afterConcurrentWebhook.lastWebhookReceivedAt?.getTime(), concurrentWebhookAt.getTime())
+  assert.equal(afterConcurrentWebhook.nextAutoSyncAt?.getTime(), concurrentSyncAt.getTime())
 
   await prisma.faceitChampionship.update({
     where: { tournament },

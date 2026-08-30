@@ -42,6 +42,8 @@ function responseData(championship: {
   lastAutoSyncFailureAt: Date | null
   lastAutoSyncError: string | null
   consecutiveAutoSyncFailures: number
+  lastWebhookReceivedAt: Date | null
+  lastWebhookEvent: string | null
 }) {
   return {
     tournament: championship.tournament,
@@ -65,6 +67,8 @@ function responseData(championship: {
     lastAutoSyncFailureAt: championship.lastAutoSyncFailureAt,
     lastAutoSyncError: championship.lastAutoSyncError,
     consecutiveAutoSyncFailures: championship.consecutiveAutoSyncFailures,
+    lastWebhookReceivedAt: championship.lastWebhookReceivedAt,
+    lastWebhookEvent: championship.lastWebhookEvent,
   }
 }
 

@@ -173,6 +173,9 @@ model FaceitChampionship {
   lastAutoSyncFailureAt       DateTime?
   lastAutoSyncError           String?
   consecutiveAutoSyncFailures Int       @default(0)
+  webhookGeneration            Int       @default(0)
+  lastWebhookReceivedAt       DateTime?
+  lastWebhookEvent            String?
   autoSyncLeaseUntil          DateTime?
   autoSyncLeaseToken          String?
   terminalStatusObservedAt    DateTime?

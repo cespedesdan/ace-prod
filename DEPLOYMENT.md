@@ -43,11 +43,12 @@ JWT_SECRET=CHAVE_ALEATORIA_COM_PELO_MENOS_32_CARACTERES
 ADMIN_EMAIL=EMAIL_PRIVADO_DO_ADMINISTRADOR
 ADMIN_PASSWORD=
 FACEIT_API_KEY=CHAVE_PRIVADA_DA_FACEIT
+FACEIT_WEBHOOK_SECRET=SEGREDO_ALEATORIO_COM_PELO_MENOS_32_CARACTERES
 TRUST_PROXY=true
 REGISTRATIONS_OPEN=false
 ```
 
-`TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. A chave FACEIT nunca deve usar o prefixo `NEXT_PUBLIC_`.
+Gere `FACEIT_WEBHOOK_SECRET` com `openssl rand -hex 32`. `TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. As chaves FACEIT nunca devem usar o prefixo `NEXT_PUBLIC_`.
 
 `REGISTRATIONS_OPEN` controla a aceitação no servidor. Mantenha `false` fora da janela de inscrições e reinicie o serviço depois de alterar o valor. Ocultar o formulário no frontend não substitui este bloqueio.
 
@@ -121,7 +122,38 @@ journalctl -u ace-prod-faceit-sync.service -n 100 --no-pager
 
 A execução manual do serviço processa apenas campeonatos pendentes. Para solicitar uma atualização imediata de uma edição específica, preserve a opção **Sincronizar** em `/admin/faceit`.
 
-O painel administrativo mostra a última atualização do snapshot, a última sincronização automática, a última tentativa, a próxima execução e a última falha automática. Em uma falha da FACEIT, o site preserva o último snapshot válido e tenta novamente com espera progressiva.
+O painel administrativo mostra a última atualização do snapshot, a última sincronização automática, a última tentativa, a próxima execução, o último webhook aceito e a última falha automática. Em uma falha da FACEIT, o site preserva o último snapshot válido e tenta novamente com espera progressiva.
+
+### Configurar os webhooks da FACEIT
+
+O callback não é ativado apenas pela presença de `FACEIT_API_KEY`. Depois que a aplicação com `FACEIT_WEBHOOK_SECRET` estiver publicada, entre no App Studio da FACEIT e crie uma assinatura do tipo **Organizer** limitada ao organizador da Ace.
+
+Configure:
+
+```text
+Callback URL: https://aceprodutora.com.br/api/webhooks/faceit
+Header name: X-Faceit-Webhook-Secret
+Header value: o mesmo FACEIT_WEBHOOK_SECRET da producao
+```
+
+Assine somente estes eventos:
+
+```text
+match_object_created
+match_status_configuring
+match_status_ready
+match_status_finished
+match_status_aborted
+match_status_cancelled
+tournament_object_updated
+tournament_status_started
+tournament_status_finished
+tournament_status_cancelled
+```
+
+O endpoint valida o segredo e o identificador do campeonato, limita o corpo da requisição e usa o evento somente para antecipar `nextAutoSyncAt`. Ele não grava times, placares ou resultados recebidos no webhook e não consulta a FACEIT durante a resposta HTTP. O worker continua buscando o snapshot oficial com a API e a reconciliação diária cobre eventos perdidos.
+
+O formato completo dos payloads não é documentado pela FACEIT. Antes de considerar a integração ativa, capture e preserve como fixture um evento de teste redigido, confirme uma resposta HTTP `202`, confira **Último webhook** em `/admin/faceit` e verifique a sincronização seguinte no journal do worker. Uma resposta `204` com `FACEIT webhook ignored` no journal indica que o identificador não pôde ser relacionado com segurança. Nesse caso, desative a assinatura; se apenas eventos de torneio forem incompatíveis, mantenha somente os eventos de partida depois de validar um payload real.
 
 ## 6. Ativar Caddy e HTTPS
 
@@ -147,6 +179,7 @@ curl -I https://www.aceprodutora.com.br
 
 - Prisma sem SQL bruto nas rotas de inscrição e administração.
 - Chave FACEIT utilizada somente no servidor.
+- Webhook FACEIT autenticado por segredo de cabeçalho; o payload funciona somente como sinal para o worker e nunca como fonte do snapshot.
 - Consultas públicas à FACEIT limitadas por IP em produção.
 - Elencos e campeonatos armazenados como snapshots, com sincronização automática e opção manual.
 - Falhas automáticas preservam o último snapshot válido e ficam visíveis somente no painel autenticado e no journal do serviço.

@@ -3,14 +3,22 @@ import type { FaceitChampionship } from '@prisma/client'
 import { FaceitApiError, getFaceitChampionship } from '@/lib/faceit'
 import { prisma } from '@/lib/prisma'
 
-export const FACEIT_AUTO_SYNC_ACTIVE_INTERVAL_MS = 2 * 60 * 1000
-export const FACEIT_AUTO_SYNC_IDLE_INTERVAL_MS = 15 * 60 * 1000
-export const FACEIT_AUTO_SYNC_TERMINAL_INTERVAL_MS = 6 * 60 * 60 * 1000
+export const FACEIT_AUTO_SYNC_LIVE_INTERVAL_MS = 5 * 60 * 1000
+export const FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS = 24 * 60 * 60 * 1000
+export const FACEIT_AUTO_SYNC_WAKE_AHEAD_MS = 30 * 60 * 1000
+export const FACEIT_AUTO_SYNC_IMMINENT_AFTER_MS = 6 * 60 * 60 * 1000
+export const FACEIT_AUTO_SYNC_FINAL_RECONCILIATION_MS = 60 * 60 * 1000
 export const FACEIT_AUTO_SYNC_TERMINAL_WINDOW_MS = 48 * 60 * 60 * 1000
 export const FACEIT_AUTO_SYNC_LEASE_MS = 6 * 60 * 1000
 
+export const FACEIT_AUTO_SYNC_ACTIVE_INTERVAL_MS = FACEIT_AUTO_SYNC_LIVE_INTERVAL_MS
+export const FACEIT_AUTO_SYNC_IDLE_INTERVAL_MS = FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS
+export const FACEIT_AUTO_SYNC_TERMINAL_INTERVAL_MS = FACEIT_AUTO_SYNC_FINAL_RECONCILIATION_MS
+
 const ACTIVE_STATUSES = new Set(['ongoing', 'started'])
 const TERMINAL_STATUSES = new Set(['aborted', 'cancelled', 'canceled', 'finished'])
+const LIVE_MATCH_STATUSES = new Set(['configuring', 'ongoing', 'ready', 'started'])
+const TERMINAL_MATCH_STATUSES = new Set(['aborted', 'cancelled', 'canceled', 'finished'])
 const RETRY_DELAYS_MS = [2 * 60 * 1000, 5 * 60 * 1000, 15 * 60 * 1000, 30 * 60 * 1000, 60 * 60 * 1000]
 
 export type FaceitSyncTrigger = 'manual' | 'automatic'
@@ -37,21 +45,64 @@ export function automaticSyncSchedule(
   status: string | null,
   now: Date,
   terminalStatusObservedAt: Date | null,
+  timing: {
+    startsAt: number | null
+    matches: Array<{ status: string | null; scheduledAt: number | null }>
+  } = { startsAt: null, matches: [] },
 ) {
   const normalized = normalizedStatus(status)
   if (TERMINAL_STATUSES.has(normalized)) {
     const observedAt = terminalStatusObservedAt || now
-    const nextAutoSyncAt = now.getTime() - observedAt.getTime() >= FACEIT_AUTO_SYNC_TERMINAL_WINDOW_MS
+    const finalReconciliationAt = observedAt.getTime() + FACEIT_AUTO_SYNC_FINAL_RECONCILIATION_MS
+    const nextAutoSyncAt = now.getTime() >= finalReconciliationAt
       ? null
-      : new Date(now.getTime() + FACEIT_AUTO_SYNC_TERMINAL_INTERVAL_MS)
+      : new Date(finalReconciliationAt)
     return { nextAutoSyncAt, terminalStatusObservedAt: observedAt }
   }
 
-  const interval = ACTIVE_STATUSES.has(normalized)
-    ? FACEIT_AUTO_SYNC_ACTIVE_INTERVAL_MS
-    : FACEIT_AUTO_SYNC_IDLE_INTERVAL_MS
+  const nowMs = now.getTime()
+  const watchdogAt = nowMs + FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS
+  let scheduledWakeAt = watchdogAt
+
+  for (const match of timing.matches) {
+    const matchStatus = normalizedStatus(match.status)
+    if (LIVE_MATCH_STATUSES.has(matchStatus)) {
+      return {
+        nextAutoSyncAt: new Date(nowMs + FACEIT_AUTO_SYNC_LIVE_INTERVAL_MS),
+        terminalStatusObservedAt: null,
+      }
+    }
+
+    const scheduledAt = match.scheduledAt
+    if (scheduledAt === null || !Number.isFinite(scheduledAt) || TERMINAL_MATCH_STATUSES.has(matchStatus)) continue
+
+    if (
+      scheduledAt >= nowMs - FACEIT_AUTO_SYNC_IMMINENT_AFTER_MS
+      && scheduledAt <= nowMs + FACEIT_AUTO_SYNC_WAKE_AHEAD_MS
+    ) {
+      return {
+        nextAutoSyncAt: new Date(nowMs + FACEIT_AUTO_SYNC_LIVE_INTERVAL_MS),
+        terminalStatusObservedAt: null,
+      }
+    }
+
+    const wakeAt = scheduledAt - FACEIT_AUTO_SYNC_WAKE_AHEAD_MS
+    if (wakeAt > nowMs) scheduledWakeAt = Math.min(scheduledWakeAt, wakeAt)
+  }
+
+  if (timing.startsAt !== null && Number.isFinite(timing.startsAt)) {
+    const tournamentWakeAt = timing.startsAt - FACEIT_AUTO_SYNC_WAKE_AHEAD_MS
+    if (timing.startsAt >= nowMs && tournamentWakeAt <= nowMs) {
+      return {
+        nextAutoSyncAt: new Date(nowMs + FACEIT_AUTO_SYNC_LIVE_INTERVAL_MS),
+        terminalStatusObservedAt: null,
+      }
+    }
+    if (tournamentWakeAt > nowMs) scheduledWakeAt = Math.min(scheduledWakeAt, tournamentWakeAt)
+  }
+
   return {
-    nextAutoSyncAt: new Date(now.getTime() + interval),
+    nextAutoSyncAt: new Date(scheduledWakeAt),
     terminalStatusObservedAt: null,
   }
 }
@@ -83,6 +134,21 @@ function storedSyncError(error: unknown) {
     return error.message.slice(0, 500)
   }
   return 'Falha inesperada ao sincronizar o campeonato com a FACEIT.'
+}
+
+async function preserveWebhookWakeAfterSync(recordId: string, webhookGenerationAtStart: number, syncStartedAt: Date) {
+  await prisma.faceitChampionship.updateMany({
+    where: {
+      id: recordId,
+      autoSyncEnabled: true,
+      webhookGeneration: { gt: webhookGenerationAtStart },
+      OR: [
+        { nextAutoSyncAt: null },
+        { nextAutoSyncAt: { gt: syncStartedAt } },
+      ],
+    },
+    data: { nextAutoSyncAt: syncStartedAt },
+  })
 }
 
 async function claimSync(championship: FaceitChampionship, trigger: FaceitSyncTrigger, now: Date) {
@@ -125,7 +191,10 @@ export async function syncFaceitChampionship({
 
   try {
     const snapshot = await getFaceitChampionship(faceitUrl)
-    const schedule = automaticSyncSchedule(snapshot.status, now, existing?.terminalStatusObservedAt || null)
+    const schedule = automaticSyncSchedule(snapshot.status, now, existing?.terminalStatusObservedAt || null, {
+      startsAt: snapshot.startsAt,
+      matches: snapshot.matches,
+    })
     const snapshotData = {
       championshipId: snapshot.championshipId,
       faceitUrl: snapshot.faceitUrl,
@@ -182,6 +251,7 @@ export async function syncFaceitChampionship({
       },
     })
     if (!updated.count) throw new FaceitSyncInProgressError()
+    await preserveWebhookWakeAfterSync(existing.id, existing.webhookGeneration, now)
     return prisma.faceitChampionship.findUniqueOrThrow({ where: { id: existing.id } })
   } catch (error) {
     if (existing) {
