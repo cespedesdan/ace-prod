@@ -2,9 +2,9 @@
 
 Site oficial da Ace Produtora e da Copa ACE 10, desenvolvido com Next.js 15, React 19, TypeScript, Tailwind CSS, Prisma e SQLite.
 
-**Versão atual: 1.1.0 — Integração simples FACEIT.**
+**Versão atual: 1.1.0 — Integração FACEIT com snapshots.**
 
-Nesta versão, o formulário consulta o time na FACEIT, preenche o nome oficial e salva um snapshot do elenco. A administração pode atualizar esse elenco manualmente e vincular campeonatos para armazenar times, partidas, horários e resultados sem consultas contínuas à API.
+O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snapshot do elenco. Campeonatos vinculados mantêm snapshots de times, partidas, horários e resultados por sincronização automática, com atualização manual disponível no painel administrativo.
 
 ## Funcionalidades
 
@@ -15,7 +15,8 @@ Nesta versão, o formulário consulta o time na FACEIT, preenche o nome oficial 
 - Consulta do time na FACEIT, preenchimento automático do nome e snapshot do elenco.
 - Painel administrativo para notícias e aprovação de inscrições.
 - Sincronização manual do elenco FACEIT pelo painel administrativo.
-- Gerenciamento de campeonatos FACEIT com vínculos, snapshots e sincronização independente por edição.
+- Gerenciamento de campeonatos FACEIT com vínculos, snapshots e sincronização automática independente por edição.
+- Histórico da última sincronização automática e da última falha no painel administrativo.
 - Publicação automática do snapshot em páginas integradas, atualmente na Copa ACE 10.
 - Publicação automática das equipes aprovadas na página da Copa ACE 10.
 - Autenticação administrativa com bcrypt e JWT em cookie `httpOnly`.
@@ -90,7 +91,9 @@ O banco e os uploads são privados e estão ignorados pelo Git. Os dois precisam
 | `npm run lint` | Executa ESLint |
 | `npm run check` | Executa lint, TypeScript e todos os testes locais |
 | `npm run test:security` | Testa rate limit e consultas parametrizadas |
+| `npm run test:faceit-sync` | Testa sincronização manual/automática, falhas e agendamento FACEIT |
 | `npm run test:tournaments` | Verifica formatos e regras MD1/MD3 das páginas históricas |
+| `npm run sync:faceit` | Sincroniza campeonatos FACEIT cuja atualização está pendente |
 
 ## Produção HTTPS
 

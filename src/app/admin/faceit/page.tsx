@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ExternalLink, LoaderCircle, Plus, RefreshCw, Shield, Swords, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckCircle2, ExternalLink, LoaderCircle, Plus, RefreshCw, Shield, Swords, Trash2 } from 'lucide-react'
 
 type FaceitTeam = {
   teamId: string
@@ -40,6 +40,13 @@ type Championship = {
   totalRounds: number | null
   startsAt: string | null
   syncedAt: string
+  autoSyncEnabled: boolean
+  nextAutoSyncAt: string | null
+  lastAutoSyncAt: string | null
+  lastAutoSyncAttemptAt: string | null
+  lastAutoSyncFailureAt: string | null
+  lastAutoSyncError: string | null
+  consecutiveAutoSyncFailures: number
   teams: FaceitTeam[]
   matches: FaceitMatch[]
   results: Array<{
@@ -53,6 +60,10 @@ function matchDate(timestamp: number | null) {
   return timestamp ? new Date(timestamp).toLocaleString('pt-BR') : 'Horário a definir'
 }
 
+function syncDate(value: string | null) {
+  return value ? new Date(value).toLocaleString('pt-BR') : 'Nunca'
+}
+
 export default function FaceitChampionshipAdminPage() {
   const router = useRouter()
   const [tournament, setTournament] = useState('Copa Ace 10')
@@ -60,6 +71,7 @@ export default function FaceitChampionshipAdminPage() {
   const [championships, setChampionships] = useState<Championship[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [updatingAutoSync, setUpdatingAutoSync] = useState(false)
   const [unlinking, setUnlinking] = useState(false)
   const [error, setError] = useState('')
   const championship = championships.find((item) => item.tournament === tournament) || null
@@ -139,6 +151,31 @@ export default function FaceitChampionshipAdminPage() {
     }
   }
 
+  async function updateAutoSync(enabled: boolean) {
+    if (!championship) return
+    setUpdatingAutoSync(true)
+    setError('')
+    try {
+      const response = await fetch('/api/admin/faceit-championship', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournament: championship.tournament, autoSyncEnabled: enabled }),
+      })
+      if (response.status === 401) return router.push('/admin/login')
+      const data = await response.json() as { championship?: Championship; error?: string }
+      if (!response.ok || !data.championship) {
+        throw new Error(data.error || 'Não foi possível alterar a sincronização automática.')
+      }
+      setChampionships((current) => current.map((item) => (
+        item.tournament === data.championship!.tournament ? data.championship! : item
+      )))
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : 'Erro inesperado.')
+    } finally {
+      setUpdatingAutoSync(false)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gray-900 px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-7xl">
@@ -149,7 +186,7 @@ export default function FaceitChampionshipAdminPage() {
         <div className="mt-6">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-400">Integração FACEIT</p>
           <h1 className="mt-2 text-3xl font-black">Campeonatos vinculados</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-400">Vincule cada edição ao campeonato correspondente na FACEIT e sincronize manualmente times, partidas, horários e rodadas. A Copa ACE 10 já possui publicação automática na página oficial.</p>
+          <p className="mt-2 max-w-3xl text-sm text-slate-400">Vincule cada edição ao campeonato correspondente na FACEIT. A atualização automática mantém times, partidas, horários e resultados atuais, e a sincronização manual continua disponível para atualizações imediatas.</p>
         </div>
 
         <form onSubmit={syncChampionship} className="brand-card mt-7 grid gap-3 p-5 lg:grid-cols-[260px_1fr_auto]">
@@ -190,7 +227,7 @@ export default function FaceitChampionshipAdminPage() {
                 <div>
                   <p className="text-xs font-black uppercase tracking-wider text-cyan-400">{championship.status || 'Status não informado'}{championship.format ? ` · ${championship.format}` : ''}</p>
                   <h2 className="mt-2 text-2xl font-black">{championship.name}</h2>
-                  <p className="mt-2 text-xs text-slate-500">Última sincronização: {new Date(championship.syncedAt).toLocaleString('pt-BR')}</p>
+                  <p className="mt-2 text-xs text-slate-500">Última atualização do snapshot: {new Date(championship.syncedAt).toLocaleString('pt-BR')}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <a href={championship.faceitUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-black text-cyan-300 hover:underline">Abrir na FACEIT <ExternalLink size={14} /></a>
@@ -198,6 +235,37 @@ export default function FaceitChampionshipAdminPage() {
                     {unlinking ? <LoaderCircle className="animate-spin" size={14} /> : <Trash2 size={14} />} Desvincular de {championship.tournament}
                   </button>
                 </div>
+              </div>
+              <div className="mt-5 border border-slate-700 bg-slate-950/60 p-4">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <div>
+                    <p className="flex items-center gap-2 text-sm font-black text-white">
+                      {championship.autoSyncEnabled ? <CheckCircle2 size={16} className="text-emerald-400" /> : <AlertTriangle size={16} className="text-amber-400" />}
+                      Sincronização automática {championship.autoSyncEnabled ? 'ativada' : 'desativada'}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">A sincronização manual acima permanece disponível independentemente desta configuração.</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={updatingAutoSync}
+                    onClick={() => updateAutoSync(!championship.autoSyncEnabled)}
+                    className="inline-flex items-center justify-center gap-2 border border-slate-600 px-3 py-2 text-xs font-black text-slate-200 hover:border-cyan-400 hover:text-cyan-300 disabled:cursor-wait disabled:opacity-50"
+                  >
+                    {updatingAutoSync && <LoaderCircle className="animate-spin" size={14} />}
+                    {championship.autoSyncEnabled ? 'Desativar atualização automática' : 'Ativar atualização automática'}
+                  </button>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div><span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Última automática</span><strong className="mt-1 block text-sm text-slate-200">{syncDate(championship.lastAutoSyncAt)}</strong></div>
+                  <div><span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Última tentativa</span><strong className="mt-1 block text-sm text-slate-200">{syncDate(championship.lastAutoSyncAttemptAt)}</strong></div>
+                  <div><span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Próxima automática</span><strong className="mt-1 block text-sm text-slate-200">{championship.autoSyncEnabled ? syncDate(championship.nextAutoSyncAt) : 'Desativada'}</strong></div>
+                </div>
+                {championship.lastAutoSyncFailureAt && (
+                  <div className={`mt-4 border p-3 text-xs ${championship.consecutiveAutoSyncFailures > 0 ? 'border-red-500/30 bg-red-500/10 text-red-200' : 'border-amber-500/20 bg-amber-500/5 text-amber-200'}`}>
+                    <p className="font-black">{championship.consecutiveAutoSyncFailures > 0 ? 'A sincronização automática está com problema.' : 'Última falha automática — recuperada.'}</p>
+                    <p className="mt-1">{syncDate(championship.lastAutoSyncFailureAt)} · {championship.lastAutoSyncError || 'Falha não detalhada.'}</p>
+                  </div>
+                )}
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <div className="bg-slate-950 p-4"><strong className="text-2xl text-cyan-300">{championship.teams.length}</strong><span className="mt-1 block text-xs uppercase text-slate-500">Times</span></div>

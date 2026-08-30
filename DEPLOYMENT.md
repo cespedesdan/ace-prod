@@ -91,15 +91,20 @@ npm audit
 npm run build
 ```
 
-## 5. Instalar o serviço Next.js
+## 5. Instalar os serviços
 
-O arquivo `deploy/ace-prod.service` assume o usuário `ubuntu` e o projeto em `/srv/ace-prod`.
+Os arquivos em `deploy/` assumem o usuário `ubuntu` e o projeto em `/srv/ace-prod`. O serviço principal executa o Next.js. O timer acorda o worker FACEIT a cada minuto; o worker consulta somente campeonatos cuja próxima sincronização está pendente.
 
 ```bash
-sudo cp deploy/ace-prod.service /etc/systemd/system/ace-prod.service
+sudo install -m 0644 deploy/ace-prod.service /etc/systemd/system/ace-prod.service
+sudo install -m 0644 deploy/ace-prod-faceit-sync.service /etc/systemd/system/ace-prod-faceit-sync.service
+sudo install -m 0644 deploy/ace-prod-faceit-sync.timer /etc/systemd/system/ace-prod-faceit-sync.timer
 sudo systemctl daemon-reload
 sudo systemctl enable --now ace-prod
+sudo systemctl start ace-prod-faceit-sync.service
+sudo systemctl enable --now ace-prod-faceit-sync.timer
 sudo systemctl status ace-prod --no-pager
+sudo systemctl status ace-prod-faceit-sync.timer --no-pager
 ```
 
 Comandos operacionais:
@@ -109,7 +114,14 @@ sudo systemctl stop ace-prod
 sudo systemctl start ace-prod
 sudo systemctl restart ace-prod
 journalctl -u ace-prod -n 100 --no-pager
+sudo systemctl start ace-prod-faceit-sync.service
+systemctl list-timers ace-prod-faceit-sync.timer
+journalctl -u ace-prod-faceit-sync.service -n 100 --no-pager
 ```
+
+A execução manual do serviço processa apenas campeonatos pendentes. Para solicitar uma atualização imediata de uma edição específica, preserve a opção **Sincronizar** em `/admin/faceit`.
+
+O painel administrativo mostra a última atualização do snapshot, a última sincronização automática, a última tentativa, a próxima execução e a última falha automática. Em uma falha da FACEIT, o site preserva o último snapshot válido e tenta novamente com espera progressiva.
 
 ## 6. Ativar Caddy e HTTPS
 
@@ -136,7 +148,8 @@ curl -I https://www.aceprodutora.com.br
 - Prisma sem SQL bruto nas rotas de inscrição e administração.
 - Chave FACEIT utilizada somente no servidor.
 - Consultas públicas à FACEIT limitadas por IP em produção.
-- Elencos e campeonatos armazenados como snapshots, com sincronização manual.
+- Elencos e campeonatos armazenados como snapshots, com sincronização automática e opção manual.
+- Falhas automáticas preservam o último snapshot válido e ficam visíveis somente no painel autenticado e no journal do serviço.
 - Corpo das inscrições limitado a 22 MiB e arquivos individuais a 10 MiB.
 - Arquivos validados por MIME e assinatura binária.
 - Comprovantes disponíveis somente para administrador autenticado.
@@ -170,7 +183,10 @@ npm run check
 npm audit
 npm run build
 sudo systemctl start ace-prod
+sudo systemctl start ace-prod-faceit-sync.service
+sudo systemctl enable --now ace-prod-faceit-sync.timer
 sudo systemctl status ace-prod --no-pager
+sudo systemctl status ace-prod-faceit-sync.timer --no-pager
 ```
 
 O Caddy pode permanecer ativo durante a atualização e poderá responder `502` enquanto o Next.js estiver parado.
@@ -183,7 +199,7 @@ O workflow `.github/workflows/ci-deploy.yml` executa as validações em todo pul
 /home/ubuntu/backups/ace-prod/AAAAMMDDTHHMMSSZ-COMMIT/
 ```
 
-Se migration, instalação, build ou teste de saúde falhar, o script restaura o commit e os dados anteriores automaticamente.
+Se migration, instalação, build, teste de saúde ou instalação do timer falhar, o script restaura o commit, os dados e as unidades systemd anteriores automaticamente.
 
 ### 1. Criar uma chave exclusiva para o deploy
 
@@ -222,6 +238,8 @@ git branch --show-current
 git status --short
 sudo -n systemctl status ace-prod --no-pager
 ```
+
+O usuário de deploy também precisa de permissão sem senha para `install` e `rm` em `/etc/systemd/system/ace-prod-faceit-sync.*` e para `systemctl daemon-reload`, `start`, `stop`, `enable`, `is-enabled` e `is-active` nas três unidades versionadas. Restrinja o `sudoers` a esses caminhos e comandos; não conceda acesso irrestrito a `sudo`.
 
 ### 2. Conferir a identidade SSH da EC2
 

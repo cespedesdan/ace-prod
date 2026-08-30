@@ -6,6 +6,9 @@ TARGET_SHA="${1:-}"
 APP_DIR="${APP_DIR:-/srv/ace-prod}"
 BACKUP_ROOT="${BACKUP_ROOT:-/home/ubuntu/backups/ace-prod}"
 SERVICE_NAME="${SERVICE_NAME:-ace-prod}"
+SYNC_SERVICE_NAME="ace-prod-faceit-sync.service"
+SYNC_TIMER_NAME="ace-prod-faceit-sync.timer"
+SYSTEMD_DIR="/etc/systemd/system"
 
 fail() {
   echo "Erro: $*" >&2
@@ -27,14 +30,28 @@ TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 BACKUP_DIR="$BACKUP_ROOT/$TIMESTAMP-$PREVIOUS_SHA"
 CODE_CHANGED=0
 BACKUP_READY=0
+SYNC_UNITS_CHANGED=0
+SYNC_TIMER_WAS_ENABLED=0
 
 rollback() {
   local exit_code=$?
   trap - ERR
 
   echo "Deploy falhou. Restaurando $PREVIOUS_SHA..." >&2
+  sudo -n systemctl stop "$SYNC_TIMER_NAME" || true
+  sudo -n systemctl stop "$SYNC_SERVICE_NAME" || true
   sudo -n systemctl stop "$SERVICE_NAME" || true
 
+  if [[ "$SYNC_UNITS_CHANGED" -eq 1 ]]; then
+    for unit in "$SYNC_SERVICE_NAME" "$SYNC_TIMER_NAME"; do
+      if [[ -f "$BACKUP_DIR/systemd/$unit" ]]; then
+        sudo -n install -m 0644 "$BACKUP_DIR/systemd/$unit" "$SYSTEMD_DIR/$unit" || true
+      else
+        sudo -n rm -f "$SYSTEMD_DIR/$unit" || true
+      fi
+    done
+    sudo -n systemctl daemon-reload || true
+  fi
   if [[ "$CODE_CHANGED" -eq 1 ]]; then
     git reset --hard "$PREVIOUS_SHA" || true
   fi
@@ -61,6 +78,9 @@ rollback() {
   fi
 
   sudo -n systemctl start "$SERVICE_NAME" || true
+  if [[ "$SYNC_TIMER_WAS_ENABLED" -eq 1 ]]; then
+    sudo -n systemctl enable --now "$SYNC_TIMER_NAME" || true
+  fi
   echo "Rollback concluido. Backup preservado em $BACKUP_DIR" >&2
   exit "$exit_code"
 }
@@ -68,6 +88,11 @@ rollback() {
 trap rollback ERR
 
 echo "Parando $SERVICE_NAME e criando backup..."
+if sudo -n systemctl is-enabled --quiet "$SYNC_TIMER_NAME"; then
+  SYNC_TIMER_WAS_ENABLED=1
+fi
+sudo -n systemctl stop "$SYNC_TIMER_NAME" || true
+sudo -n systemctl stop "$SYNC_SERVICE_NAME" || true
 sudo -n systemctl stop "$SERVICE_NAME"
 mkdir -p "$BACKUP_DIR"
 
@@ -80,6 +105,13 @@ done
 if [[ -d storage/registrations ]]; then
   cp -a storage/registrations "$BACKUP_DIR/registrations"
 fi
+
+mkdir -p "$BACKUP_DIR/systemd"
+for unit in "$SYNC_SERVICE_NAME" "$SYNC_TIMER_NAME"; do
+  if [[ -f "$SYSTEMD_DIR/$unit" ]]; then
+    sudo -n cp -a "$SYSTEMD_DIR/$unit" "$BACKUP_DIR/systemd/$unit"
+  fi
+done
 
 printf 'previous_sha=%s\ntarget_sha=%s\ncreated_at=%s\n' \
   "$PREVIOUS_SHA" "$TARGET_SHA" "$TIMESTAMP" > "$BACKUP_DIR/manifest.txt"
@@ -96,13 +128,26 @@ npm run build
 
 sudo -n systemctl start "$SERVICE_NAME"
 
+HEALTHY=0
 for attempt in {1..30}; do
   if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:8001/ >/dev/null; then
-    trap - ERR
-    echo "Deploy concluido. Backup: $BACKUP_DIR"
-    exit 0
+    HEALTHY=1
+    break
   fi
   sleep 2
 done
 
-fail "a aplicacao nao respondeu na porta 8001"
+[[ "$HEALTHY" -eq 1 ]] || fail "a aplicacao nao respondeu na porta 8001"
+
+echo "Instalando sincronizacao automatica da FACEIT..."
+SYNC_UNITS_CHANGED=1
+sudo -n install -m 0644 "deploy/$SYNC_SERVICE_NAME" "$SYSTEMD_DIR/$SYNC_SERVICE_NAME"
+sudo -n install -m 0644 "deploy/$SYNC_TIMER_NAME" "$SYSTEMD_DIR/$SYNC_TIMER_NAME"
+sudo -n systemctl daemon-reload
+sudo -n systemctl start "$SYNC_SERVICE_NAME"
+sudo -n systemctl enable --now "$SYNC_TIMER_NAME"
+sudo -n systemctl is-enabled --quiet "$SYNC_TIMER_NAME"
+sudo -n systemctl is-active --quiet "$SYNC_TIMER_NAME"
+
+trap - ERR
+echo "Deploy concluido. Backup: $BACKUP_DIR"

@@ -151,24 +151,35 @@ model RegistrationPlayer {
 }
 
 model FaceitChampionship {
-  id             String   @id @default(cuid())
-  tournament     String   @unique
-  championshipId String   @unique
-  faceitUrl      String
-  name           String
-  status         String?
-  gameId         String?
-  format         String?
-  seedingStrategy String?
-  totalRounds    Int?
-  startsAt       DateTime?
-  teamsJson      String   @default("[]")
-  matchesJson    String   @default("[]")
-  resultsJson    String   @default("[]")
-  syncedAt       DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                          String    @id @default(cuid())
+  tournament                  String    @unique
+  championshipId              String    @unique
+  faceitUrl                   String
+  name                        String
+  status                      String?
+  gameId                      String?
+  format                      String?
+  seedingStrategy             String?
+  totalRounds                 Int?
+  startsAt                    DateTime?
+  teamsJson                   String    @default("[]")
+  matchesJson                 String    @default("[]")
+  resultsJson                 String    @default("[]")
+  syncedAt                    DateTime
+  autoSyncEnabled             Boolean   @default(true)
+  nextAutoSyncAt              DateTime?
+  lastAutoSyncAt              DateTime?
+  lastAutoSyncAttemptAt       DateTime?
+  lastAutoSyncFailureAt       DateTime?
+  lastAutoSyncError           String?
+  consecutiveAutoSyncFailures Int       @default(0)
+  autoSyncLeaseUntil          DateTime?
+  autoSyncLeaseToken          String?
+  terminalStatusObservedAt    DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
 
+  @@index([autoSyncEnabled, nextAutoSyncAt])
   @@map("faceit_championships")
 }
 

@@ -1,0 +1,19 @@
+[Unit]
+Description=Ace Produtora FACEIT championship synchronization
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/srv/ace-prod/scripts/sync-faceit-championships.ts
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/ace-prod
+Environment=NODE_ENV=production
+EnvironmentFile=/srv/ace-prod/.env.local
+ExecStart=/usr/bin/npm run sync:faceit
+TimeoutStartSec=5min
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
