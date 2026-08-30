@@ -17,11 +17,21 @@ O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snap
 - Sincronização manual do elenco FACEIT pelo painel administrativo.
 - Gerenciamento de campeonatos FACEIT com vínculos, snapshots e sincronização automática independente por edição.
 - Histórico da última sincronização automática e da última falha no painel administrativo.
+- Classificação suíça baseada somente em partidas finalizadas na FACEIT; partidas canceladas não alteram campanhas ou resultados.
 - Publicação automática do snapshot em páginas integradas, atualmente na Copa ACE 10.
 - Publicação automática das equipes aprovadas na página da Copa ACE 10.
 - Autenticação administrativa com bcrypt e JWT em cookie `httpOnly`.
 - Rate limit persistente por e-mail e, atrás do proxy confiável, também por IP.
 - Validação de campos, arquivos, assinaturas binárias e caminhos de armazenamento.
+
+## Funcionalidades em avaliação
+
+Estas propostas estão em pull requests e ainda não fazem parte da versão atual:
+
+- [#19 — sincronização acionada por webhook da FACEIT](https://github.com/cespedesdan/ace-prod/pull/19): rascunho que mantém a reconciliação agendada como segurança; aguarda validação com um evento real da FACEIT e correção da auditoria Lighthouse.
+- [#11 — confirmação do líder do time pela FACEIT](https://github.com/cespedesdan/ace-prod/pull/11): fluxo OAuth que ainda precisa ser atualizado contra a `main`, ter os conflitos resolvidos e ser integrado à interface antes da reabertura das inscrições.
+
+Não configure webhooks ou credenciais OAuth em produção antes de essas propostas serem aprovadas e integradas.
 
 ## Rotas
 
