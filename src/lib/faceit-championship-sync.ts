@@ -14,6 +14,12 @@ const TERMINAL_STATUSES = new Set(['aborted', 'cancelled', 'canceled', 'finished
 const RETRY_DELAYS_MS = [2 * 60 * 1000, 5 * 60 * 1000, 15 * 60 * 1000, 30 * 60 * 1000, 60 * 60 * 1000]
 
 export type FaceitSyncTrigger = 'manual' | 'automatic'
+export const FACEIT_STAGES = ['SWISS', 'PLAYOFFS'] as const
+export type FaceitStage = (typeof FACEIT_STAGES)[number]
+
+export function isFaceitStage(value: unknown): value is FaceitStage {
+  return typeof value === 'string' && (FACEIT_STAGES as readonly string[]).includes(value)
+}
 
 export class FaceitSyncInProgressError extends Error {
   constructor() {
@@ -111,16 +117,18 @@ async function claimSync(championship: FaceitChampionship, trigger: FaceitSyncTr
 
 export async function syncFaceitChampionship({
   tournament,
+  stage = 'SWISS',
   faceitUrl,
   trigger,
   now = new Date(),
 }: {
   tournament: string
+  stage?: FaceitStage
   faceitUrl: string
   trigger: FaceitSyncTrigger
   now?: Date
 }) {
-  const existing = await prisma.faceitChampionship.findUnique({ where: { tournament } })
+  const existing = await prisma.faceitChampionship.findFirst({ where: { tournament, stage } })
   const leaseToken = existing ? await claimSync(existing, trigger, now) : null
 
   try {
@@ -160,6 +168,7 @@ export async function syncFaceitChampionship({
       return await prisma.faceitChampionship.create({
         data: {
           tournament,
+          stage,
           ...snapshotData,
           autoSyncEnabled: true,
           nextAutoSyncAt: schedule.nextAutoSyncAt,
@@ -211,9 +220,10 @@ export async function syncFaceitChampionship({
   }
 }
 
-export async function setFaceitAutoSync(tournament: string, enabled: boolean, now = new Date()) {
+export async function setFaceitAutoSync(tournament: string, stage: FaceitStage, enabled: boolean, now = new Date()) {
+  const championship = await prisma.faceitChampionship.findFirstOrThrow({ where: { tournament, stage } })
   return prisma.faceitChampionship.update({
-    where: { tournament },
+    where: { id: championship.id },
     data: {
       autoSyncEnabled: enabled,
       nextAutoSyncAt: enabled ? now : null,
@@ -221,9 +231,10 @@ export async function setFaceitAutoSync(tournament: string, enabled: boolean, no
   })
 }
 
-export async function runDueFaceitChampionshipSyncs(now = new Date()) {
+export async function runDueFaceitChampionshipSyncs(now = new Date(), tournament?: string) {
   const due = await prisma.faceitChampionship.findMany({
     where: {
+      ...(tournament ? { tournament } : {}),
       autoSyncEnabled: true,
       OR: [
         { nextAutoSyncAt: { lte: now } },
@@ -238,6 +249,7 @@ export async function runDueFaceitChampionshipSyncs(now = new Date()) {
     try {
       await syncFaceitChampionship({
         tournament: championship.tournament,
+        stage: championship.stage as FaceitStage,
         faceitUrl: championship.faceitUrl,
         trigger: 'automatic',
         now: new Date(),

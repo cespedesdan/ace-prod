@@ -1,9 +1,12 @@
-import { ExternalLink, Radio, Shield, Swords } from 'lucide-react'
+import { ExternalLink, Radio, Shield } from 'lucide-react'
 import { CopaAce10Swiss } from '@/components/CopaAce10Swiss'
+import { BracketLane } from '@/components/TournamentFormatPage'
+import type { ArchiveRound, ArchiveTeam } from '@/data/tournamentArchives'
 
 const SHOW_FACEIT_TEAMS = false
 
 export type CopaAce10FaceitData = {
+  stage: string
   name: string
   faceitUrl: string
   status: string | null
@@ -58,22 +61,56 @@ function statusLabel(status: string | null) {
   return status ? labels[status.toLowerCase()] || status : 'A definir'
 }
 
+function archiveTeam(team?: CopaAce10FaceitData['matches'][number]['teams'][number]): ArchiveTeam {
+  const name = team?.name || 'A definir'
+  return { name, shortName: name.slice(0, 3).toUpperCase(), logo: team?.avatarUrl || undefined }
+}
+
+const PLAYOFF_ROUNDS = [
+  { name: 'Quartas de final', matches: 4 },
+  { name: 'Semifinais', matches: 2 },
+  { name: 'Grande final', matches: 1 },
+] as const
+
+export function buildPlayoffRounds(matches: CopaAce10FaceitData['matches']): ArchiveRound[] {
+  return PLAYOFF_ROUNDS.map((round, index) => {
+    const roundMatches = matches.filter((match) => match.round === index + 1)
+    return {
+      name: round.name,
+      matches: Array.from({ length: Math.max(round.matches, roundMatches.length) }, (_, matchIndex) => {
+        const match = roundMatches[matchIndex]
+        if (!match) return {
+          label: 'A definir', teamA: archiveTeam(), teamB: archiveTeam(), scoreA: null, scoreB: null, bestOf: 3 as const,
+        }
+      const [teamA, teamB] = match.teams
+      return {
+        label: `${matchDate(match.scheduledAt)} · ${statusLabel(match.status)}`,
+        teamA: archiveTeam(teamA),
+        teamB: archiveTeam(teamB),
+        scoreA: teamA ? match.scores[teamA.faction] ?? match.scores[teamA.teamId] ?? null : null,
+        scoreB: teamB ? match.scores[teamB.faction] ?? match.scores[teamB.teamId] ?? null : null,
+        bestOf: match.bestOf === 1 || match.bestOf === 3 ? match.bestOf : undefined,
+        href: match.faceitUrl || undefined,
+      }
+      }),
+    }
+  })
+}
+
 export function CopaAce10Faceit({ championship }: { championship: CopaAce10FaceitData }) {
-  const isSwiss = [championship.format, championship.seedingStrategy]
+  const isSwiss = championship.stage === 'SWISS' || [championship.format, championship.seedingStrategy]
     .some((value) => value?.toLowerCase().includes('swiss'))
-  const rounds = new Map<string, CopaAce10FaceitData['matches']>()
-  for (const match of championship.matches) {
-    const label = `Rodada ${match.round ?? '?'}${match.group !== null ? ` · Grupo ${match.group}` : ''}`
-    rounds.set(label, [...(rounds.get(label) || []), match])
-  }
+  const stageLabel = isSwiss ? 'Fase suíça' : 'Playoffs'
+  const stageId = isSwiss ? 'swiss' : 'playoffs'
+  const playoffRounds = isSwiss ? [] : buildPlayoffRounds(championship.matches)
   const placements = championship.results.flatMap((result) => result.placements)
 
   return (
-    <section id="faceit" className="deferred-render space-y-6">
+    <section id={`faceit-${stageId}`} className="deferred-render space-y-6">
       <article className="tournament-panel">
         <header className="tournament-panel-header flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
           <div>
-            <p className="tournament-kicker inline-flex items-center gap-2"><Radio size={13} /> Dados oficiais FACEIT</p>
+            <p className="tournament-kicker inline-flex items-center gap-2"><Radio size={13} /> {stageLabel} · dados oficiais FACEIT</p>
             <h2 className="mt-1 text-xl font-black uppercase">{championship.name}</h2>
           </div>
           <div className="text-left sm:text-right">
@@ -103,31 +140,9 @@ export function CopaAce10Faceit({ championship }: { championship: CopaAce10Facei
         </div>
       </div>}
 
-      <div id="partidas">
-        <div className="mb-4 flex items-center gap-2"><Swords size={20} className="text-[#ffd276]" /><h2 className="tournament-section-title">Partidas e chaveamento</h2></div>
-        {isSwiss ? <CopaAce10Swiss matches={championship.matches} teams={championship.teams} /> : rounds.size ? (
-          <div className="space-y-5">
-            {[...rounds].map(([round, matches]) => (
-              <article key={round} className="tournament-panel overflow-hidden">
-                <header className="tournament-panel-header px-4 py-3 text-xs font-black uppercase tracking-wider text-[#ffd276]">{round}</header>
-                <div className="divide-y divide-[#d99a28]/15">
-                  {matches.map((match) => (
-                    <div key={match.matchId} className="grid gap-3 p-4 md:grid-cols-[180px_1fr_auto] md:items-center">
-                      <div className="text-xs text-slate-500"><time>{matchDate(match.scheduledAt)}</time><p className="mt-1 uppercase">MD{match.bestOf || '?'} · {statusLabel(match.status)}</p></div>
-                      <div className="space-y-1">
-                        {match.teams.length ? match.teams.map((team) => {
-                          const score = match.scores[team.faction] ?? match.scores[team.teamId]
-                          const winner = match.winner === team.faction || match.winner === team.teamId
-                          return <p key={team.faction} className={winner ? 'font-black text-[#ffd276]' : 'font-bold text-white'}>{team.name}{score !== undefined ? ` — ${score}` : ''}</p>
-                        }) : <p className="text-sm text-slate-500">Adversários a definir</p>}
-                      </div>
-                      {match.faceitUrl && <a href={match.faceitUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-black text-[#ffd276] hover:underline">Ver partida <ExternalLink size={12} /></a>}
-                    </div>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
+      <div id={`partidas-${stageId}`}>
+        {isSwiss ? <CopaAce10Swiss matches={championship.matches} teams={championship.teams} /> : playoffRounds.length ? (
+          <BracketLane title="Chave dos playoffs" eyebrow="Mata-mata · dados oficiais FACEIT" subtitle="Eliminação simples · MD3" rounds={playoffRounds} />
         ) : <p className="tournament-panel p-5 text-sm text-slate-500">A FACEIT ainda não publicou as partidas.</p>}
       </div>
 

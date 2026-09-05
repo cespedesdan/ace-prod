@@ -273,6 +273,13 @@
   background: rgb(217 154 40 / 20%);
 }
 
+/* Os cards de confronto reutilizados não devem herdar a borda roxa global. */
+.copa-ace-10-page .tournament-panel .border-slate-100,
+.copa-ace-10-page .tournament-panel .border-slate-200,
+.copa-ace-10-page .tournament-panel .border-slate-300 {
+  border-color: rgb(217 154 40 / 28%);
+}
+
 .copa-ace-10-page .tournament-panel .text-slate-900,
 .copa-ace-10-page .tournament-panel .text-slate-800,
 .copa-ace-10-page .tournament-panel .text-slate-700 {

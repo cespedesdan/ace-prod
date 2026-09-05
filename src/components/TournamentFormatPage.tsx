@@ -44,8 +44,8 @@ function TeamLogo({ team, size = 34, deferred = false }: { team: ArchiveTeam; si
 }
 
 function MatchCard({ match }: { match: ArchiveMatch }) {
-  const aWon = match.scoreA > match.scoreB
-  const bWon = match.scoreB > match.scoreA
+  const aWon = match.scoreA !== null && match.scoreB !== null && match.scoreA > match.scoreB
+  const bWon = match.scoreA !== null && match.scoreB !== null && match.scoreB > match.scoreA
   const card = (
     <article className="overflow-hidden border border-slate-300 bg-white shadow-sm">
       {(match.label || match.bestOf) && (
@@ -57,12 +57,12 @@ function MatchCard({ match }: { match: ArchiveMatch }) {
       <div className={`flex items-center gap-2 px-3 py-2.5 ${aWon ? 'bg-orange-50' : ''}`}>
         <TeamLogo team={match.teamA} size={25} deferred />
         <span className={`min-w-0 flex-1 truncate text-sm ${aWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamA.name}</span>
-        <span className={`text-base font-black tabular-nums ${aWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreA}</span>
+        <span className={`text-base font-black tabular-nums ${aWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreA ?? '—'}</span>
       </div>
       <div className={`flex items-center gap-2 border-t border-slate-100 px-3 py-2.5 ${bWon ? 'bg-orange-50' : ''}`}>
         <TeamLogo team={match.teamB} size={25} deferred />
         <span className={`min-w-0 flex-1 truncate text-sm ${bWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamB.name}</span>
-        <span className={`text-base font-black tabular-nums ${bWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreB}</span>
+        <span className={`text-base font-black tabular-nums ${bWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreB ?? '—'}</span>
       </div>
     </article>
   )
@@ -184,8 +184,8 @@ function ResultFooter({ data }: { data: TournamentArchive }) {
   )
 }
 
-function BracketLane({ title, eyebrow, subtitle, rounds, footer }: { title: string; eyebrow: string; subtitle: string; rounds: ArchiveRound[]; footer?: ReactNode }) {
-  const columns = rounds.length >= 4 ? 'min-w-[1240px] grid-cols-4' : rounds.length === 3 ? 'min-w-[920px] grid-cols-3' : 'min-w-[620px] grid-cols-2'
+export function BracketLane({ title, eyebrow, subtitle, rounds, footer }: { title: string; eyebrow: string; subtitle: string; rounds: ArchiveRound[]; footer?: ReactNode }) {
+  const minimumWidth = Math.max(420, rounds.length * 260 + (rounds.length - 1) * 40)
   return (
     <section className="deferred-render tournament-panel">
       <header className="tournament-panel-header flex flex-col justify-between gap-2 px-5 py-4 sm:flex-row sm:items-center">
@@ -193,7 +193,7 @@ function BracketLane({ title, eyebrow, subtitle, rounds, footer }: { title: stri
         <span className="text-xs font-bold text-slate-400">{subtitle}</span>
       </header>
       <div className="overflow-x-auto bg-slate-100 p-5 sm:p-7">
-        <div className={`grid gap-10 ${columns}`}>
+        <div className="grid gap-10" style={{ gridTemplateColumns: `repeat(${rounds.length}, minmax(260px, 1fr))`, minWidth: minimumWidth }}>
           {rounds.map((round, roundIndex) => (
             <div key={round.name} className="flex flex-col">
               <div className="mb-4 flex items-center gap-2"><span className="grid h-6 w-6 place-items-center bg-orange-500 text-xs font-black text-white">{roundIndex + 1}</span><h3 className="text-xs font-black uppercase tracking-[0.12em] text-slate-600">{round.name}</h3></div>

@@ -152,7 +152,8 @@ model RegistrationPlayer {
 
 model FaceitChampionship {
   id                          String    @id @default(cuid())
-  tournament                  String    @unique
+  tournament                  String
+  stage                       String    @default("SWISS")
   championshipId              String    @unique
   faceitUrl                   String
   name                        String
@@ -180,6 +181,7 @@ model FaceitChampionship {
   updatedAt                   DateTime  @updatedAt
 
   @@index([autoSyncEnabled, nextAutoSyncAt])
+  @@unique([tournament, stage])
   @@map("faceit_championships")
 }
 
