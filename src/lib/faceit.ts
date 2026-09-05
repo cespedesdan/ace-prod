@@ -160,6 +160,14 @@ function localizedFaceitUrl(value: unknown) {
   }
 }
 
+function championshipNameFromUrl(value: string) {
+  try {
+    const segments = new URL(value).pathname.split('/').filter(Boolean)
+    const index = segments.findIndex((segment) => segment.toLowerCase() === 'championship')
+    return index >= 0 ? decodeURIComponent(segments[index + 2] || '').trim() || null : null
+  } catch { return null }
+}
+
 function optionalNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
@@ -306,14 +314,15 @@ export async function getFaceitChampionship(value: string): Promise<FaceitChampi
   const championshipId = parseFaceitChampionshipId(value)
   const encodedId = encodeURIComponent(championshipId)
   const [details, matchItems, resultItems, subscriptions] = await Promise.all([
-    faceitRequest(`/championships/${encodedId}`, 'Campeonato não encontrado na FACEIT.'),
+    faceitRequest(`/championships/${encodedId}`, 'Campeonato não encontrado na FACEIT.')
+      .catch((error: unknown) => error instanceof FaceitApiError && error.status === 404 ? null : Promise.reject(error)),
     getChampionshipItems(`/championships/${encodedId}/matches?type=all`, 100, 'Campeonato não encontrado na FACEIT.'),
     getChampionshipItems(`/championships/${encodedId}/results`, 100, 'Campeonato não encontrado na FACEIT.'),
     getChampionshipItems(`/championships/${encodedId}/subscriptions`, 10, 'Campeonato não encontrado na FACEIT.'),
   ])
 
-  const returnedId = optionalString(details.championship_id) || optionalString(details.id)
-  const name = optionalString(details.name)
+  const returnedId = details ? optionalString(details.championship_id) || optionalString(details.id) : championshipId
+  const name = details ? optionalString(details.name) : championshipNameFromUrl(value)
   if (!returnedId || returnedId.toLowerCase() !== championshipId || !name) {
     throw new FaceitApiError('A FACEIT retornou dados inválidos para este campeonato.', 502)
   }
@@ -389,13 +398,13 @@ export async function getFaceitChampionship(value: string): Promise<FaceitChampi
   return {
     championshipId,
     name,
-    faceitUrl: localizedFaceitUrl(details.faceit_url) || `https://www.faceit.com/pt/championship/${championshipId}`,
-    status: optionalString(details.status),
-    gameId: optionalString(details.game_id),
-    format: optionalString(details.type),
-    seedingStrategy: optionalString(details.seeding_strategy),
-    totalRounds: optionalNumber(details.total_rounds),
-    startsAt: faceitTimestampMs(details.championship_start),
+    faceitUrl: details ? localizedFaceitUrl(details.faceit_url) || `https://www.faceit.com/pt/championship/${championshipId}` : value,
+    status: details ? optionalString(details.status) : null,
+    gameId: details ? optionalString(details.game_id) : null,
+    format: details ? optionalString(details.type) : null,
+    seedingStrategy: details ? optionalString(details.seeding_strategy) : null,
+    totalRounds: details ? optionalNumber(details.total_rounds) : null,
+    startsAt: details ? faceitTimestampMs(details.championship_start) : null,
     teams,
     matches,
     results: championshipResults,

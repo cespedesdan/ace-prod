@@ -16,28 +16,22 @@ export const metadata: Metadata = {
   description: 'Cronograma e partidas das cinco rodadas suíças da Copa Ace 10.',
 }
 
-async function getFaceitSchedule() {
-  const championship = await prisma.faceitChampionship.findUnique({
-    where: { tournament: publicTournament },
-    select: { faceitUrl: true, matchesJson: true, syncedAt: true },
+async function getFaceitSchedules() {
+  const championships = await prisma.faceitChampionship.findMany({
+    where: { tournament: publicTournament, stage: { in: ['SWISS', 'PLAYOFFS'] } },
+    orderBy: { stage: 'asc' },
+    select: { stage: true, faceitUrl: true, matchesJson: true, syncedAt: true },
   })
-  if (!championship) return null
-
-  try {
-    const matches: unknown = JSON.parse(championship.matchesJson)
-    if (!Array.isArray(matches)) return null
-    return {
-      faceitUrl: championship.faceitUrl,
-      matches: matches as FaceitChampionshipSnapshot['matches'],
-      syncedAt: championship.syncedAt,
-    }
-  } catch {
-    return null
-  }
+  return championships.flatMap((championship) => {
+    try {
+      const matches: unknown = JSON.parse(championship.matchesJson)
+      return Array.isArray(matches) ? [{ ...championship, stage: championship.stage as 'SWISS' | 'PLAYOFFS', matches: matches as FaceitChampionshipSnapshot['matches'] }] : []
+    } catch { return [] }
+  })
 }
 
 export default async function SchedulePage() {
-  const faceitSchedule = await getFaceitSchedule()
+  const faceitSchedules = await getFaceitSchedules()
 
   return (
     <main className="schedule-page tournament-page">
@@ -55,7 +49,7 @@ export default async function SchedulePage() {
 
       <div className="tournament-container space-y-6 py-8">
         <CopaAce10Schedule />
-        <ScheduleList championship={faceitSchedule} />
+        <ScheduleList championships={faceitSchedules} />
       </div>
     </main>
   )

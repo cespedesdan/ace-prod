@@ -15,8 +15,8 @@ export type ArchiveMatch = {
   label?: string
   teamA: ArchiveTeam
   teamB: ArchiveTeam
-  scoreA: number
-  scoreB: number
+  scoreA: number | null
+  scoreB: number | null
   bestOf?: 1 | 3
   href?: string
 }

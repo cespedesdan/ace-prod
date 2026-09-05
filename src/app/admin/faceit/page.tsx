@@ -30,6 +30,7 @@ type FaceitMatch = {
 
 type Championship = {
   tournament: string
+  stage: 'SWISS' | 'PLAYOFFS'
   championshipId: string
   faceitUrl: string
   name: string
@@ -56,6 +57,11 @@ type Championship = {
   }>
 }
 
+const stages = [
+  { value: 'SWISS', label: 'Fase suíça' },
+  { value: 'PLAYOFFS', label: 'Playoffs' },
+] as const
+
 function matchDate(timestamp: number | null) {
   return timestamp ? new Date(timestamp).toLocaleString('pt-BR') : 'Horário a definir'
 }
@@ -67,6 +73,7 @@ function syncDate(value: string | null) {
 export default function FaceitChampionshipAdminPage() {
   const router = useRouter()
   const [tournament, setTournament] = useState('Copa Ace 10')
+  const [stage, setStage] = useState<Championship['stage']>('SWISS')
   const [faceitUrl, setFaceitUrl] = useState('')
   const [championships, setChampionships] = useState<Championship[]>([])
   const [loading, setLoading] = useState(true)
@@ -74,7 +81,7 @@ export default function FaceitChampionshipAdminPage() {
   const [updatingAutoSync, setUpdatingAutoSync] = useState(false)
   const [unlinking, setUnlinking] = useState(false)
   const [error, setError] = useState('')
-  const championship = championships.find((item) => item.tournament === tournament) || null
+  const championship = championships.find((item) => item.tournament === tournament && item.stage === stage) || null
 
   useEffect(() => {
     fetch('/api/admin/faceit-championship')
@@ -86,6 +93,7 @@ export default function FaceitChampionshipAdminPage() {
         setChampionships(linked)
         if (linked[0]) {
           setTournament(linked[0].tournament)
+          setStage(linked[0].stage)
           setFaceitUrl(linked[0].faceitUrl)
         }
       })
@@ -110,14 +118,15 @@ export default function FaceitChampionshipAdminPage() {
       const response = await fetch('/api/admin/faceit-championship', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tournament, faceitUrl }),
+        body: JSON.stringify({ tournament, stage, faceitUrl }),
       })
       if (response.status === 401) return router.push('/admin/login')
       const data = await response.json() as { championship?: Championship; error?: string }
       if (!response.ok || !data.championship) throw new Error(data.error || 'Não foi possível sincronizar.')
-      setChampionships((current) => [...current.filter((item) => item.tournament !== data.championship!.tournament), data.championship!]
-        .sort((left, right) => left.tournament.localeCompare(right.tournament, 'pt-BR')))
+      setChampionships((current) => [...current.filter((item) => item.tournament !== data.championship!.tournament || item.stage !== data.championship!.stage), data.championship!]
+        .sort((left, right) => left.tournament.localeCompare(right.tournament, 'pt-BR') || left.stage.localeCompare(right.stage)))
       setTournament(data.championship.tournament)
+      setStage(data.championship.stage)
       setFaceitUrl(data.championship.faceitUrl)
     } catch (syncError) {
       setError(syncError instanceof Error ? syncError.message : 'Erro inesperado.')
@@ -127,22 +136,23 @@ export default function FaceitChampionshipAdminPage() {
   }
 
   async function unlinkChampionship() {
-    if (!championship || !window.confirm(`Desvincular ${championship.tournament} da FACEIT? O snapshot deixará de aparecer na página integrada.`)) return
+    if (!championship || !window.confirm(`Desvincular ${championship.tournament} · ${stages.find((item) => item.value === championship.stage)?.label} da FACEIT? O snapshot deixará de aparecer na página integrada.`)) return
     setUnlinking(true)
     setError('')
     try {
       const response = await fetch('/api/admin/faceit-championship', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tournament: championship.tournament }),
+        body: JSON.stringify({ tournament: championship.tournament, stage: championship.stage }),
       })
       if (response.status === 401) return router.push('/admin/login')
       const data = await response.json() as { error?: string }
       if (!response.ok) throw new Error(data.error || 'Não foi possível desvincular.')
 
-      const remaining = championships.filter((item) => item.tournament !== championship.tournament)
+      const remaining = championships.filter((item) => item.tournament !== championship.tournament || item.stage !== championship.stage)
       setChampionships(remaining)
       setTournament(remaining[0]?.tournament || 'Copa Ace 10')
+      setStage(remaining[0]?.stage || 'SWISS')
       setFaceitUrl(remaining[0]?.faceitUrl || '')
     } catch (unlinkError) {
       setError(unlinkError instanceof Error ? unlinkError.message : 'Erro inesperado.')
@@ -159,7 +169,7 @@ export default function FaceitChampionshipAdminPage() {
       const response = await fetch('/api/admin/faceit-championship', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tournament: championship.tournament, autoSyncEnabled: enabled }),
+        body: JSON.stringify({ tournament: championship.tournament, stage: championship.stage, autoSyncEnabled: enabled }),
       })
       if (response.status === 401) return router.push('/admin/login')
       const data = await response.json() as { championship?: Championship; error?: string }
@@ -167,7 +177,7 @@ export default function FaceitChampionshipAdminPage() {
         throw new Error(data.error || 'Não foi possível alterar a sincronização automática.')
       }
       setChampionships((current) => current.map((item) => (
-        item.tournament === data.championship!.tournament ? data.championship! : item
+        item.tournament === data.championship!.tournament && item.stage === data.championship!.stage ? data.championship! : item
       )))
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : 'Erro inesperado.')
@@ -189,10 +199,16 @@ export default function FaceitChampionshipAdminPage() {
           <p className="mt-2 max-w-3xl text-sm text-slate-400">Vincule cada edição ao campeonato correspondente na FACEIT. A atualização automática mantém times, partidas, horários e resultados atuais, e a sincronização manual continua disponível para atualizações imediatas.</p>
         </div>
 
-        <form onSubmit={syncChampionship} className="brand-card mt-7 grid gap-3 p-5 lg:grid-cols-[260px_1fr_auto]">
+        <form onSubmit={syncChampionship} className="brand-card mt-7 grid gap-3 p-5 lg:grid-cols-[220px_180px_1fr_auto]">
           <label className="text-xs font-black uppercase tracking-wider text-slate-300">
             Campeonato no site
             <input type="text" required minLength={3} maxLength={100} value={tournament} onChange={(event) => setTournament(event.target.value)} placeholder="Ex.: Copa Ace 10" className="mt-2 w-full border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-normal normal-case text-white outline-none focus:border-cyan-400" />
+          </label>
+          <label className="text-xs font-black uppercase tracking-wider text-slate-300">
+            Estágio
+            <select value={stage} onChange={(event) => setStage(event.target.value as Championship['stage'])} className="mt-2 w-full border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-normal normal-case text-white outline-none focus:border-cyan-400">
+              {stages.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
           </label>
           <label className="text-xs font-black uppercase tracking-wider text-slate-300">
             Link do campeonato na FACEIT
@@ -200,7 +216,7 @@ export default function FaceitChampionshipAdminPage() {
           </label>
           <button type="submit" disabled={syncing} className="brand-button-primary self-end disabled:cursor-wait disabled:opacity-50">
             {syncing ? <LoaderCircle className="animate-spin" size={16} /> : <RefreshCw size={16} />}
-            {championship ? `Sincronizar ${championship.tournament}` : `Vincular ${tournament || 'campeonato'}`}
+            {championship ? `Sincronizar ${stages.find((item) => item.value === stage)?.label}` : `Vincular ${stages.find((item) => item.value === stage)?.label}`}
           </button>
         </form>
 
@@ -209,12 +225,12 @@ export default function FaceitChampionshipAdminPage() {
 
         {!loading && championships.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2" aria-label="Campeonatos vinculados">
-            <button type="button" onClick={() => { setTournament(''); setFaceitUrl('') }} className="inline-flex items-center gap-2 border border-slate-700 px-3 py-2 text-xs font-black text-slate-400 hover:border-slate-500 hover:text-white">
+            <button type="button" onClick={() => { setTournament('Copa Ace 10'); setStage('SWISS'); setFaceitUrl('') }} className="inline-flex items-center gap-2 border border-slate-700 px-3 py-2 text-xs font-black text-slate-400 hover:border-slate-500 hover:text-white">
               <Plus size={14} /> Novo vínculo
             </button>
             {championships.map((item) => (
-              <button key={item.tournament} type="button" onClick={() => { setTournament(item.tournament); setFaceitUrl(item.faceitUrl) }} className={`border px-3 py-2 text-xs font-black ${item.tournament === tournament ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300' : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'}`}>
-                {item.tournament}
+              <button key={`${item.tournament}-${item.stage}`} type="button" onClick={() => { setTournament(item.tournament); setStage(item.stage); setFaceitUrl(item.faceitUrl) }} className={`border px-3 py-2 text-xs font-black ${item.tournament === tournament && item.stage === stage ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300' : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'}`}>
+                {item.tournament} · {stages.find((stageItem) => stageItem.value === item.stage)?.label}
               </button>
             ))}
           </div>
@@ -225,14 +241,14 @@ export default function FaceitChampionshipAdminPage() {
             <section className="brand-card p-5">
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-cyan-400">{championship.status || 'Status não informado'}{championship.format ? ` · ${championship.format}` : ''}</p>
+                  <p className="text-xs font-black uppercase tracking-wider text-cyan-400">{stages.find((item) => item.value === championship.stage)?.label} · {championship.status || 'Status não informado'}{championship.format ? ` · ${championship.format}` : ''}</p>
                   <h2 className="mt-2 text-2xl font-black">{championship.name}</h2>
                   <p className="mt-2 text-xs text-slate-500">Última atualização do snapshot: {new Date(championship.syncedAt).toLocaleString('pt-BR')}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <a href={championship.faceitUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-black text-cyan-300 hover:underline">Abrir na FACEIT <ExternalLink size={14} /></a>
                   <button type="button" disabled={unlinking} onClick={unlinkChampionship} className="inline-flex items-center gap-2 border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-black text-red-300 hover:bg-red-500/20 disabled:opacity-50">
-                    {unlinking ? <LoaderCircle className="animate-spin" size={14} /> : <Trash2 size={14} />} Desvincular de {championship.tournament}
+                    {unlinking ? <LoaderCircle className="animate-spin" size={14} /> : <Trash2 size={14} />} Desvincular {stages.find((item) => item.value === championship.stage)?.label}
                   </button>
                 </div>
               </div>

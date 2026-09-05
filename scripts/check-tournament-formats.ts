@@ -6,6 +6,7 @@ import { hallOfFameEditions } from '../src/data/hallOfFame'
 import { tournamentArchives } from '../src/data/tournamentArchives'
 import { buildFaceitSwissStandings, type FaceitChampionshipSnapshot } from '../src/lib/faceit'
 import { buildSwissRounds } from '../src/components/CopaAce10Swiss'
+import { buildPlayoffRounds } from '../src/components/CopaAce10Faceit'
 import { organizeSchedule } from '../src/components/ScheduleList'
 
 const copa9 = tournamentArchives['copa-ace-9']
@@ -83,6 +84,13 @@ assert.deepEqual(swissStage.rounds.map(({ groups }) => groups.map(({ record }) =
 ])
 assert.equal(swissStage.rounds[0].groups[0].matches.length, 1)
 assert.deepEqual(swissStage.campaigns.get('a'), { wins: 1, losses: 0 })
+
+const playoffStage = buildPlayoffRounds([{ ...swissMatches[0], winner: null, status: 'SCHEDULED', scores: {}, bestOf: 3 }])
+assert.deepEqual(playoffStage.map((round) => round.name), ['Quartas de final', 'Semifinais', 'Grande final'])
+assert.deepEqual(playoffStage.map((round) => round.matches.length), [4, 2, 1])
+assert.deepEqual(playoffStage[0].matches[0].scoreA, null)
+assert.deepEqual(playoffStage[0].matches[0].scoreB, null)
+assert.equal(playoffStage[0].matches[0].bestOf, 3)
 
 const terminalMatches = [1, 2, 3].map((round) => ({ ...swissMatches[0], matchId: String(round), round }))
 const cancelledTerminalMatch = {

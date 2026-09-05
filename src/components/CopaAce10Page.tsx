@@ -27,21 +27,22 @@ async function getConfirmedTeams() {
   })
 }
 
-async function getFaceitChampionship(): Promise<CopaAce10FaceitData | null> {
-  const championship = await prisma.faceitChampionship.findUnique({
+async function getFaceitChampionships(): Promise<CopaAce10FaceitData[]> {
+  const championships = await prisma.faceitChampionship.findMany({
     where: { tournament: publicTournament },
-    select: { name: true, faceitUrl: true, status: true, format: true, seedingStrategy: true, totalRounds: true, syncedAt: true, teamsJson: true, matchesJson: true, resultsJson: true },
+    orderBy: { stage: 'asc' },
+    select: { stage: true, name: true, faceitUrl: true, status: true, format: true, seedingStrategy: true, totalRounds: true, syncedAt: true, teamsJson: true, matchesJson: true, resultsJson: true },
   })
-  if (!championship) return null
-  try {
-    const teams = JSON.parse(championship.teamsJson)
-    const matches = JSON.parse(championship.matchesJson)
-    const results = JSON.parse(championship.resultsJson)
-    if (!Array.isArray(teams) || !Array.isArray(matches) || !Array.isArray(results)) return null
-    return { ...championship, teams, matches, results }
-  } catch {
-    return null
-  }
+  return championships.flatMap((championship) => {
+    try {
+      const teams = JSON.parse(championship.teamsJson)
+      const matches = JSON.parse(championship.matchesJson)
+      const results = JSON.parse(championship.resultsJson)
+      return Array.isArray(teams) && Array.isArray(matches) && Array.isArray(results)
+        ? [{ ...championship, teams, matches, results }]
+        : []
+    } catch { return [] }
+  })
 }
 
 function ConfirmedTeamLogo({ id, name, size = 52 }: { id: string; name: string; size?: number }) {
@@ -53,7 +54,7 @@ function ConfirmedTeamLogo({ id, name, size = 52 }: { id: string; name: string; 
 }
 
 export default async function CopaAce10Page() {
-  const [teams, faceitChampionship] = await Promise.all([getConfirmedTeams(), getFaceitChampionship()])
+  const [teams, faceitChampionships] = await Promise.all([getConfirmedTeams(), getFaceitChampionships()])
   const availableSlots = TOTAL_TEAMS - teams.length
   const slots = Array.from({ length: TOTAL_TEAMS }, (_, index) => teams[index] ?? null)
 
@@ -134,8 +135,8 @@ export default async function CopaAce10Page() {
             <a href="#equipes">Times</a>
             <a href="#formato">Formato</a>
             <a href="#cronograma">Cronograma</a>
-            {faceitChampionship && <a href="#faceit">FACEIT</a>}
-            {faceitChampionship && <a href="#partidas">Partidas</a>}
+            {faceitChampionships.some((championship) => championship.stage === 'SWISS') && <a href="#faceit-swiss">Suíço</a>}
+            {faceitChampionships.some((championship) => championship.stage === 'PLAYOFFS') && <a href="#faceit-playoffs">Playoffs</a>}
             <a href="#premiacao">Premiação</a>
             <a href="#inscricao">Inscrição</a>
           </nav>
@@ -176,7 +177,7 @@ export default async function CopaAce10Page() {
 
         <CopaAce10Schedule />
 
-        {faceitChampionship && <CopaAce10Faceit championship={faceitChampionship} />}
+        {faceitChampionships.map((championship) => <CopaAce10Faceit key={championship.stage} championship={championship} />)}
 
         <section id="equipes" className="deferred-render">
           <div className="mb-4 flex items-end justify-between gap-4">

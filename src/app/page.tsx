@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 }
 
 async function getFaceitStandings() {
-  const championship = await prisma.faceitChampionship.findUnique({
-    where: { tournament: publicTournament },
+  const championship = await prisma.faceitChampionship.findFirst({
+    where: { tournament: publicTournament, stage: 'SWISS' },
     select: { teamsJson: true, matchesJson: true, syncedAt: true },
   })
   if (!championship) return null
