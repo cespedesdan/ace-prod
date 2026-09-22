@@ -30,23 +30,39 @@ model Team {
   updatedAt DateTime @updatedAt
 
   // Relations
-  matchesAsTeamA    Match[] @relation("TeamAMatches")
-  matchesAsTeamB    Match[] @relation("TeamBMatches")
+  matchesAsTeamA    Match[]      @relation("TeamAMatches")
+  matchesAsTeamB    Match[]      @relation("TeamBMatches")
   hallOfFameEntries HallOfFame[]
 
   @@map("teams")
 }
 
 model Tournament {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  startDate DateTime
-  endDate   DateTime
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  name                  String    @unique
+  slug                  String    @unique
+  description           String    @default("")
+  logoUrl               String?
+  format                String    @default("SWISS_SINGLE_ELIMINATION")
+  status                String    @default("DRAFT")
+  teamLimit             Int       @default(16)
+  prizePoolCents        Int       @default(0)
+  registrationOpen      Boolean   @default(false)
+  published             Boolean   @default(false)
+  publishedInHallOfFame Boolean   @default(false)
+  champion              String?
+  runnerUp              String?
+  finalSnapshotJson     String?
+  closedAt              DateTime?
+  reopenedAt            DateTime?
+  lastActionBy          String?
+  startDate             DateTime
+  endDate               DateTime
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   // Relations
-  matches        Match[]
+  matches           Match[]
   hallOfFameEntries HallOfFame[]
 
   @@map("tournaments")
@@ -84,25 +100,25 @@ model News {
 }
 
 model HallOfFame {
-  id           String @id @default(cuid())
+  id           String   @id @default(cuid())
   year         Int
   tournamentId String
   winnerTeamId String
   createdAt    DateTime @default(now())
 
   // Relations
-  tournament  Tournament @relation(fields: [tournamentId], references: [id])
-  winnerTeam  Team       @relation(fields: [winnerTeamId], references: [id])
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  winnerTeam Team       @relation(fields: [winnerTeamId], references: [id])
 
   @@map("hall_of_fame")
 }
 
 model Registration {
-  id                       String             @id @default(cuid())
-  protocol                 String             @unique
-  claimKey                 String?            @unique
-  teamNameClaimKey         String?            @unique
-  tournament               String             @default("Copa Ace 10")
+  id                       String               @id @default(cuid())
+  protocol                 String               @unique
+  claimKey                 String?              @unique
+  teamNameClaimKey         String?              @unique
+  tournament               String               @default("Copa Ace 10")
   teamFaceitUrl            String
   faceitTeamId             String?
   faceitTeamNickname       String?
@@ -117,14 +133,14 @@ model Registration {
   teamInstagram            String?
   discoverySource          String
   scheduleRestrictions     String?
-  rulesAccepted            Boolean            @default(true)
+  rulesAccepted            Boolean              @default(true)
   logoPath                 String
   logoOriginalName         String
   paymentProofPath         String
   paymentProofOriginalName String
-  status                   RegistrationStatus @default(PENDING)
-  createdAt                DateTime           @default(now())
-  updatedAt                DateTime           @updatedAt
+  status                   RegistrationStatus   @default(PENDING)
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
   players                  RegistrationPlayer[]
 
   @@index([tournament, status])
@@ -132,18 +148,18 @@ model Registration {
 }
 
 model RegistrationPlayer {
-  id               String       @id @default(cuid())
-  registrationId   String
-  faceitPlayerId   String
-  nickname         String
-  avatarUrl        String?
-  country          String?
-  skillLevel       Int?
-  membershipType   String?
-  isLeader         Boolean      @default(false)
-  faceitUrl        String?
-  syncedAt         DateTime     @default(now())
-  registration     Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  registrationId String
+  faceitPlayerId String
+  nickname       String
+  avatarUrl      String?
+  country        String?
+  skillLevel     Int?
+  membershipType String?
+  isLeader       Boolean      @default(false)
+  faceitUrl      String?
+  syncedAt       DateTime     @default(now())
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 
   @@unique([registrationId, faceitPlayerId])
   @@index([registrationId])
@@ -180,18 +196,18 @@ model FaceitChampionship {
   createdAt                   DateTime  @default(now())
   updatedAt                   DateTime  @updatedAt
 
-  @@index([autoSyncEnabled, nextAutoSyncAt])
   @@unique([tournament, stage])
+  @@index([autoSyncEnabled, nextAutoSyncAt])
   @@map("faceit_championships")
 }
 
 model LiveStream {
-  id            String   @id
-  title         String
+  id             String   @id
+  title          String
   youtubeVideoId String
-  visibleOnHome Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  visibleOnHome  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("live_streams")
 }

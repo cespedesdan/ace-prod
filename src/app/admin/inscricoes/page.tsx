@@ -31,6 +31,9 @@ type RegistrationPlayer = {
 type Registration = {
   id: string
   protocol: string
+  tournament: string
+  tournamentTeamLimit: number
+  tournamentPublicUrl: string | null
   teamFaceitUrl: string
   teamName: string
   teamTag: string
@@ -73,6 +76,7 @@ export default function RegistrationsAdminPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [section, setSection] = useState<RegistrationSection>('ACTIVE')
   const [filter, setFilter] = useState<ActiveFilter>('ALL')
+  const [tournamentFilter, setTournamentFilter] = useState('ALL')
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState('')
   const [error, setError] = useState('')
@@ -92,13 +96,15 @@ export default function RegistrationsAdminPage() {
       .finally(() => setLoading(false))
   }, [router])
 
+  const tournamentNames = useMemo(() => [...new Set(registrations.map((item) => item.tournament))], [registrations])
+  const scopedRegistrations = registrations.filter((item) => tournamentFilter === 'ALL' || item.tournament === tournamentFilter)
   const counts = useMemo(() => ({
-    APPROVED: registrations.filter((item) => item.status === 'APPROVED').length,
-    PENDING: registrations.filter((item) => item.status === 'PENDING').length,
-    REJECTED: registrations.filter((item) => item.status === 'REJECTED').length,
-  }), [registrations])
+    APPROVED: scopedRegistrations.filter((item) => item.status === 'APPROVED').length,
+    PENDING: scopedRegistrations.filter((item) => item.status === 'PENDING').length,
+    REJECTED: scopedRegistrations.filter((item) => item.status === 'REJECTED').length,
+  }), [scopedRegistrations])
 
-  const visibleRegistrations = registrations.filter((item) => (section === 'REJECTED' ? item.status === 'REJECTED' : item.status !== 'REJECTED' && (filter === 'ALL' || item.status === filter)))
+  const visibleRegistrations = scopedRegistrations.filter((item) => (section === 'REJECTED' ? item.status === 'REJECTED' : item.status !== 'REJECTED' && (filter === 'ALL' || item.status === filter)))
 
   async function updateStatus(id: string, status: RegistrationStatus) {
     setActionId(id)
@@ -162,19 +168,17 @@ export default function RegistrationsAdminPage() {
 
         <div className="mt-6 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-400">Copa Ace 10</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-400">Campeonatos</p>
             <h1 className="mt-2 text-3xl font-black">Gestão das inscrições</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-400">Confirme uma equipe para publicá-la automaticamente na página oficial. O torneio aceita até 16 equipes.</p>
+            <p className="mt-2 max-w-2xl text-sm text-slate-400">Confirme uma equipe para publicá-la automaticamente na página do campeonato em que ela se inscreveu.</p>
           </div>
-          <Link href="/copa-ace-10" target="_blank" className="inline-flex items-center justify-center gap-2 rounded-lg border border-cyan-400/25 bg-cyan-400/10 px-4 py-3 text-sm font-bold text-cyan-300 hover:bg-cyan-400/15">
-            Ver página pública <ExternalLink size={16} />
-          </Link>
+          <label className="text-xs font-bold text-slate-300">Campeonato<select value={tournamentFilter} onChange={(event) => setTournamentFilter(event.target.value)} className="mt-2 block min-w-64 bg-slate-950 px-3 py-2 text-white"><option value="ALL">Todos</option>{tournamentNames.map((name) => <option key={name} value={name}>{name}</option>)}</select></label>
         </div>
 
         <div className="mt-7 grid gap-3 sm:grid-cols-3">
           <div className="border border-copa-cyan/20 bg-copa-cyan/5 p-4">
             <p className="text-xs font-black uppercase tracking-wider text-copa-cyan">Confirmadas</p>
-            <p className="mt-2 text-3xl font-black">{counts.APPROVED}<span className="text-lg text-slate-500">/16</span></p>
+            <p className="mt-2 text-3xl font-black">{counts.APPROVED}</p>
           </div>
           <div className="border border-tr-orange/20 bg-tr-orange/5 p-4">
             <p className="text-xs font-black uppercase tracking-wider text-tr-orange">Pendentes</p>
@@ -223,6 +227,7 @@ export default function RegistrationsAdminPage() {
                     <h2 className="text-xl font-black">{registration.teamName}</h2>
                     <span className="rounded bg-slate-700 px-2 py-1 text-[10px] font-black uppercase text-slate-300">{registration.teamTag}</span>
                     <span className={`rounded px-2 py-1 text-[10px] font-black uppercase ${statusStyle[registration.status]}`}>{statusLabel[registration.status]}</span>
+                    {registration.tournamentPublicUrl ? <a href={registration.tournamentPublicUrl} target="_blank" rel="noreferrer" className="rounded bg-cyan-400/10 px-2 py-1 text-[10px] font-black uppercase text-cyan-300 hover:bg-cyan-400/20">{registration.tournament} <ExternalLink className="inline" size={10} /></a> : <span className="text-xs text-slate-500">{registration.tournament}</span>}
                   </div>
                   <p className="mt-2 font-mono text-xs text-cyan-300">{registration.protocol}</p>
                   <a href={registration.teamFaceitUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-cyan-400 hover:underline">Time na FACEIT <ExternalLink size={12} /></a>
@@ -245,7 +250,7 @@ export default function RegistrationsAdminPage() {
                   </div>
                   <div className="flex flex-wrap gap-2 border-t border-slate-700 pt-3">
                     {registration.status !== 'APPROVED' && (
-                      <button type="button" disabled={actionId === registration.id || counts.APPROVED >= 16} onClick={() => updateStatus(registration.id, 'APPROVED')} className="inline-flex items-center gap-2 bg-copa-cyan px-3 py-2 text-xs font-black text-smoke hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40">
+                      <button type="button" disabled={actionId === registration.id || registrations.filter((item) => item.tournament === registration.tournament && item.status === 'APPROVED').length >= registration.tournamentTeamLimit} onClick={() => updateStatus(registration.id, 'APPROVED')} className="inline-flex items-center gap-2 bg-copa-cyan px-3 py-2 text-xs font-black text-smoke hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40">
                         {actionId === registration.id ? <LoaderCircle className="animate-spin" size={14} /> : <CheckCircle2 size={14} />} Confirmar time
                       </button>
                     )}

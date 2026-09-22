@@ -10,7 +10,7 @@ import { registrationTextLimitError } from '@/lib/registration-input'
 import { registrationClaimKeys } from '@/lib/registration-claim'
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
 import { normalizeRegistrationImage, NormalizedImageTooLargeError } from '@/lib/registration-upload'
-import { registrationsAreOpen } from '@/lib/registration-status'
+import { getOpenRegistrationTournament } from '@/lib/registration-status'
 import { readFormDataWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
@@ -84,7 +84,8 @@ function rateLimitResponse(retryAfterSeconds: number) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!registrationsAreOpen()) {
+  const tournament = await getOpenRegistrationTournament()
+  if (!tournament) {
     return errorResponse('As inscrições estão encerradas.', 410)
   }
 
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
     if (clientIp) {
       const ipLimit = await consumeRateLimit({
         scope: 'registration-ip',
-        identifier: clientIp,
+        identifier: `${tournament.id}:${clientIp}`,
         ...REGISTRATION_RATE_LIMIT,
       })
       if (!ipLimit.allowed) return rateLimitResponse(ipLimit.retryAfterSeconds)
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
 
     const emailLimit = await consumeRateLimit({
       scope: 'registration-email',
-      identifier: representativeEmail || 'invalid-email',
+      identifier: `${tournament.id}:${representativeEmail || 'invalid-email'}`,
       ...REGISTRATION_RATE_LIMIT,
     })
     if (!emailLimit.allowed) return rateLimitResponse(emailLimit.retryAfterSeconds)
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
     const proofUpload = await validateUpload(formData.get('paymentProof'), proofMimeTypes, 'O comprovante de pagamento')
     if (typeof proofUpload === 'string') return errorResponse(proofUpload)
 
-    const activeClaims = registrationClaimKeys('Copa Ace 10', faceitTeam.teamId, teamNameNormalized)
+    const activeClaims = registrationClaimKeys(tournament.name, faceitTeam.teamId, teamNameNormalized)
     const existingTeam = await prisma.registration.findFirst({
       where: {
         OR: [
@@ -199,7 +200,8 @@ export async function POST(request: NextRequest) {
 
     const id = randomUUID()
     const datePart = new Date().toISOString().slice(0, 10).replaceAll('-', '')
-    const protocol = `ACE10-${datePart}-${randomBytes(3).toString('hex').toUpperCase()}`
+    const protocolPrefix = tournament.slug.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 12) || 'ACE'
+    const protocol = `${protocolPrefix}-${datePart}-${randomBytes(3).toString('hex').toUpperCase()}`
     const storageRoot = path.join(process.cwd(), 'storage', 'registrations')
     registrationDirectory = path.join(storageRoot, id)
     await mkdir(registrationDirectory, { recursive: true })
@@ -215,6 +217,7 @@ export async function POST(request: NextRequest) {
       data: {
         id,
         protocol,
+        tournament: tournament.name,
         ...activeClaims,
         teamFaceitUrl,
         faceitTeamId: faceitTeam.teamId,

@@ -8,6 +8,7 @@ export interface HallOfFameEdition {
   description: string
   highlights: string[]
   status?: 'completed' | 'ongoing'
+  statusLabel?: string
   href?: string
 }
 

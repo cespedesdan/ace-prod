@@ -2,5 +2,9 @@
 @import "tailwindcss/utilities" source(none);
 @source "./page.tsx";
 @source "../components/Hero.tsx";
-@source "../components/RankingTable.tsx";
 @source "../components/YouTubeLivePlayer.tsx";
+
+.home-page .clutch-feature-card {
+  border-color: rgb(189 17 89 / 52%);
+  box-shadow: 0 0 36px rgb(189 17 89 / 12%);
+}

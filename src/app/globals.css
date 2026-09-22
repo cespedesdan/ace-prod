@@ -19,6 +19,7 @@
   --ace-border: #493552;
   --ace-white: #ffffff;
   --ace-pink: #ff1476;
+  --ace-light-pink: rgba(255, 20, 118, 0.733);
   --ace-blue: #008de0;
   --ace-orange: #ff7d00;
   --background: var(--ace-night);
@@ -468,5 +469,19 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
 .copa10-nav-button.is-active {
   background: linear-gradient(135deg, #ffe0a0, #edb64d);
   box-shadow: 0 0 24px rgb(217 154 40 / 30%);
+  transform: translateY(-1px);
+}
+
+.clutch-button {
+  border-color: #bd1159 !important;
+  background: #bd1159 !important;
+  color: #fff !important;
+  box-shadow: 0 8px 24px rgb(189 17 89 / 18%);
+}
+
+.clutch-button:hover {
+  border-color: #e52a78 !important;
+  background: #d61d6b !important;
+  box-shadow: 0 0 24px rgb(189 17 89 / 30%);
   transform: translateY(-1px);
 }

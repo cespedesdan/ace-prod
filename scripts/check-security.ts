@@ -347,8 +347,11 @@ async function main() {
       /Input image exceeds pixel limit/,
     )
 
-    const originalRegistrationState = process.env.REGISTRATIONS_OPEN
-    delete process.env.REGISTRATIONS_OPEN
+    const openTournaments = await prisma.tournament.findMany({
+      where: { registrationOpen: true },
+      select: { id: true },
+    })
+    await prisma.tournament.updateMany({ where: { registrationOpen: true }, data: { registrationOpen: false } })
     try {
       const closedResponse = await submitRegistration(
         new NextRequest('http://localhost/api/registrations', { method: 'POST' }),
@@ -359,8 +362,12 @@ async function main() {
         error: 'As inscrições estão encerradas.',
       })
     } finally {
-      if (originalRegistrationState === undefined) delete process.env.REGISTRATIONS_OPEN
-      else process.env.REGISTRATIONS_OPEN = originalRegistrationState
+      if (openTournaments.length) {
+        await prisma.tournament.updateMany({
+          where: { id: { in: openTournaments.map((tournament) => tournament.id) } },
+          data: { registrationOpen: true },
+        })
+      }
     }
 
     const validRegistrationText = {

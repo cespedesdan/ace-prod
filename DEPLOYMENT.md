@@ -1,4 +1,4 @@
-# Publicação da Ace Produtora 1.1.0
+# Publicação da Ace Produtora 1.2.0
 
 Guia da produção atual em uma instância AWS EC2 com Ubuntu, Caddy, Next.js e SQLite. Os domínios usados são `aceprodutora.com.br` e `www.aceprodutora.com.br`.
 
@@ -44,12 +44,11 @@ ADMIN_EMAIL=EMAIL_PRIVADO_DO_ADMINISTRADOR
 ADMIN_PASSWORD=
 FACEIT_API_KEY=CHAVE_PRIVADA_DA_FACEIT
 TRUST_PROXY=true
-REGISTRATIONS_OPEN=false
 ```
 
 `TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. A chave FACEIT nunca deve usar o prefixo `NEXT_PUBLIC_`.
 
-`REGISTRATIONS_OPEN` controla a aceitação no servidor. Mantenha `false` fora da janela de inscrições e reinicie o serviço depois de alterar o valor. Ocultar o formulário no frontend não substitui este bloqueio.
+As inscrições são controladas em `/admin/campeonatos`. A API aceita inscrições apenas para o único campeonato publicado e marcado como **Inscrições abertas**.
 
 ## 2. Instalar e preparar o banco
 
@@ -83,7 +82,19 @@ unset ADMIN_PASSWORD
 
 O seed cria ou atualiza somente o administrador. A senha é armazenada como hash bcrypt com custo 12 e não deve permanecer no `.env.local`.
 
-## 4. Validar e construir
+## 4. Configurar os campeonatos deste ambiente
+
+Os registros criados no painel ficam no SQLite e não acompanham o código pelo Git. Depois de uma instalação nova ou de um deploy que introduza a gestão de campeonatos:
+
+1. Acesse `/admin/campeonatos` em produção.
+2. Crie ou edite a edição com nome, endereço público, descrição, logo, formato, datas e limite de equipes.
+3. Salve sem publicar e use **Visualizar prévia** para conferir a página autenticada.
+4. Marque **Publicar página** quando os dados estiverem corretos.
+5. Selecione **Inscrições abertas** somente na edição que receberá inscrições.
+
+Somente um campeonato publicado pode receber inscrições por vez. A edição ativa passa a controlar a Navbar, a home, `/inscreva-se` e o vínculo das novas inscrições. O deploy automático preserva o banco de produção, mas não copia campeonatos cadastrados no banco de desenvolvimento.
+
+## 5. Validar e construir
 
 ```bash
 npm run check
@@ -91,7 +102,7 @@ npm audit
 npm run build
 ```
 
-## 5. Instalar os serviços
+## 6. Instalar os serviços
 
 Os arquivos em `deploy/` assumem o usuário `ubuntu` e o projeto em `/srv/ace-prod`. O serviço principal executa o Next.js. O timer acorda o worker FACEIT a cada minuto; o worker consulta somente campeonatos cuja próxima sincronização está pendente.
 
@@ -123,7 +134,7 @@ A execução manual do serviço processa apenas campeonatos pendentes. Para soli
 
 O painel administrativo mostra a última atualização do snapshot, a última sincronização automática, a última tentativa, a próxima execução e a última falha automática. Em uma falha da FACEIT, o site preserva o último snapshot válido e tenta novamente com espera progressiva.
 
-## 6. Ativar Caddy e HTTPS
+## 7. Ativar Caddy e HTTPS
 
 ```bash
 sudo cp deploy/Caddyfile /etc/caddy/Caddyfile

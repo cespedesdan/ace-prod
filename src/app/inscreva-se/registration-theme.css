@@ -2,23 +2,24 @@
 @import "tailwindcss/utilities" source(none);
 @source "./page.tsx";
 @source "../../components/RegistrationClosed.tsx";
+@source "../../components/RegistrationForm.tsx";
 
 .tournament-page.copa-ace-10-page {
-  --tournament-accent: #d99a28;
-  --tournament-accent-dark: #865612;
-  --tournament-hero: #050403;
-  --tournament-panel-header: #170c05;
-  color: #f7f4ee;
+  --tournament-accent: #bd1159;
+  --tournament-accent-dark: #700a35;
+  --tournament-hero: #050104;
+  --tournament-panel-header: #1a0711;
+  color: #fff5f9;
   background:
-    radial-gradient(circle at 8% 18%, rgb(134 86 18 / 18%), transparent 30rem),
-    linear-gradient(180deg, #050403, #120a04 46rem, #050403);
+    radial-gradient(circle at 8% 18%, rgb(189 17 89 / 18%), transparent 30rem),
+    linear-gradient(180deg, #050104, #16050d 46rem, #050104);
 }
 
 .copa-ace-10-page .copa10-hero {
-  border-bottom-color: #d99a28;
+  border-bottom-color: #bd1159;
   background:
-    linear-gradient(90deg, rgb(5 4 3 / 98%) 0%, rgb(23 12 5 / 94%) 48%, rgb(5 4 3 / 72%) 100%),
-    #050403;
+    linear-gradient(90deg, rgb(5 1 4 / 98%) 0%, rgb(26 7 17 / 94%) 48%, rgb(5 1 4 / 72%) 100%),
+    #050104;
 }
 
 .copa-ace-10-page .copa10-hero::after {
@@ -29,8 +30,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 82% 48%, rgb(217 154 40 / 24%), transparent 24rem),
-    radial-gradient(circle at 12% 0%, rgb(255 210 118 / 9%), transparent 20rem);
+    radial-gradient(circle at 82% 48%, rgb(189 17 89 / 24%), transparent 24rem),
+    radial-gradient(circle at 12% 0%, rgb(255 111 174 / 9%), transparent 20rem);
   pointer-events: none;
 }
 
@@ -42,8 +43,8 @@
 
 .copa-ace-10-page .copa10-hero h1 span {
   display: block;
-  color: #ffd276;
-  text-shadow: 0 0 35px rgb(217 154 40 / 20%);
+  color: #ff6fae;
+  text-shadow: 0 0 35px rgb(189 17 89 / 24%);
 }
 
 .copa10-button-secondary {
@@ -51,7 +52,7 @@
   min-height: 3rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgb(217 154 40 / 62%);
+  border: 1px solid rgb(189 17 89 / 62%);
   border-radius: 0;
   padding: 0.75rem 1.25rem;
   color: #f7f4ee;
@@ -65,26 +66,102 @@
 }
 
 .copa10-button-secondary:hover {
-  border-color: #ffd276;
-  background: rgb(217 154 40 / 10%);
+  border-color: #ff6fae;
+  background: rgb(189 17 89 / 10%);
   transform: translateY(-2px);
 }
 
 .registration-page {
-  --ace-border: rgb(217 154 40 / 38%);
+  --ace-border: rgb(189 17 89 / 38%);
 }
 
 .registration-page .registration-hero {
-  border-bottom: 1px solid rgb(217 154 40 / 35%);
+  border-bottom: 1px solid rgb(189 17 89 / 35%);
 }
 
-.registration-page .registration-aside {
-  border-color: #d99a28 !important;
+.registration-page .registration-aside,
+.registration-page .registration-form {
+  border-color: #bd1159 !important;
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
 }
 
-.registration-open-badge {
-  border-color: #d99a28 !important;
+.registration-open-badge,
+.registration-form-actions {
+  border-color: #bd1159 !important;
+}
+
+.registration-page .registration-form {
+  border: 1px solid rgb(189 17 89 / 28%);
+  background: linear-gradient(145deg, #1a0711, #12040a);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 38%);
+}
+
+.registration-steps {
+  border: 1px solid rgb(189 17 89 / 28%);
+  background: #12040a;
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+
+.registration-step {
+  color: #756b62;
+  font-family: var(--font-nippo), var(--font-poppins), sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.registration-step + .registration-step {
+  border-left: 1px solid rgb(189 17 89 / 22%);
+}
+
+.registration-step > span {
+  border-color: #bd1159 !important;
+  color: #ff6fae;
+}
+
+.registration-step.is-active {
+  background: linear-gradient(135deg, #ff6fae, #bd1159);
+  color: #050104;
+}
+
+.registration-step.is-active > span {
+  border-color: #050104 !important;
+  color: #050104;
+}
+
+.registration-step.is-complete {
+  color: #ff6fae;
+}
+
+.registration-upload {
+  border-color: rgb(189 17 89 / 38%);
+  background: rgb(5 1 4 / 42%);
+}
+
+.registration-upload:hover {
+  border-color: #ff6fae;
+  background: rgb(189 17 89 / 7%);
+}
+
+.registration-form input:not([type="file"]):not([type="checkbox"]),
+.registration-form select,
+.registration-form textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 1px solid rgb(189 17 89 / 48%);
+  background: #12040a;
+  padding: 0.75rem 0.875rem;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.registration-form input:not([type="file"]):not([type="checkbox"]):focus,
+.registration-form select:focus,
+.registration-form textarea:focus {
+  border-color: #ff6fae;
+  outline: 2px solid rgb(189 17 89 / 15%);
+}
+
+.registration-payment-card {
+  background: linear-gradient(145deg, rgb(189 17 89 / 10%), rgb(5 1 4 / 54%));
 }
 
 @media (max-width: 639px) {

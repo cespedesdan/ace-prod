@@ -1,10 +1,12 @@
-# Ace Produtora 1.1.0
+# Ace Produtora 1.2.0
 
 Site oficial da Ace Produtora e da Copa ACE 10, desenvolvido com Next.js 15, React 19, TypeScript, Tailwind CSS, Prisma e SQLite.
 
-**Versão atual: 1.1.0 — Integração FACEIT com snapshots.**
+**Versão atual: 1.2.0 — Gestão de campeonatos e inscrições por edição.**
 
 O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snapshot do elenco. Campeonatos vinculados mantêm snapshots de times, partidas, horários e resultados por sincronização automática, com atualização manual disponível no painel administrativo.
+
+Na versão 1.2.0, o campeonato publicado com inscrições abertas controla a Navbar, a home, a página `/inscreva-se` e o destino de cada inscrição. O painel permite criar, copiar, editar, pré-visualizar, publicar, encerrar e reabrir edições sem alterar o código das páginas genéricas.
 
 ## Funcionalidades
 
@@ -14,6 +16,7 @@ O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snap
 - Inscrição de equipes com PIX, logo e comprovante de pagamento privado.
 - Consulta do time na FACEIT, preenchimento automático do nome e snapshot do elenco.
 - Painel administrativo para notícias e aprovação de inscrições.
+- Gestão administrativa de campeonatos, logos, publicação, pré-visualização e ciclo de vida.
 - Sincronização manual do elenco FACEIT pelo painel administrativo.
 - Gerenciamento de campeonatos FACEIT com vínculos, snapshots e sincronização automática independente por edição.
 - Histórico da última sincronização automática e da última falha no painel administrativo.
@@ -25,7 +28,7 @@ O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snap
 
 ## Segurança e integridade
 
-- A API de inscrição permanece fechada por padrão e só aceita envios quando `REGISTRATIONS_OPEN=true`.
+- A API de inscrição aceita envios somente para o único campeonato publicado e marcado como “Inscrições abertas” no painel administrativo.
 - Inscrições ativas reservam separadamente o ID FACEIT e o nome normalizado da equipe; uma rejeição libera as duas reservas para um novo envio corrigido.
 - Campos públicos possuem limites no servidor. Imagens são decodificadas, limitadas a 25 milhões de pixels e reprocessadas sem metadados ou conteúdo excedente antes do armazenamento; imagens animadas são rejeitadas.
 - Alterações administrativas exigem origem válida, usam sessão `__Host-` em produção e respostas privadas não podem ser armazenadas em cache.
@@ -45,15 +48,17 @@ Não configure webhooks ou credenciais OAuth em produção antes de essas propos
 
 | Rota | Finalidade |
 | --- | --- |
-| `/` | Home e prévia da classificação |
+| `/` | Home, transmissão ativa e próximo campeonato |
 | `/copa-ace-10` | Página oficial da Copa ACE 10 |
+| `/campeonatos/[slug]` | Página pública das novas edições |
 | `/inscreva-se` | Formulário de inscrição |
-| `/schedule` | Agenda da primeira rodada |
+| `/schedule` | Agenda organizada por rodada e situação das partidas |
 | `/news` | Notícias publicadas |
 | `/hall-of-fame` | Histórico dos campeonatos |
 | `/admin/login` | Login administrativo |
 | `/admin` | Painel administrativo |
 | `/admin/inscricoes` | Aprovação e rejeição de inscrições |
+| `/admin/campeonatos` | Criação, pré-visualização, publicação e encerramento de edições |
 | `/admin/faceit` | Vínculo, sincronização e desvinculação de campeonatos FACEIT |
 | `/admin/noticias` | Criação, edição e exclusão de notícias |
 | `/api/security/csp-report` | Coletor interno de relatórios da política de segurança |
@@ -78,7 +83,9 @@ Em desenvolvimento, `TRUST_PROXY` deve permanecer `false`.
 
 Defina `FACEIT_API_KEY` no `.env.local` para habilitar a consulta de times. A chave é usada somente pelo servidor: não use prefixo `NEXT_PUBLIC_` e nunca a envie ao Git.
 
-Mantenha `REGISTRATIONS_OPEN=false` fora da janela de inscrições. Alterar somente a interface não abre nem fecha a API; reinicie o servidor depois de mudar esse valor.
+As inscrições são abertas e encerradas em `/admin/campeonatos`; a mesma configuração controla a Navbar, o formulário e o campeonato associado a cada envio.
+
+Para publicar uma edição, informe descrição, logo, datas e limite de equipes. Campeonatos salvos sem publicação podem ser conferidos pelo botão **Visualizar prévia**, acessível somente durante uma sessão administrativa.
 
 ## Primeiro administrador
 
@@ -97,6 +104,8 @@ O seed configura somente o administrador. Ele não cria times, partidas, notíci
 - Estrutura versionada do banco: `prisma/migrations/`
 
 O banco e os uploads são privados e estão ignorados pelo Git. Os dois precisam entrar no plano de backup.
+
+Os campeonatos criados no painel também ficam somente no banco do ambiente atual. Um campeonato criado em desenvolvimento não é enviado ao Git nem criado automaticamente em produção; depois do deploy, cadastre ou ajuste a edição em `/admin/campeonatos` no ambiente de produção.
 
 ## Scripts
 
@@ -117,6 +126,7 @@ O banco e os uploads são privados e estão ignorados pelo Git. Os dois precisam
 | `npm run test:security` | Testa rate limit e consultas parametrizadas |
 | `npm run test:faceit-sync` | Testa sincronização manual/automática, falhas e agendamento FACEIT |
 | `npm run test:tournaments` | Verifica formatos e regras MD1/MD3 das páginas históricas |
+| `npm run test:tournament-management` | Verifica publicação, formatos, premiação e upload de logos dos campeonatos |
 | `npm run sync:faceit` | Sincroniza campeonatos FACEIT cuja atualização está pendente |
 
 ## Produção HTTPS
