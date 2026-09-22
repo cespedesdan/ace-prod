@@ -9,8 +9,6 @@ import {
   SingleEliminationTournamentPage,
 } from '@/components/TournamentFormatPage'
 
-export const dynamicParams = false
-
 export function generateStaticParams() {
   return hallOfFameEditions.map(({ slug }) => ({ slug }))
 }
