@@ -303,6 +303,12 @@ Em **Settings > Rules > Rulesets**, proteja a `main`: exija pull request, o stat
 4. A atualização da `main` inicia **Publicar na AWS**.
 5. Acompanhe em **Actions > CI e deploy**.
 
+Antes de reexecutar um deploy que falhou por falta de espaço, confira as partições da aplicação e do sistema:
+
+```bash
+df -h / /srv
+```
+
 Também é possível iniciar manualmente em **Actions > CI e deploy > Run workflow**, escolhendo `main`.
 
 O SSH da EC2 precisa aceitar conexões do runner do GitHub. A porta 22 não deve ser aberta mais do que o necessário; mantenha a chave dedicada, o `fail2ban` e as regras do Security Group ativos.
