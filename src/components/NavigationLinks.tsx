@@ -18,8 +18,10 @@ function navigationClass(item: NavigationItem, mobile = false) {
     : 'px-3 py-2 rounded-md text-sm font-medium transition-colors'
   const variant = item.edition
     ? 'copa10-nav-button'
-    : item.clutch
+    : item.clutch && item.highlight
       ? 'clutch-button'
+    : item.clutch
+      ? 'clutch-nav-link'
     : item.highlight
       ? mobile ? 'bg-copa-cyan text-smoke' : 'bg-copa-cyan text-smoke hover:bg-cyan-300'
       : 'text-gray-300 hover:bg-copa-cyan/5 hover:text-copa-cyan'

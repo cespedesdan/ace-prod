@@ -15,12 +15,12 @@ interface NewsListProps {
 
 export function NewsList({ news }: NewsListProps) {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       {news.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="brand-card px-6 py-12 text-center">
           <NewspaperIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-400 mb-2">Nenhuma notícia encontrada</h3>
-          <p className="text-gray-500">Não há notícias publicadas no momento.</p>
+          <p className="text-gray-400">Novidades da ACE Produtora serão publicadas aqui.</p>
         </div>
       ) : (
         news.map((article) => (

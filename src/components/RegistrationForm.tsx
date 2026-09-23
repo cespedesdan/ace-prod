@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, Check, CheckCircle2, Copy, ImagePlus, LoaderCirc
 import { MAX_REGISTRATION_FILE_SIZE } from '@/lib/registration-shared'
 
 const PIX = '00020126580014BR.GOV.BCB.PIX0136f0f1c3b8-8afe-495c-9ea3-1302b970d582520400005303986540525.005802BR592547.933.229 GABRIEL MOTTA 6009SAO PAULO61080540900062250521NuInD0E966Xzeje4hgf2j63043F58'
-const inputClass = 'mt-2 w-full border border-[#bd1159]/30 bg-[#12040a] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-[#8a6675] focus:border-[#ff6fae] focus:ring-2 focus:ring-[#bd1159]/15'
+const inputClass = 'mt-2 w-full border border-[#bd1159]/50 bg-[#12040a] px-3.5 py-3 text-base text-white outline-none transition placeholder:text-[#bda7b1] focus:border-[#ff6fae] focus:ring-2 focus:ring-[#bd1159]/25 sm:text-sm'
 const labelClass = 'text-xs font-bold uppercase tracking-[0.08em] text-slate-300'
 
 type Tournament = { name: string; logoUrl: string | null; teamLimit: number; startDate: string; endDate: string }
@@ -109,7 +109,7 @@ export default function RegistrationForm({ tournament }: { tournament: Tournamen
   }
 
   if (protocol) return (
-    <main className="tournament-page copa-ace-10-page registration-page min-h-[80vh] px-4 py-16 text-white">
+    <main className="tournament-page clutch-page registration-page min-h-[80vh] px-4 py-16 text-white">
       <div className="registration-form mx-auto max-w-2xl p-7 text-center sm:p-12">
         <span className="mx-auto grid h-20 w-20 place-items-center border border-[#bd1159]/50 bg-[#bd1159]/10 text-[#ff6fae]"><CheckCircle2 size={42} /></span>
         <p className="mt-7 text-xs font-black uppercase tracking-[0.2em] text-[#ff6fae]">Inscrição recebida · {tournament.name}</p>
@@ -121,7 +121,7 @@ export default function RegistrationForm({ tournament }: { tournament: Tournamen
   )
 
   return (
-    <main className="tournament-page copa-ace-10-page registration-page min-h-screen text-white">
+    <main className="tournament-page clutch-page registration-page min-h-screen text-white">
       <section className="tournament-hero copa10-hero registration-hero">
         <div className="copa10-hero-glow" aria-hidden="true" />
         <div className="tournament-container relative grid gap-8 py-10 lg:grid-cols-[1fr_380px] lg:py-14">

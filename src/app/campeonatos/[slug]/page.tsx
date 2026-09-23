@@ -44,6 +44,7 @@ export default async function TournamentPage({ params, searchParams }: PageProps
   const preview = await canPreview(searchParams)
   const tournament = await getTournament(slug, preview)
   if (!tournament) notFound()
+  const isClutch = tournament.slug.startsWith('ace-clutch')
 
   const [teams, championships] = await Promise.all([
     prisma.registration.findMany({
@@ -60,7 +61,7 @@ export default async function TournamentPage({ params, searchParams }: PageProps
   ])
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
+    <main className={`tournament-page min-h-screen bg-gray-950 text-white ${isClutch ? 'clutch-page' : ''}`}>
       {preview && !tournament.published && <div className="border-b border-amber-400/30 bg-amber-400/10 px-4 py-3 text-center text-xs font-black uppercase tracking-wider text-amber-300">Pré-visualização administrativa · página ainda não publicada</div>}
       <section className="border-b border-white/10 bg-gray-900">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_260px] lg:px-8">
@@ -73,7 +74,7 @@ export default async function TournamentPage({ params, searchParams }: PageProps
               <span className="inline-flex items-center gap-2 bg-white/5 px-3 py-2"><Users size={15} /> Até {tournament.teamLimit} times</span>
               <span className="inline-flex items-center gap-2 bg-white/5 px-3 py-2"><Shield size={15} /> {formatLabel(tournament.format)}</span>
             </div>
-            {tournament.registrationOpen && <Link href="/inscreva-se" className={`brand-button-primary mt-6 ${tournament.slug.startsWith('ace-clutch') ? 'clutch-button' : ''}`}>Inscreva-se <ArrowRight size={17} /></Link>}
+            {tournament.registrationOpen && <Link href="/inscreva-se" className={`brand-button-primary mt-6 ${isClutch ? 'clutch-button' : ''}`}>Inscreva-se <ArrowRight size={17} /></Link>}
           </div>
           <div className="flex items-center justify-center border border-white/10 bg-black/20 p-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -97,12 +98,12 @@ export default async function TournamentPage({ params, searchParams }: PageProps
 
         <section className="brand-card p-5">
           <h2 className="text-xl font-black uppercase">Times confirmados</h2>
-          {teams.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{teams.map((team) => <div key={team.id} className="bg-slate-900 px-4 py-3"><strong>{team.teamName}</strong><span className="ml-2 text-xs text-slate-500">{team.teamTag}</span></div>)}</div> : <p className="mt-3 text-sm text-slate-500">Os times ainda não foram publicados.</p>}
+          {teams.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{teams.map((team) => <div key={team.id} className="bg-slate-900 px-4 py-3"><strong>{team.teamName}</strong><span className="ml-2 text-xs text-slate-500">{team.teamTag}</span></div>)}</div> : <p className="mt-3 text-sm text-slate-400">Os times confirmados serão divulgados em breve.</p>}
         </section>
 
         <section className="brand-card p-5">
           <h2 className="inline-flex items-center gap-2 text-xl font-black uppercase"><Radio className="text-cyan-400" size={19} /> Estágios FACEIT</h2>
-          {championships.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{championships.map((championship) => <article key={championship.stage} className="bg-slate-900 p-4"><p className="text-xs font-black uppercase text-cyan-400">{championship.stage === 'SWISS' ? 'Fase suíça' : 'Playoffs'}</p><h3 className="mt-1 font-black">{championship.name}</h3><p className="mt-2 text-xs text-slate-500">{jsonCount(championship.matchesJson)} partidas · atualizado em {championship.syncedAt.toLocaleString('pt-BR')}</p><a href={championship.faceitUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-cyan-300 hover:underline">Abrir na FACEIT <ExternalLink size={12} /></a></article>)}</div> : <p className="mt-3 text-sm text-slate-500">Nenhum estágio FACEIT vinculado.</p>}
+          {championships.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{championships.map((championship) => <article key={championship.stage} className="bg-slate-900 p-4"><p className="text-xs font-black uppercase text-cyan-400">{championship.stage === 'SWISS' ? 'Fase suíça' : 'Playoffs'}</p><h3 className="mt-1 font-black">{championship.name}</h3><p className="mt-2 text-xs text-slate-400">{jsonCount(championship.matchesJson)} partidas · atualizado em {championship.syncedAt.toLocaleString('pt-BR')}</p><a href={championship.faceitUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-cyan-300 hover:underline">Abrir na FACEIT <ExternalLink size={12} /></a></article>)}</div> : <p className="mt-3 text-sm text-slate-400">Os confrontos serão divulgados em breve.</p>}
         </section>
 
         <Link href="/hall-of-fame" className="inline-flex text-sm font-bold text-cyan-300 hover:underline">Ver histórico de campeonatos</Link>

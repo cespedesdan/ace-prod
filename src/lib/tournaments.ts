@@ -32,12 +32,12 @@ export function tournamentPublicPath(slug: string) {
 }
 
 export function tournamentPrizeLabel(slug: string, prizePoolCents: number) {
-  if (slug === 'ace-clutch-3') return '5 mousepads Logitech + R$ 200,00'
+  if (slug === 'ace-clutch-3') return '5 mousepads + R$ 500,00'
   return (prizePoolCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 export function tournamentPrizeBreakdown(slug: string) {
-  return slug === 'ace-clutch-3' ? '1º lugar: R$ 125,00 · 2º lugar: R$ 75,00' : null
+  return slug === 'ace-clutch-3' ? '1º lugar: R$ 350,00 · 2º lugar: R$ 150,00' : null
 }
 
 export function tournamentStatusLabel(status: string, registrationOpen: boolean) {

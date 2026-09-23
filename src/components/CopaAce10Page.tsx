@@ -27,6 +27,13 @@ async function getConfirmedTeams() {
   })
 }
 
+async function getRegistrationState() {
+  return prisma.tournament.findUnique({
+    where: { name: publicTournament },
+    select: { registrationOpen: true },
+  })
+}
+
 async function getFaceitChampionships(): Promise<CopaAce10FaceitData[]> {
   const championships = await prisma.faceitChampionship.findMany({
     where: { tournament: publicTournament },
@@ -54,7 +61,7 @@ function ConfirmedTeamLogo({ id, name, size = 52 }: { id: string; name: string; 
 }
 
 export default async function CopaAce10Page() {
-  const [teams, faceitChampionships] = await Promise.all([getConfirmedTeams(), getFaceitChampionships()])
+  const [teams, faceitChampionships, tournamentState] = await Promise.all([getConfirmedTeams(), getFaceitChampionships(), getRegistrationState()])
   const availableSlots = TOTAL_TEAMS - teams.length
   const slots = Array.from({ length: TOTAL_TEAMS }, (_, index) => teams[index] ?? null)
 
@@ -68,7 +75,7 @@ export default async function CopaAce10Page() {
               <div className="copa10-logo-lockup">
                 <Image src="/copa-ace-10/copa-ace-logo-10-cropped.png" alt="Copa ACE" width={583} height={235} sizes="(max-width: 639px) 80px, 112px" />
               </div>
-              <p className="tournament-kicker mt-7">10ª edição · inscrições abertas</p>
+              <p className="tournament-kicker mt-7">10ª edição · campeonato oficial</p>
               <h1 className="lcp-text mt-3 max-w-3xl text-5xl uppercase leading-[0.92] tracking-[-0.04em] sm:text-7xl xl:text-[5.4rem]">
                 A maior Copa ACE <span>de todos os tempos</span>
               </h1>
@@ -222,15 +229,17 @@ export default async function CopaAce10Page() {
             ))}
           </div>
           <div className="flex flex-col justify-between gap-4 border-t border-slate-200 p-5 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-4"><div className="grid h-12 w-12 place-items-center tournament-accent-bg text-[#050403]"><Swords size={23} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Primeira rodada</p><p className="mt-1 font-black text-slate-900">Pareamentos e horários a definir</p></div></div>
+            <div className="flex items-center gap-4"><div className="grid h-12 w-12 place-items-center tournament-accent-bg text-[#050403]"><Swords size={23} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Partidas</p><p className="mt-1 font-black text-slate-900">Confrontos, horários e resultados na agenda</p></div></div>
             <IntentLink href="/schedule" className="inline-flex items-center gap-2 text-sm font-black tournament-accent-text">Consultar agenda <ArrowRight size={16} /></IntentLink>
           </div>
         </section>
 
-        <section id="inscricao" className="deferred-render copa10-registration-panel">
-          <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center border border-[#d99a28]/50 text-[#ffd276]"><CalendarDays size={23} /></div><div><p className="tournament-section-eyebrow">Inscrições abertas</p><h2>Monte seu elenco para a Copa ACE 10</h2><p>5 titulares, até 2 reservas e 1 coach, com logo e comprovante de pagamento.</p></div></div>
-          <IntentLink href="/inscreva-se" className="tournament-button-primary">Inscrever equipe <ArrowRight size={16} /></IntentLink>
-        </section>
+        {tournamentState?.registrationOpen && (
+          <section id="inscricao" className="deferred-render copa10-registration-panel">
+            <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center border border-[#d99a28]/50 text-[#ffd276]"><CalendarDays size={23} /></div><div><p className="tournament-section-eyebrow">Inscrições abertas</p><h2>Monte seu elenco para a Copa ACE 10</h2><p>5 titulares, até 2 reservas e 1 coach, com logo e comprovante de pagamento.</p></div></div>
+            <IntentLink href="/inscreva-se" className="tournament-button-primary">Inscrever equipe <ArrowRight size={16} /></IntentLink>
+          </section>
+        )}
       </div>
     </main>
   )

@@ -8,6 +8,10 @@ function optimizedLogoSrc(src: string) {
   return `/_next/image?url=${encodeURIComponent(src)}&w=192&q=60`
 }
 
+function formatDate(value: Date) {
+  return value.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
 export async function HallOfFameList() {
   const published = await prisma.tournament.findMany({
     where: {
@@ -24,8 +28,8 @@ export async function HallOfFameList() {
       title: tournament.name,
       logo: tournament.logoUrl || existing?.logo || '/copa_ace_logo_clean.png',
       date: tournament.status === 'COMPLETED'
-        ? tournament.endDate.toLocaleDateString('pt-BR')
-        : `${tournament.startDate.toLocaleDateString('pt-BR')} a ${tournament.endDate.toLocaleDateString('pt-BR')}`,
+        ? formatDate(tournament.endDate)
+        : `${formatDate(tournament.startDate)} a ${formatDate(tournament.endDate)}`,
       champion: tournament.champion || 'Em disputa',
       runnerUp: tournament.runnerUp || 'A definir',
       description: tournament.description,
@@ -45,9 +49,9 @@ export async function HallOfFameList() {
           href={href}
           className="deferred-render-compact brand-card group grid gap-5 p-5 transition hover:border-copa-cyan/50 sm:grid-cols-[120px_1fr_auto] sm:items-center"
         >
-          <div className="relative h-24 w-24 overflow-hidden border border-white/10 bg-smoke/70">
+          <div className="relative grid h-24 w-24 place-items-center overflow-hidden border border-white/10 bg-smoke/70">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={optimizedLogoSrc(edition.logo)} alt={`Logo ${edition.title}`} width={96} height={96} decoding="async" loading="lazy" className="h-full w-full object-contain p-3 transition duration-200 group-hover:scale-105" />
+            <img src={optimizedLogoSrc(edition.logo)} alt={`Logo ${edition.title}`} width={96} height={96} decoding="async" loading="lazy" className="h-full w-full object-contain p-3 transition duration-200 group-hover:scale-[1.03]" />
           </div>
 
           <div>

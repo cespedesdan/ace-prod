@@ -108,12 +108,15 @@ assert.deepEqual(terminalStage.campaigns.get('b'), { wins: 0, losses: 3 })
 assert.equal(terminalStage.rounds.flatMap(({ groups }) => groups.flatMap(({ matches }) => matches)).some(({ matchId }) => matchId === 'cancelled'), false)
 
 const schedule = organizeSchedule([
-  { ...swissMatches[0], matchId: 'today', winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-22T19:00:00-03:00') },
-  { ...swissMatches[0], matchId: 'upcoming', winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-23T19:00:00-03:00') },
-  { ...swissMatches[0], matchId: 'finished', status: 'FINISHED', scheduledAt: Date.parse('2026-08-21T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'today-late', round: 1, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-22T21:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'today-early', round: 5, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-22T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'upcoming-late', round: 1, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-24T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'upcoming-early', round: 5, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-23T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'finished-old', round: 1, status: 'FINISHED', scheduledAt: Date.parse('2026-08-20T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'finished-new', round: 5, status: 'FINISHED', scheduledAt: Date.parse('2026-08-21T19:00:00-03:00') },
 ], Date.parse('2026-08-22T12:00:00-03:00'))
-assert.deepEqual(schedule.today.map(({ matchId }) => matchId), ['today'])
-assert.deepEqual(schedule.upcoming.map(({ matchId }) => matchId), ['upcoming'])
-assert.deepEqual(schedule.finished.map(({ matchId }) => matchId), ['finished'])
+assert.deepEqual(schedule.today.map(({ matchId }) => matchId), ['today-early', 'today-late'])
+assert.deepEqual(schedule.upcoming.map(({ matchId }) => matchId), ['upcoming-early', 'upcoming-late'])
+assert.deepEqual(schedule.finished.map(({ matchId }) => matchId), ['finished-new', 'finished-old'])
 
 console.log('Tournament format checks passed.')

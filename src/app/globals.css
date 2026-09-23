@@ -485,3 +485,47 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
   box-shadow: 0 0 24px rgb(189 17 89 / 30%);
   transform: translateY(-1px);
 }
+
+.clutch-nav-link {
+  border: 1px solid rgb(189 17 89 / 55%);
+  color: #ff9ac5 !important;
+}
+
+.clutch-nav-link:hover,
+.clutch-nav-link[aria-current='page'] {
+  border-color: #bd1159;
+  background: rgb(189 17 89 / 12%);
+  color: white !important;
+}
+
+/* Ace Clutch — one scoped theme for every generic championship page. */
+.clutch-page {
+  --tournament-accent: #bd1159;
+  --tournament-accent-dark: #700a35;
+  background:
+    radial-gradient(circle at 90% 8%, rgb(189 17 89 / 16%), transparent 30rem),
+    var(--ace-night);
+}
+
+.clutch-page .brand-kicker,
+.clutch-page .text-cyan-400,
+.clutch-page .text-cyan-300 {
+  color: #ff9ac5;
+}
+
+.clutch-page .brand-card {
+  border-color: rgb(189 17 89 / 28%);
+}
+
+.clutch-page .brand-button-primary {
+  background: #bd1159;
+  color: white;
+}
+
+.clutch-page .brand-button-primary:hover {
+  background: #d61d6b;
+}
+
+.clutch-page :focus-visible {
+  outline-color: #ff6fae;
+}
