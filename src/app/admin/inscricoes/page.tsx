@@ -74,6 +74,7 @@ const filters: Array<{ value: ActiveFilter; label: string }> = [
 export default function RegistrationsAdminPage() {
   const router = useRouter()
   const [registrations, setRegistrations] = useState<Registration[]>([])
+  const [openTournamentName, setOpenTournamentName] = useState<string | null>(null)
   const [section, setSection] = useState<RegistrationSection>('ACTIVE')
   const [filter, setFilter] = useState<ActiveFilter>('ALL')
   const [tournamentFilter, setTournamentFilter] = useState('ALL')
@@ -89,14 +90,22 @@ export default function RegistrationsAdminPage() {
           return null
         }
         if (!response.ok) throw new Error('Não foi possível carregar as inscrições.')
-        return response.json() as Promise<{ registrations: Registration[] }>
+        return response.json() as Promise<{ registrations: Registration[]; openTournamentName: string | null }>
       })
-      .then((data) => data && setRegistrations(data.registrations))
+      .then((data) => {
+        if (!data) return
+        setRegistrations(data.registrations)
+        setOpenTournamentName(data.openTournamentName)
+        if (data.openTournamentName) setTournamentFilter(data.openTournamentName)
+      })
       .catch((fetchError) => setError(fetchError instanceof Error ? fetchError.message : 'Erro inesperado.'))
       .finally(() => setLoading(false))
   }, [router])
 
-  const tournamentNames = useMemo(() => [...new Set(registrations.map((item) => item.tournament))], [registrations])
+  const tournamentNames = useMemo(() => [...new Set([
+    ...registrations.map((item) => item.tournament),
+    ...(openTournamentName ? [openTournamentName] : []),
+  ])], [registrations, openTournamentName])
   const scopedRegistrations = registrations.filter((item) => tournamentFilter === 'ALL' || item.tournament === tournamentFilter)
   const counts = useMemo(() => ({
     APPROVED: scopedRegistrations.filter((item) => item.status === 'APPROVED').length,

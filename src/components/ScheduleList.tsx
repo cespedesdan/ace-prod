@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { CalendarClock, CheckCircle2, Gamepad2, Radio } from 'lucide-react'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
+import { tournamentFormatLabels, tournamentStageLabel } from '@/lib/tournaments'
 import { ScheduleFilters } from './ScheduleFilters'
 
 const firstRoundMatches = Array.from({ length: 8 }, (_, index) => index + 1)
@@ -63,9 +64,10 @@ export function organizeSchedule<T extends FaceitMatch>(matches: T[], now = Date
   return organized
 }
 
-function roundLabel(match: ScheduledMatch) {
+function roundLabel(match: ScheduledMatch, format: string) {
   if (match.stage === 'SWISS') return match.round !== null ? `Rodada ${match.round}` : 'Rodada a definir'
-  return ({ 1: 'Quartas de final', 2: 'Semifinais', 3: 'Grande final' } as Record<number, string>)[match.round ?? 0] || 'Playoffs'
+  if (format === 'SWISS_SINGLE_ELIMINATION') return ({ 1: 'Quartas de final', 2: 'Semifinais', 3: 'Grande final' } as Record<number, string>)[match.round ?? 0] || 'Playoffs'
+  return match.round !== null ? `Rodada ${match.round}` : 'Rodada a definir'
 }
 
 function TeamLogo({ team }: { team?: FaceitMatch['teams'][number] }) {
@@ -78,14 +80,14 @@ function TeamLogo({ team }: { team?: FaceitMatch['teams'][number] }) {
   )
 }
 
-function MatchCard({ match, bucket }: { match: ScheduledMatch; bucket: Exclude<ScheduleFilter, 'all'> }) {
+function MatchCard({ match, bucket, format }: { match: ScheduledMatch; bucket: Exclude<ScheduleFilter, 'all'>; format: string }) {
   const matchTeams = match.teams.length ? match.teams.slice(0, 2) : [undefined, undefined]
 
   return (
     <article data-schedule-match data-bucket={bucket} data-stage={match.stage} data-round={match.round ?? ''} className="border border-[#5d4868] bg-[#2a1b34] p-4 shadow-[0_14px_32px_rgba(0,0,0,.32)]">
       <div className="flex items-center justify-between border-b border-white/15 pb-3">
         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-copa-cyan">
-          {match.stage === 'SWISS' ? 'Suíço' : 'Playoffs'} · {roundLabel(match)}{match.stage === 'SWISS' && match.group !== null ? ` · Grupo ${match.group}` : ''}
+          {tournamentStageLabel(format, match.stage)} · {roundLabel(match, format)}{match.stage === 'SWISS' && match.group !== null ? ` · Grupo ${match.group}` : ''}
         </p>
         <span className="bg-cyan-400/10 px-2 py-1 text-[10px] font-black uppercase text-copa-cyan">MD{match.bestOf || '?'}</span>
       </div>
@@ -128,7 +130,7 @@ function PlaceholderCards() {
   )
 }
 
-export function ScheduleList({ championships }: { championships: ChampionshipSchedule[] }) {
+export function ScheduleList({ championships, tournamentName, format, showFirstRoundPlaceholders = false }: { championships: ChampionshipSchedule[]; tournamentName: string; format: string; showFirstRoundPlaceholders?: boolean }) {
   const matches = championships.flatMap((championship) => championship.matches.map((match) => ({ ...match, stage: championship.stage })))
   const swiss = championships.find((championship) => championship.stage === 'SWISS')
   const organized = organizeSchedule(matches)
@@ -136,19 +138,20 @@ export function ScheduleList({ championships }: { championships: ChampionshipSch
     ? (['today', 'upcoming', 'finished'] as const).flatMap((bucket) =>
         organized[bucket].map((match) => ({ bucket, round: match.round, stage: match.stage })),
       )
-    : firstRoundMatches.map(() => ({ bucket: 'upcoming' as const, round: 1, stage: 'SWISS' as const }))
+    : showFirstRoundPlaceholders ? firstRoundMatches.map(() => ({ bucket: 'upcoming' as const, round: 1, stage: 'SWISS' as const })) : []
 
   return (
     <section id="jogos" className="tournament-panel overflow-hidden">
       <header className="tournament-panel-header flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
-        <div><p className="tournament-kicker">Copa Ace 10</p><h2 className="mt-1 text-xl font-black uppercase">Agenda de partidas</h2></div>
+        <div><p className="tournament-kicker">{tournamentName}</p><h2 className="mt-1 text-xl font-black uppercase">Agenda de partidas</h2></div>
         <div className="text-left sm:text-right">
-          <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-300"><Gamepad2 size={15} /> Sistema suíço e playoffs</span>
+          <span className="inline-flex items-center gap-2 text-xs font-bold text-slate-300"><Gamepad2 size={15} /> {tournamentFormatLabels[format as keyof typeof tournamentFormatLabels] || format}</span>
           {championships.length > 0 && <p className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">FACEIT atualizada em {new Date(Math.max(...championships.map((championship) => championship.syncedAt.getTime()))).toLocaleString('pt-BR')}</p>}
         </div>
       </header>
 
-      <ScheduleFilters matches={matchMeta} />
+      {!matches.length && !showFirstRoundPlaceholders ? <p className="border-t border-cyan-400/15 bg-[#100a15]/60 p-5 text-sm text-slate-300">As partidas serão publicadas aqui quando o campeonato estiver vinculado à FACEIT e os confrontos forem definidos.</p> : <>
+      <ScheduleFilters matches={matchMeta} format={format} />
 
       {(['today', 'upcoming', 'finished'] as const).map((key) => {
         const section = sections[key]
@@ -161,8 +164,8 @@ export function ScheduleList({ championships }: { championships: ChampionshipSch
               <span data-schedule-count={key} className="text-xs font-black text-copa-cyan">{sectionMatches.length}</span>
             </header>
             {sectionMatches.length
-              ? <div className="grid gap-3 md:grid-cols-2">{sectionMatches.map((match) => <MatchCard key={match.matchId} match={match} bucket={key} />)}</div>
-              : key === 'upcoming' && !swiss?.matches.length
+              ? <div className="grid gap-3 md:grid-cols-2">{sectionMatches.map((match) => <MatchCard key={match.matchId} match={match} bucket={key} format={format} />)}</div>
+              : key === 'upcoming' && showFirstRoundPlaceholders && !swiss?.matches.length
                 ? <><PlaceholderCards /><p hidden data-schedule-empty={key} className="border border-dashed border-slate-500 bg-[#21152a] px-4 py-3 text-center text-sm font-bold text-slate-300">{section.empty}</p></>
                 : <p data-schedule-empty={key} className="border border-dashed border-slate-500 bg-[#21152a] px-4 py-3 text-center text-sm font-bold text-slate-300">{section.empty}</p>}
             {sectionMatches.length > 0 && <p hidden data-schedule-empty={key} className="border border-dashed border-slate-500 bg-[#21152a] px-4 py-3 text-center text-sm font-bold text-slate-300">{section.empty}</p>}
@@ -171,8 +174,9 @@ export function ScheduleList({ championships }: { championships: ChampionshipSch
       })}
 
       {championships.some((championship) => !championship.matches.length) && (
-        <p className="border-t border-cyan-400/15 bg-[#1c1124] px-5 py-4 text-xs text-slate-400">Novas partidas serão publicadas assim que os confrontos forem definidos. {championships.filter((championship) => !championship.matches.length).map((championship) => <a key={championship.stage} href={championship.faceitUrl} target="_blank" rel="noreferrer" className="ml-2 font-black text-copa-cyan hover:underline">Ver {championship.stage === 'SWISS' ? 'fase suíça' : 'playoffs'}</a>)}</p>
+        <p className="border-t border-cyan-400/15 bg-[#1c1124] px-5 py-4 text-xs text-slate-400">Novas partidas serão publicadas assim que os confrontos forem definidos. {championships.filter((championship) => !championship.matches.length).map((championship) => <a key={championship.stage} href={championship.faceitUrl} target="_blank" rel="noreferrer" className="ml-2 font-black text-copa-cyan hover:underline">Ver {tournamentStageLabel(format, championship.stage).toLowerCase()}</a>)}</p>
       )}
+      </>}
     </section>
   )
 }

@@ -21,11 +21,18 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       include: { players: { orderBy: { nickname: 'asc' } } },
     }),
-    prisma.tournament.findMany({ select: { name: true, slug: true, teamLimit: true } }),
+    prisma.tournament.findMany({
+      orderBy: { startDate: 'asc' },
+      select: { name: true, slug: true, teamLimit: true, registrationOpen: true, published: true, status: true },
+    }),
   ])
   const tournamentByName = new Map(tournaments.map((tournament) => [tournament.name, tournament]))
+  const openTournamentName = tournaments.find((tournament) =>
+    tournament.registrationOpen && tournament.published && tournament.status !== 'COMPLETED',
+  )?.name || null
 
   return privateJson({
+    openTournamentName,
     registrations: registrations.map((registration) => {
       const tournament = tournamentByName.get(registration.tournament)
       return {

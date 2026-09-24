@@ -8,6 +8,8 @@ import { buildFaceitSwissStandings, type FaceitChampionshipSnapshot } from '../s
 import { buildSwissRounds } from '../src/components/CopaAce10Swiss'
 import { buildPlayoffRounds } from '../src/components/CopaAce10Faceit'
 import { organizeSchedule } from '../src/components/ScheduleList'
+import { faceitBracketRounds } from '../src/lib/faceit-public'
+import { tournamentStageLabel } from '../src/lib/tournaments'
 
 const copa9 = tournamentArchives['copa-ace-9']
 const copa8 = tournamentArchives['copa-ace-8']
@@ -68,6 +70,11 @@ const swissMatches = [{
     { faction: 'faction2', teamId: 'b', name: 'Bravo', avatarUrl: null },
   ],
 }] as FaceitChampionshipSnapshot['matches']
+const bracketRounds = faceitBracketRounds([{ ...swissMatches[0], round: 2 }, swissMatches[0]])
+assert.deepEqual(bracketRounds.map((round) => round.name), ['Rodada 1', 'Rodada 2'])
+assert.equal(bracketRounds[0].matches[0].scoreA, 1)
+assert.equal(bracketRounds[0].matches[0].teamA.name, 'Alpha')
+assert.equal(tournamentStageLabel('DOUBLE_ELIMINATION', 'PLAYOFFS'), 'Chaveamento')
 const swissStandings = buildFaceitSwissStandings(swissTeams, swissMatches)
 assert.deepEqual(swissStandings.map(({ name, wins, losses, scoreBalance }) => ({ name, wins, losses, scoreBalance })), [
   { name: 'Alpha', wins: 1, losses: 0, scoreBalance: 1 },

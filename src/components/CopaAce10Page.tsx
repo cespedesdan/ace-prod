@@ -230,7 +230,7 @@ export default async function CopaAce10Page() {
           </div>
           <div className="flex flex-col justify-between gap-4 border-t border-slate-200 p-5 sm:flex-row sm:items-center">
             <div className="flex items-center gap-4"><div className="grid h-12 w-12 place-items-center tournament-accent-bg text-[#050403]"><Swords size={23} /></div><div><p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Partidas</p><p className="mt-1 font-black text-slate-900">Confrontos, horários e resultados na agenda</p></div></div>
-            <IntentLink href="/schedule" className="inline-flex items-center gap-2 text-sm font-black tournament-accent-text">Consultar agenda <ArrowRight size={16} /></IntentLink>
+            <IntentLink href="/schedule?campeonato=copa-ace-10" className="inline-flex items-center gap-2 text-sm font-black tournament-accent-text">Consultar agenda <ArrowRight size={16} /></IntentLink>
           </div>
         </section>
 

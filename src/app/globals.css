@@ -502,6 +502,10 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
 .clutch-page {
   --tournament-accent: #bd1159;
   --tournament-accent-dark: #700a35;
+  --color-orange-50: rgb(189 17 89 / 9%);
+  --color-orange-400: #ff9ac5;
+  --color-orange-500: #bd1159;
+  --color-orange-600: #bd1159;
   background:
     radial-gradient(circle at 90% 8%, rgb(189 17 89 / 16%), transparent 30rem),
     var(--ace-night);

@@ -1,24 +1,20 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowRight, CalendarDays, ExternalLink, Radio, Shield, Trophy, Users } from 'lucide-react'
 import { adminCookieName } from '@/lib/admin-request'
 import { verifyToken } from '@/lib/auth'
+import { faceitBracketRounds, storedFaceitMatches } from '@/lib/faceit-public'
 import { prisma } from '@/lib/prisma'
-import { tournamentFormatLabels, tournamentPrizeBreakdown, tournamentPrizeLabel } from '@/lib/tournaments'
+import { tournamentFormatLabels, tournamentPrizeBreakdown, tournamentPrizeLabel, tournamentStageLabel } from '@/lib/tournaments'
+import { BracketLane } from '@/components/TournamentFormatPage'
 
 type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ preview?: string }> }
 
 function formatLabel(format: string) {
   return tournamentFormatLabels[format as keyof typeof tournamentFormatLabels] || format
-}
-
-function jsonCount(value: string) {
-  try {
-    const items = JSON.parse(value)
-    return Array.isArray(items) ? items.length : 0
-  } catch { return 0 }
 }
 
 async function canPreview(searchParams: PageProps['searchParams']) {
@@ -59,6 +55,10 @@ export default async function TournamentPage({ params, searchParams }: PageProps
       select: { stage: true, name: true, faceitUrl: true, status: true, matchesJson: true, syncedAt: true },
     }),
   ])
+  const faceitStages = championships.map((championship) => ({
+    ...championship,
+    matches: storedFaceitMatches(championship.matchesJson),
+  }))
 
   return (
     <main className={`tournament-page min-h-screen bg-gray-950 text-white ${isClutch ? 'clutch-page' : ''}`}>
@@ -74,7 +74,10 @@ export default async function TournamentPage({ params, searchParams }: PageProps
               <span className="inline-flex items-center gap-2 bg-white/5 px-3 py-2"><Users size={15} /> Até {tournament.teamLimit} times</span>
               <span className="inline-flex items-center gap-2 bg-white/5 px-3 py-2"><Shield size={15} /> {formatLabel(tournament.format)}</span>
             </div>
-            {tournament.registrationOpen && <Link href="/inscreva-se" className={`brand-button-primary mt-6 ${isClutch ? 'clutch-button' : ''}`}>Inscreva-se <ArrowRight size={17} /></Link>}
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              {tournament.registrationOpen && <Link href="/inscreva-se" className={`brand-button-primary ${isClutch ? 'clutch-button' : ''}`}>Inscreva-se <ArrowRight size={17} /></Link>}
+              <Link href={`/schedule?campeonato=${tournament.slug}`} className="inline-flex items-center gap-2 text-sm font-bold text-cyan-300 hover:underline"><CalendarDays size={16} /> Ver agenda</Link>
+            </div>
           </div>
           <div className="flex items-center justify-center border border-white/10 bg-black/20 p-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -98,12 +101,28 @@ export default async function TournamentPage({ params, searchParams }: PageProps
 
         <section className="brand-card p-5">
           <h2 className="text-xl font-black uppercase">Times confirmados</h2>
-          {teams.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{teams.map((team) => <div key={team.id} className="bg-slate-900 px-4 py-3"><strong>{team.teamName}</strong><span className="ml-2 text-xs text-slate-500">{team.teamTag}</span></div>)}</div> : <p className="mt-3 text-sm text-slate-400">Os times confirmados serão divulgados em breve.</p>}
+          {teams.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{teams.map((team) => <div key={team.id} className="flex min-w-0 items-center gap-3 bg-slate-900 px-4 py-3">
+            <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden border border-white/10 bg-white">
+              <Image src={`/api/tournaments/${tournament.slug}/teams/${team.id}/logo`} alt={`Logo ${team.teamName}`} width={48} height={48} className="h-full w-full object-contain p-1" />
+            </span>
+            <div className="min-w-0"><strong className="block truncate">{team.teamName}</strong><span className="text-xs text-slate-400">{team.teamTag}</span></div>
+          </div>)}</div> : <p className="mt-3 text-sm text-slate-400">Os times confirmados serão divulgados em breve.</p>}
         </section>
 
-        <section className="brand-card p-5">
-          <h2 className="inline-flex items-center gap-2 text-xl font-black uppercase"><Radio className="text-cyan-400" size={19} /> Estágios FACEIT</h2>
-          {championships.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{championships.map((championship) => <article key={championship.stage} className="bg-slate-900 p-4"><p className="text-xs font-black uppercase text-cyan-400">{championship.stage === 'SWISS' ? 'Fase suíça' : 'Playoffs'}</p><h3 className="mt-1 font-black">{championship.name}</h3><p className="mt-2 text-xs text-slate-400">{jsonCount(championship.matchesJson)} partidas · atualizado em {championship.syncedAt.toLocaleString('pt-BR')}</p><a href={championship.faceitUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-cyan-300 hover:underline">Abrir na FACEIT <ExternalLink size={12} /></a></article>)}</div> : <p className="mt-3 text-sm text-slate-400">Os confrontos serão divulgados em breve.</p>}
+        <section id="partidas" className="space-y-5">
+          <div className="brand-card p-5">
+            <h2 className="inline-flex items-center gap-2 text-xl font-black uppercase"><Radio className="text-cyan-400" size={19} /> Jogos e chaveamento</h2>
+            {faceitStages.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{faceitStages.map((championship) => <article key={championship.stage} className="bg-slate-900 p-4"><p className="text-xs font-black uppercase text-cyan-400">{tournamentStageLabel(tournament.format, championship.stage)}</p><h3 className="mt-1 font-black">{championship.name}</h3><p className="mt-2 text-xs text-slate-400">{championship.matches.length} partidas · atualizado em {championship.syncedAt.toLocaleString('pt-BR')}</p><a href={championship.faceitUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-cyan-300 hover:underline">Abrir na FACEIT <ExternalLink size={12} /></a></article>)}</div> : <p className="mt-3 text-sm text-slate-400">Os confrontos serão divulgados em breve.</p>}
+          </div>
+          {faceitStages.map((championship) => championship.matches.length > 0 && (
+            <BracketLane
+              key={championship.stage}
+              title={tournamentStageLabel(tournament.format, championship.stage)}
+              eyebrow="Partidas oficiais FACEIT"
+              subtitle="Confrontos por rodada"
+              rounds={faceitBracketRounds(championship.matches)}
+            />
+          ))}
         </section>
 
         <Link href="/hall-of-fame" className="inline-flex text-sm font-bold text-cyan-300 hover:underline">Ver histórico de campeonatos</Link>

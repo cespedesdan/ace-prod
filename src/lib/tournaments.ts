@@ -31,6 +31,12 @@ export function tournamentPublicPath(slug: string) {
   return slug === 'copa-ace-10' ? '/copa-ace-10' : `/campeonatos/${slug}`
 }
 
+export function tournamentStageLabel(format: string, stage: string) {
+  if (format === 'SINGLE_ELIMINATION' || format === 'DOUBLE_ELIMINATION') return 'Chaveamento'
+  if (stage === 'PLAYOFFS') return 'Playoffs'
+  return format.startsWith('GROUP_') ? 'Fase de grupos' : 'Fase suíça'
+}
+
 export function tournamentPrizeLabel(slug: string, prizePoolCents: number) {
   if (slug === 'ace-clutch-3') return '5 mousepads + R$ 500,00'
   return (prizePoolCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })

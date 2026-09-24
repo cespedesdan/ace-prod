@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { tournamentStageLabel } from '@/lib/tournaments'
 
 type ScheduleBucket = 'today' | 'upcoming' | 'finished'
 type ScheduleFilter = 'all' | ScheduleBucket
@@ -14,13 +15,13 @@ const filters: Array<{ value: ScheduleFilter; label: string }> = [
   { value: 'finished', label: 'Finalizadas' },
 ]
 
-const roundOptions = [1, 2, 3, 4, 5]
-
-export function ScheduleFilters({ matches }: { matches: MatchMeta[] }) {
+export function ScheduleFilters({ matches, format }: { matches: MatchMeta[]; format: string }) {
   const [filter, setFilter] = useState<ScheduleFilter>('all')
   const [round, setRound] = useState('all')
   const [stage, setStage] = useState<'all' | MatchStage>('all')
   const initialized = useRef(false)
+  const roundOptions = [...new Set(matches.map((match) => match.round).filter((value): value is number => value !== null && value > 0))].sort((a, b) => a - b)
+  const stageOptions = [...new Set(matches.map((match) => match.stage))]
   const counts = useMemo(() => {
     const selected = matches.filter((match) =>
       (round === 'all' || match.round === Number(round)) &&
@@ -78,14 +79,13 @@ export function ScheduleFilters({ matches }: { matches: MatchMeta[] }) {
         ))}
       </div>
       <div className="flex flex-wrap gap-3">
-        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-300">
+        {stageOptions.length > 1 && <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-300">
           Fase
           <select value={stage} onChange={(event) => setStage(event.target.value as typeof stage)} className="min-h-11 border border-white/25 bg-[#21152a] px-3 py-2 text-xs font-bold text-white outline-none focus:border-copa-cyan">
             <option value="all">Todas</option>
-            <option value="SWISS">Suíço</option>
-            <option value="PLAYOFFS">Playoffs</option>
+            {stageOptions.map((value) => <option key={value} value={value}>{tournamentStageLabel(format, value)}</option>)}
           </select>
-        </label>
+        </label>}
         <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-300">
           Rodada
           <select value={round} onChange={(event) => setRound(event.target.value)} className="min-h-11 border border-white/25 bg-[#21152a] px-3 py-2 text-xs font-bold text-white outline-none focus:border-copa-cyan">
