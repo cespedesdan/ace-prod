@@ -98,7 +98,7 @@ Somente um campeonato publicado pode receber inscrições por vez. A edição at
 
 ```bash
 npm run check
-npm audit
+npm run audit:security
 npm run build
 ```
 
@@ -191,7 +191,7 @@ npm ci
 npm run db:generate
 npm run db:migrate
 npm run check
-npm audit
+npm run audit:security
 npm run build
 sudo systemctl start ace-prod
 sudo systemctl start ace-prod-faceit-sync.service

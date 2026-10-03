@@ -28,6 +28,8 @@ Na versão 1.2.0, o campeonato publicado com inscrições abertas controla a Nav
 
 ## Segurança e integridade
 
+- A auditoria bloqueia vulnerabilidades altas/críticas. Há uma [exceção temporária e específica para `braces` no lint](docs/excecao-auditoria-braces.md), autorizada até 02/11/2026 às 00:00 UTC; não abrange dependências de produção. Execute `npm run audit:security` para reproduzir a política do CI.
+
 - A API de inscrição aceita envios somente para o único campeonato publicado e marcado como “Inscrições abertas” no painel administrativo.
 - Inscrições ativas reservam separadamente o ID FACEIT e o nome normalizado da equipe; uma rejeição libera as duas reservas para um novo envio corrigido.
 - Campos públicos possuem limites no servidor. Imagens são decodificadas, limitadas a 25 milhões de pixels e reprocessadas sem metadados ou conteúdo excedente antes do armazenamento; imagens animadas são rejeitadas.
@@ -146,7 +148,7 @@ O repositório também inclui CI e deploy automático pela GitHub Actions, com b
 
 ```powershell
 npm run check
-npm audit
+npm run audit:security
 npm run build
 ```
 
