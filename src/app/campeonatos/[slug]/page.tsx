@@ -6,10 +6,11 @@ import { notFound, redirect } from 'next/navigation'
 import { ArrowRight, CalendarDays, ExternalLink, Radio, Shield, Trophy, Users } from 'lucide-react'
 import { adminCookieName } from '@/lib/admin-request'
 import { verifyToken } from '@/lib/auth'
-import { faceitBracketRounds, faceitDoubleElimination, storedFaceitMatches } from '@/lib/faceit-public'
+import { faceitBracketRounds, storedFaceitMatches } from '@/lib/faceit-public'
 import { prisma } from '@/lib/prisma'
 import { tournamentFormatLabels, tournamentPrizeBreakdown, tournamentPrizeLabel, tournamentStageLabel } from '@/lib/tournaments'
 import { BracketLane } from '@/components/TournamentFormatPage'
+import { FaceitDoubleEliminationBracket } from '@/components/FaceitDoubleEliminationBracket'
 
 type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ preview?: string }> }
 
@@ -115,10 +116,7 @@ export default async function TournamentPage({ params, searchParams }: PageProps
             {faceitStages.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{faceitStages.map((championship) => <article key={championship.stage} className="bg-slate-900 p-4"><p className="text-xs font-black uppercase text-cyan-400">{tournamentStageLabel(tournament.format, championship.stage)}</p><h3 className="mt-1 font-black">{championship.name}</h3><p className="mt-2 text-xs text-slate-400">{championship.matches.length} partidas · atualizado em {championship.syncedAt.toLocaleString('pt-BR')}</p><a href={championship.faceitUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-cyan-300 hover:underline">Abrir na FACEIT <ExternalLink size={12} /></a></article>)}</div> : <p className="mt-3 text-sm text-slate-400">Os confrontos serão divulgados em breve.</p>}
           </div>
           {faceitStages.flatMap((championship) => tournament.format === 'DOUBLE_ELIMINATION'
-            ? faceitDoubleElimination(championship.matches).map((lane) => lane.matches.length ? (
-              <BracketLane key={`${championship.stage}-${lane.title}`} title={lane.title} eyebrow="Dupla eliminação"
-                subtitle="Partidas oficiais FACEIT" rounds={faceitBracketRounds(lane.matches)} />
-            ) : <div key={`${championship.stage}-${lane.title}`} className="brand-card p-5"><h3 className="text-xl font-black uppercase">{lane.title}</h3><p className="mt-3 text-sm text-slate-300">Os confrontos serão divulgados assim que estiverem definidos.</p></div>)
+            ? <FaceitDoubleEliminationBracket key={championship.stage} matches={championship.matches} />
             : championship.matches.length > 0 && (
             <BracketLane
               key={championship.stage}
