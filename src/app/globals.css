@@ -533,3 +533,21 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
 .clutch-page :focus-visible {
   outline-color: #ff6fae;
 }
+
+/* Connected double elimination, scoped away from Copa Ace 10 and other formats. */
+.double-bracket-scroll { overflow-x: auto; padding: 20px 0; }
+.double-bracket-scroll:focus-visible { outline: 2px solid var(--tournament-accent); outline-offset: -2px; }
+.double-bracket-board { position: relative; }
+.double-bracket-lines { position: absolute; inset: 0; pointer-events: none; }
+.double-bracket-lines path { fill: none; stroke: #8d8396; stroke-width: 1.5; }
+.double-bracket-lines .double-bracket-drop { stroke: var(--tournament-accent); opacity: .65; }
+.double-bracket-node { position: absolute; }
+.double-bracket-node article { height: 120px; background: #241b2c !important; border-color: #74617c !important; }
+.double-bracket-node article > div { height: 45px; }
+.double-bracket-node article > div:first-child { height: 30px; }
+.double-bracket-node article > div:first-child span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.double-bracket-node a:focus-visible { outline: 3px solid var(--tournament-accent); outline-offset: 3px; }
+.double-bracket-lane { position: absolute; left: 20px; font-size: 14px; font-weight: 900; text-transform: uppercase; color: var(--color-orange-400); }
+.double-bracket-round { position: absolute; font-size: 12px; font-weight: 700; color: #d4cbd8; }
+.double-bracket .tournament-kicker,
+.double-bracket-node .text-orange-600 { color: var(--color-orange-400); }

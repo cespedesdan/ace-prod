@@ -204,13 +204,26 @@ O Caddy pode permanecer ativo durante a atualização e poderá responder `502` 
 
 ## Deploy automático com GitHub Actions
 
-O workflow `.github/workflows/ci-deploy.yml` executa as validações em todo pull request para `main`. Depois do merge, ele publica o commit exato na EC2. Antes de alterar o código, `scripts/deploy-production.sh` para o serviço e copia o banco e os uploads para:
+O workflow `.github/workflows/ci-deploy.yml` executa as validações em todo pull request para `main`. Depois do merge, ele publica o commit exato na EC2. Antes de parar os serviços, `scripts/deploy-production.sh` confere o espaço livre em `/`, na aplicação e no destino do backup. O deploy exige ao menos 1 GiB livre em `/` e na aplicação, além de espaço para duas cópias do banco e uploads e 512 MiB de margem no volume de backup. Depois de copiar o banco e os uploads, valida checksums, executa `PRAGMA integrity_check` e ensaia a cópia de restauração antes de atualizar o código. O backup fica em:
 
 ```text
-/home/ubuntu/backups/ace-prod/AAAAMMDDTHHMMSSZ-COMMIT/
+/srv/backups/ace-prod/AAAAMMDDTHHMMSSZ-COMMIT/
 ```
 
 Se migration, instalação, build, teste de saúde ou instalação do timer falhar, o script restaura o commit, os dados e as unidades systemd anteriores automaticamente.
+
+Cada backup contém `manifest.txt`, `CHECKSUMS.sha256`, `dev.db`, o WAL quando existir, os comprovantes/logos e as unidades systemd. O `dev.db-shm` é um índice temporário reconstruído pelo SQLite: não é copiado da produção nem incluído nos checksums, pois a verificação de integridade pode recriá-lo ou modificá-lo. Para inspecionar um backup sem mexer na produção:
+
+```bash
+cd /srv/backups/ace-prod/AAAAMMDDTHHMMSSZ-COMMIT
+sha256sum --check CHECKSUMS.sha256
+node --disable-warning=ExperimentalWarning -e 'const {DatabaseSync}=require("node:sqlite"); const db=new DatabaseSync("dev.db",{readOnly:true}); console.log(db.prepare("PRAGMA integrity_check").get()); db.close()'
+cat manifest.txt
+```
+
+O script faz esse ensaio antes de cada atualização. Se a implantação passar pelo teste de saúde e depois surgir um problema, preserve o log e o diretório do backup; a restauração manual deve reverter juntos o commit, o banco e `registrations/` para manter o esquema e os dados na mesma versão.
+
+Para validar as proteções em desenvolvimento, sem acessar o servidor, execute `node --disable-warning=ExperimentalWarning scripts/check-deploy-backup.mjs` (Node 24 e Bash; no Windows, utiliza o Bash do Git). O teste usa um banco temporário isolado, incluindo WAL, validação repetida, arquivo corrompido e recusa por falta de espaço. Não executa deploy nem operações systemd.
 
 ### 1. Criar uma chave exclusiva para o deploy
 

@@ -43,7 +43,7 @@ function TeamLogo({ team, size = 34, deferred = false }: { team: ArchiveTeam; si
   )
 }
 
-function MatchCard({ match }: { match: ArchiveMatch }) {
+export function MatchCard({ match }: { match: ArchiveMatch }) {
   const aWon = match.scoreA !== null && match.scoreB !== null && match.scoreA > match.scoreB
   const bWon = match.scoreA !== null && match.scoreB !== null && match.scoreB > match.scoreA
   const card = (
@@ -56,12 +56,12 @@ function MatchCard({ match }: { match: ArchiveMatch }) {
       )}
       <div className={`flex items-center gap-2 px-3 py-2.5 ${aWon ? 'bg-orange-50' : ''}`}>
         <TeamLogo team={match.teamA} size={25} deferred />
-        <span className={`min-w-0 flex-1 truncate text-sm ${aWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamA.name}</span>
+        <span title={match.teamA.name} className={`min-w-0 flex-1 truncate text-sm ${aWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamA.name}</span>
         <span className={`text-base font-black tabular-nums ${aWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreA ?? '—'}</span>
       </div>
       <div className={`flex items-center gap-2 border-t border-slate-100 px-3 py-2.5 ${bWon ? 'bg-orange-50' : ''}`}>
         <TeamLogo team={match.teamB} size={25} deferred />
-        <span className={`min-w-0 flex-1 truncate text-sm ${bWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamB.name}</span>
+        <span title={match.teamB.name} className={`min-w-0 flex-1 truncate text-sm ${bWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamB.name}</span>
         <span className={`text-base font-black tabular-nums ${bWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreB ?? '—'}</span>
       </div>
     </article>
