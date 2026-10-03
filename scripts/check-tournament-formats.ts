@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { FaceitDoubleEliminationBracket } from '../src/components/FaceitDoubleEliminationBracket'
 import { copaAce8Teams } from '../src/data/copaAce8'
 import { copaAce7Teams } from '../src/data/copaAce7'
 import { hallOfFameEditions } from '../src/data/hallOfFame'
@@ -101,6 +104,17 @@ const eightTeamOpening = Array.from({ length: 4 }, (_, index) => ({
   teams: swissMatches[0].teams.map((team, faction) => ({ ...team, teamId: `team-${index * 2 + faction}` })),
 }))
 const eightTeamBracket = buildDoubleEliminationBracket(eightTeamOpening)
+// The standalone tsx runner uses classic JSX; Next compiles automatic JSX.
+Object.assign(globalThis, { React })
+const renderedDoubleBracket = renderToStaticMarkup(React.createElement(FaceitDoubleEliminationBracket, { matches: eightTeamOpening }))
+assert.match(renderedDoubleBracket, /Chave superior/)
+assert.match(renderedDoubleBracket, /Chave inferior/)
+assert.match(renderedDoubleBracket, /Grande final/)
+assert.match(renderedDoubleBracket, /repeat\(3, minmax\(260px, 1fr\)\)/)
+assert.match(renderedDoubleBracket, /repeat\(4, minmax\(260px, 1fr\)\)/)
+assert.equal((renderedDoubleBracket.match(/<article/g) || []).length, 14)
+assert.equal((renderedDoubleBracket.match(/role="region"/g) || []).length, 2)
+assert.doesNotMatch(renderedDoubleBracket, /double-bracket-board|<svg/)
 assert.equal(eightTeamBracket.size, 8)
 assert.deepEqual(eightTeamBracket.columns.filter((column) => column.lane === 'upper').map((column) => column.nodes.length), [4, 2, 1])
 assert.deepEqual(eightTeamBracket.columns.filter((column) => column.lane === 'lower').map((column) => column.nodes.length), [2, 2, 1, 1])

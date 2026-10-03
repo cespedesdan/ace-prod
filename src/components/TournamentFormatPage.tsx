@@ -192,7 +192,7 @@ export function BracketLane({ title, eyebrow, subtitle, rounds, footer }: { titl
         <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-400">{eyebrow}</p><h2 className="mt-1 text-xl font-black uppercase">{title}</h2></div>
         <span className="text-xs font-bold text-slate-400">{subtitle}</span>
       </header>
-      <div className="overflow-x-auto bg-slate-100 p-5 sm:p-7">
+      <div className="overflow-x-auto bg-slate-100 p-5 sm:p-7" tabIndex={0} role="region" aria-label={`${title}, rodadas com rolagem horizontal`}>
         <div className="grid gap-10" style={{ gridTemplateColumns: `repeat(${rounds.length}, minmax(260px, 1fr))`, minWidth: minimumWidth }}>
           {rounds.map((round, roundIndex) => (
             <div key={round.name} className="flex flex-col">
