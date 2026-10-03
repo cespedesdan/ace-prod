@@ -8,7 +8,7 @@ import { buildFaceitSwissStandings, type FaceitChampionshipSnapshot } from '../s
 import { buildSwissRounds } from '../src/components/CopaAce10Swiss'
 import { buildPlayoffRounds } from '../src/components/CopaAce10Faceit'
 import { organizeSchedule } from '../src/components/ScheduleList'
-import { faceitBracketRounds } from '../src/lib/faceit-public'
+import { faceitBracketRounds, faceitDoubleElimination } from '../src/lib/faceit-public'
 import { tournamentStageLabel } from '../src/lib/tournaments'
 
 const copa9 = tournamentArchives['copa-ace-9']
@@ -74,6 +74,23 @@ const bracketRounds = faceitBracketRounds([{ ...swissMatches[0], round: 2 }, swi
 assert.deepEqual(bracketRounds.map((round) => round.name), ['Rodada 1', 'Rodada 2'])
 assert.equal(bracketRounds[0].matches[0].scoreA, 1)
 assert.equal(bracketRounds[0].matches[0].teamA.name, 'Alpha')
+const upperMatch = { ...swissMatches[0], matchId: 'upper', group: 1 }
+const lowerMatch = { ...swissMatches[0], matchId: 'lower', group: 2, winner: 'faction2' }
+const finalMatch = { ...swissMatches[0], matchId: 'final', group: 3, winner: null, status: 'SCHEDULED', scores: {}, bestOf: 3 }
+const doubleLanes = faceitDoubleElimination([finalMatch, lowerMatch, upperMatch])
+assert.deepEqual(doubleLanes.map((lane) => [lane.title, lane.matches.map((match) => match.matchId)]), [
+  ['Chave superior', ['upper']], ['Chave inferior', ['lower']], ['Grande final', ['final']],
+])
+const pendingFinal = faceitDoubleElimination([upperMatch, { ...lowerMatch, winner: null }, finalMatch])
+assert.equal(pendingFinal[2].matches.length, 0)
+assert.equal(pendingFinal[3].matches[0].matchId, 'final')
+const finalInUpper = faceitDoubleElimination([upperMatch, lowerMatch, { ...finalMatch, group: 1, round: 2 }])
+assert.equal(finalInUpper[0].matches.length, 1)
+assert.equal(finalInUpper[2].matches[0].matchId, 'final')
+assert.equal(faceitDoubleElimination([]).length, 3)
+const reversedTeams = faceitBracketRounds([{ ...upperMatch, teams: [...upperMatch.teams].reverse() }])
+assert.equal(reversedTeams[0].matches[0].teamA.name, 'Alpha')
+assert.equal(reversedTeams[0].matches[0].scoreA, 1)
 assert.equal(tournamentStageLabel('DOUBLE_ELIMINATION', 'PLAYOFFS'), 'Chaveamento')
 const swissStandings = buildFaceitSwissStandings(swissTeams, swissMatches)
 assert.deepEqual(swissStandings.map(({ name, wins, losses, scoreBalance }) => ({ name, wins, losses, scoreBalance })), [

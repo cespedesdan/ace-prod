@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { CalendarClock, CheckCircle2, Gamepad2, Radio } from 'lucide-react'
 import type { FaceitChampionshipSnapshot } from '@/lib/faceit'
+import { faceitDoubleElimination } from '@/lib/faceit-public'
 import { tournamentFormatLabels, tournamentStageLabel } from '@/lib/tournaments'
 import { ScheduleFilters } from './ScheduleFilters'
 
@@ -18,7 +19,7 @@ type ChampionshipSchedule = {
   syncedAt: Date
 }
 
-type ScheduledMatch = FaceitMatch & { stage: ChampionshipSchedule['stage'] }
+type ScheduledMatch = FaceitMatch & { stage: ChampionshipSchedule['stage']; bracketLabel?: string }
 
 const sections = {
   today: { title: 'Partidas de hoje', eyebrow: 'Em destaque', icon: Radio, empty: 'Nenhuma partida marcada para hoje.' },
@@ -87,7 +88,7 @@ function MatchCard({ match, bucket, format }: { match: ScheduledMatch; bucket: E
     <article data-schedule-match data-bucket={bucket} data-stage={match.stage} data-round={match.round ?? ''} className="border border-[#5d4868] bg-[#2a1b34] p-4 shadow-[0_14px_32px_rgba(0,0,0,.32)]">
       <div className="flex items-center justify-between border-b border-white/15 pb-3">
         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-copa-cyan">
-          {tournamentStageLabel(format, match.stage)} · {roundLabel(match, format)}{match.stage === 'SWISS' && match.group !== null ? ` · Grupo ${match.group}` : ''}
+          {match.bracketLabel || tournamentStageLabel(format, match.stage)} · {roundLabel(match, format)}{format !== 'DOUBLE_ELIMINATION' && match.stage === 'SWISS' && match.group !== null ? ` · Grupo ${match.group}` : ''}
         </p>
         <span className="bg-cyan-400/10 px-2 py-1 text-[10px] font-black uppercase text-copa-cyan">MD{match.bestOf || '?'}</span>
       </div>
@@ -131,7 +132,9 @@ function PlaceholderCards() {
 }
 
 export function ScheduleList({ championships, tournamentName, format, showFirstRoundPlaceholders = false }: { championships: ChampionshipSchedule[]; tournamentName: string; format: string; showFirstRoundPlaceholders?: boolean }) {
-  const matches = championships.flatMap((championship) => championship.matches.map((match) => ({ ...match, stage: championship.stage })))
+  const matches = championships.flatMap((championship) => format === 'DOUBLE_ELIMINATION'
+    ? faceitDoubleElimination(championship.matches).flatMap((lane) => lane.matches.map((match) => ({ ...match, stage: championship.stage, bracketLabel: lane.title })))
+    : championship.matches.map((match) => ({ ...match, stage: championship.stage })))
   const swiss = championships.find((championship) => championship.stage === 'SWISS')
   const organized = organizeSchedule(matches)
   const matchMeta = matches.length
