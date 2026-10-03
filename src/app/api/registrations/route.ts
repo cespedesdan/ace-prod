@@ -40,6 +40,8 @@ function errorResponse(message: string, status = 400) {
   return NextResponse.json({ success: false, error: message }, { status })
 }
 
+class RegistrationTournamentChangedError extends Error {}
+
 function hasValidSignature(buffer: Buffer, extension: string) {
   if (extension === 'jpg') return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff
   if (extension === 'png') return buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
@@ -114,6 +116,9 @@ export async function POST(request: NextRequest) {
         return errorResponse('O envio ultrapassa o limite permitido.', 413)
       }
       return errorResponse('Os dados enviados pelo formulário são inválidos.')
+    }
+    if (readText(formData, 'tournamentId') !== tournament.id) {
+      return errorResponse('O campeonato deste formulário mudou. Recarregue a página antes de enviar sua inscrição.', 409)
     }
     const submittedFaceitUrl = readText(formData, 'teamFaceitUrl')
     const teamTag = readText(formData, 'teamTag').toUpperCase()
@@ -213,44 +218,50 @@ export async function POST(request: NextRequest) {
       writeFile(path.join(storageRoot, proofRelativePath), proofUpload.buffer),
     ])
 
-    await prisma.registration.create({
-      data: {
-        id,
-        protocol,
-        tournament: tournament.name,
-        ...activeClaims,
-        teamFaceitUrl,
-        faceitTeamId: faceitTeam.teamId,
-        faceitTeamNickname: faceitTeam.nickname,
-        faceitTeamAvatarUrl: faceitTeam.avatarUrl,
-        faceitLastSyncedAt: new Date(),
-        teamName,
-        teamNameNormalized,
-        teamTag,
-        representativeName,
-        representativeEmail,
-        representativePhone,
-        teamInstagram: teamInstagram || null,
-        discoverySource,
-        scheduleRestrictions: scheduleRestrictions || null,
-        rulesAccepted: true,
-        logoPath: logoRelativePath,
-        logoOriginalName: logoUpload.file.name,
-        paymentProofPath: proofRelativePath,
-        paymentProofOriginalName: proofUpload.file.name,
-        players: {
-          create: faceitTeam.members.map((member) => ({
-            faceitPlayerId: member.playerId,
-            nickname: member.nickname,
-            avatarUrl: member.avatarUrl,
-            country: member.country,
-            skillLevel: member.skillLevel,
-            membershipType: member.membershipType,
-            isLeader: member.isLeader,
-            faceitUrl: member.faceitUrl,
-          })),
-        },
-      },
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.tournament.findUnique({ where: { id: tournament.id } })
+      if (!current?.published || !current.registrationOpen || current.status === 'COMPLETED' || current.name !== tournament.name) {
+        throw new RegistrationTournamentChangedError()
+      }
+      return tx.registration.create({
+        data: {
+          id,
+          protocol,
+          tournament: tournament.name,
+          ...activeClaims,
+          teamFaceitUrl,
+          faceitTeamId: faceitTeam.teamId,
+          faceitTeamNickname: faceitTeam.nickname,
+          faceitTeamAvatarUrl: faceitTeam.avatarUrl,
+          faceitLastSyncedAt: new Date(),
+          teamName,
+          teamNameNormalized,
+          teamTag,
+          representativeName,
+          representativeEmail,
+          representativePhone,
+          teamInstagram: teamInstagram || null,
+          discoverySource,
+          scheduleRestrictions: scheduleRestrictions || null,
+          rulesAccepted: true,
+          logoPath: logoRelativePath,
+          logoOriginalName: logoUpload.file.name,
+          paymentProofPath: proofRelativePath,
+          paymentProofOriginalName: proofUpload.file.name,
+          players: {
+            create: faceitTeam.members.map((member) => ({
+              faceitPlayerId: member.playerId,
+              nickname: member.nickname,
+              avatarUrl: member.avatarUrl,
+              country: member.country,
+              skillLevel: member.skillLevel,
+              membershipType: member.membershipType,
+              isLeader: member.isLeader,
+              faceitUrl: member.faceitUrl,
+            })),
+          },
+          },
+      })
     })
 
     return NextResponse.json({
@@ -261,6 +272,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (registrationDirectory) {
       await rm(registrationDirectory, { recursive: true, force: true }).catch(() => undefined)
+    }
+    if (error instanceof RegistrationTournamentChangedError) {
+      return errorResponse('As inscrições deste campeonato mudaram durante o envio. Recarregue a página para verificar a disponibilidade.', 409)
     }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return errorResponse('Já existe uma inscrição para esta equipe.', 409)

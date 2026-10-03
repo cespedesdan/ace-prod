@@ -2,7 +2,7 @@ import { CalendarDays, LockKeyhole } from 'lucide-react'
 
 export default function RegistrationClosed() {
   return (
-    <main className="tournament-page clutch-page registration-page min-h-screen text-white">
+    <div className="tournament-page clutch-page registration-page min-h-screen text-white">
       <section className="tournament-hero copa10-hero registration-hero flex min-h-[calc(100vh-5rem)] items-center">
         <div className="copa10-hero-glow" aria-hidden="true" />
         <div className="tournament-container relative grid gap-8 py-10 lg:grid-cols-[1fr_380px] lg:py-14">
@@ -24,6 +24,6 @@ export default function RegistrationClosed() {
           </aside>
         </div>
       </section>
-    </main>
+    </div>
   )
 }

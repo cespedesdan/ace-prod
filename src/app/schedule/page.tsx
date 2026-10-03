@@ -13,6 +13,7 @@ import { tournamentPublicPath } from '@/lib/tournaments'
 export const revalidate = 60
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/schedule' },
   title: 'Agenda de jogos | Ace Produtora',
   description: 'Acompanhe as partidas e resultados dos campeonatos da Ace Produtora.',
 }
@@ -41,7 +42,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
   )
 
   return (
-    <main className="schedule-page tournament-page">
+    <div className="schedule-page tournament-page">
       <ClientPerformance />
       <section className="tournament-hero">
         <div className="tournament-container py-6">
@@ -66,6 +67,6 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
           <ScheduleList key={selected.slug} tournamentName={selected.name} format={selected.format} showFirstRoundPlaceholders={selected.slug === 'copa-ace-10'} championships={schedules} />
         </> : <p className="text-slate-300">Nenhum campeonato publicado no momento.</p>}
       </div>
-    </main>
+    </div>
   )
 }

@@ -114,6 +114,27 @@ textarea {
   outline-offset: 3px;
 }
 
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  background: var(--ace-copa);
+  color: var(--ace-night);
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+#conteudo-principal,
+.tournament-page [id] {
+  scroll-margin-top: 6rem;
+}
+
 .brand-logo-neutral img {
   filter: brightness(0) invert(1);
 }
@@ -438,16 +459,12 @@ a[data-navigation-pending] {
   }
 }
 
-body:has(.home-page) .nav-link-home,
-body:has(.schedule-page) .nav-link-schedule,
-body:has(.news-page) .nav-link-news,
-body:has(.hall-of-fame-page) .nav-link-hall-of-fame,
-body:has(.tournament-page:not(.copa-ace-10-page):not(.schedule-page)) .nav-link-hall-of-fame {
+.nav-link[aria-current="page"]:not(.copa10-nav-button):not(.clutch-nav-link):not(.clutch-button) {
   background: rgb(0 255 190 / 10%);
   color: var(--ace-copa);
 }
 
-body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
+.copa10-nav-button[aria-current="page"] {
   background: linear-gradient(135deg, #ffe0a0, #edb64d);
   box-shadow: 0 0 24px rgb(217 154 40 / 30%);
 }

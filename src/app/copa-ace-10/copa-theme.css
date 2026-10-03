@@ -35,7 +35,7 @@
   display: none;
 }
 
-.copa10-hero-glow {
+.copa-ace-10-page .copa10-hero-glow {
   position: absolute;
   inset: 0;
   background:
@@ -44,7 +44,7 @@
   pointer-events: none;
 }
 
-.copa10-logo-lockup img {
+.copa-ace-10-page .copa10-logo-lockup img {
   width: auto;
   height: 2.8rem;
   object-fit: contain;
@@ -112,7 +112,7 @@
 }
 
 .copa-ace-10-page .tournament-button-primary,
-.copa10-button-secondary {
+.copa-ace-10-page .copa10-button-secondary {
   min-height: 3rem;
   border-radius: 0;
   font-family: var(--font-nippo), var(--font-poppins), sans-serif;
@@ -133,7 +133,7 @@
   transform: translateY(-2px);
 }
 
-.copa10-button-secondary {
+.copa-ace-10-page .copa10-button-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -145,31 +145,10 @@
   transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
 
-.copa10-button-secondary:hover {
+.copa-ace-10-page .copa10-button-secondary:hover {
   border-color: #ffd276;
   background: rgb(217 154 40 / 10%);
   transform: translateY(-2px);
-}
-
-/* Inscrição da Copa ACE 10 — usa o mesmo vocabulário visual da página do torneio. */
-.registration-page {
-  --ace-border: rgb(217 154 40 / 38%);
-}
-
-.registration-page .registration-hero {
-  border-bottom: 1px solid rgb(217 154 40 / 35%);
-}
-
-.registration-page .registration-aside {
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-}
-
-.registration-page .registration-aside {
-  border-color: #d99a28 !important;
-}
-
-.registration-open-badge {
-  border-color: #d99a28 !important;
 }
 
 .copa10-coin-stage {
@@ -328,7 +307,7 @@
     text-shadow: none;
   }
 
-  .copa10-logo-lockup img {
+  .copa-ace-10-page .copa10-logo-lockup img {
     height: 2rem;
   }
 

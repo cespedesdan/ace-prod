@@ -1,6 +1,6 @@
 export default function CopaAce10Loading() {
   return (
-    <main className="tournament-page copa-ace-10-page" aria-busy="true">
+    <div className="tournament-page copa-ace-10-page" aria-busy="true">
       <section className="tournament-hero copa10-hero min-h-[70vh]">
         <div className="copa10-hero-glow" aria-hidden="true" />
         <div className="tournament-container relative py-20 lg:py-28">
@@ -13,6 +13,6 @@ export default function CopaAce10Loading() {
           </p>
         </div>
       </section>
-    </main>
+    </div>
   )
 }

@@ -6,7 +6,7 @@ Site oficial da Ace Produtora e da Copa ACE 10, desenvolvido com Next.js 15, Rea
 
 O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snapshot do elenco. Campeonatos vinculados mantêm snapshots de times, partidas, horários e resultados por sincronização automática, com atualização manual disponível no painel administrativo.
 
-Na versão 1.2.0, o campeonato publicado com inscrições abertas controla a Navbar, a home, a página `/inscreva-se` e o destino de cada inscrição. O painel permite criar, copiar, editar, pré-visualizar, publicar, encerrar e reabrir edições sem alterar o código das páginas genéricas.
+Na versão 1.2.0, a Navbar e a home destacam primeiro o campeonato com inscrições abertas, depois um campeonato em progresso e, na ausência destes, o publicado mais recente. Fechar inscrições não remove o acesso ao torneio. A página `/inscreva-se` atende somente ao campeonato aberto; o formulário envia seu ID e o servidor confirma o vínculo novamente antes de gravar. O painel permite criar, copiar, editar, pré-visualizar, publicar, encerrar e reabrir edições sem alterar o código das páginas genéricas.
 
 ## Funcionalidades
 
@@ -32,6 +32,7 @@ Na versão 1.2.0, o campeonato publicado com inscrições abertas controla a Nav
 
 - A API de inscrição aceita envios somente para o único campeonato publicado e marcado como “Inscrições abertas” no painel administrativo.
 - Inscrições ativas reservam separadamente o ID FACEIT e o nome normalizado da equipe; uma rejeição libera as duas reservas para um novo envio corrigido.
+- Renomear um campeonato atualiza as reservas de unicidade na mesma transação, sem alterar a ordem das inscrições.
 - Campos públicos possuem limites no servidor. Imagens são decodificadas, limitadas a 25 milhões de pixels e reprocessadas sem metadados ou conteúdo excedente antes do armazenamento; imagens animadas são rejeitadas.
 - Alterações administrativas exigem origem válida, usam sessão `__Host-` em produção e respostas privadas não podem ser armazenadas em cache.
 - Login administrativo possui limites persistentes por origem, combinação de e-mail/origem e conta. Inscrições são limitadas por e-mail e, quando o proxy é confiável, também por IP.
@@ -125,10 +126,11 @@ Os campeonatos criados no painel também ficam somente no banco do ambiente atua
 | `npm run db:seed` | Cria ou atualiza somente o administrador |
 | `npm run lint` | Executa ESLint |
 | `npm run check` | Executa lint, TypeScript e todos os testes locais |
-| `npm run test:security` | Testa rate limit e consultas parametrizadas |
+| `npm run test:security` | Testa rate limit e consultas parametrizadas em banco temporário |
 | `npm run test:faceit-sync` | Testa sincronização manual/automática, falhas e agendamento FACEIT |
 | `npm run test:tournaments` | Verifica formatos e regras MD1/MD3 das páginas históricas |
 | `npm run test:tournament-management` | Verifica publicação, formatos, premiação e upload de logos dos campeonatos |
+| `npm run test:public-regressions` | Verifica troca de campeonato durante inscrição, renomeação sem duplicatas, destaque e sitemap em banco temporário |
 | `npm run sync:faceit` | Sincroniza campeonatos FACEIT cuja atualização está pendente |
 
 ## Produção HTTPS
@@ -153,3 +155,11 @@ npm run build
 ```
 
 As consultas da aplicação usam Prisma e são parametrizadas. Não introduza `$queryRawUnsafe` ou `$executeRawUnsafe`.
+
+Os testes que gravam dados usam SQLite temporário em `.performance-reports/ace-check-*`, criado a partir das migrations e removido ao final. As respostas FACEIT dos testes são simuladas. Execute os comandos `npm run test:*`, não os arquivos TypeScript diretamente: os testes com escrita exigem o sinalizador de isolamento. O banco normal da aplicação permanece `prisma/dev.db`; a substituição de conexão é exclusiva desse ambiente de teste.
+
+As correções e pendências da revisão pública estão em [auditoria pública e de arquitetura](docs/auditoria-publica-arquitetura-2026-10-03.md). O contato do rodapé inclui os marcadores HTML `email_off` documentados pelo Cloudflare, para evitar alterações no HTML antes da hidratação do React; a confirmação na borda depende de nova publicação.
+
+Os testes que gravam dados usam SQLite temporário em `.performance-reports/ace-check-*`, criado a partir das migrations e removido ao final. As respostas FACEIT dos testes são simuladas. Execute os comandos `npm run test:*`, não os arquivos TypeScript diretamente: os testes com escrita exigem o sinalizador de isolamento. O banco normal da aplicação permanece `prisma/dev.db`; a substituição de conexão é exclusiva desse ambiente de teste.
+
+As correções e pendências da revisão pública estão em [auditoria pública e de arquitetura](docs/auditoria-publica-arquitetura-2026-10-03.md). O contato do rodapé inclui os marcadores HTML `email_off` documentados pelo Cloudflare, para evitar alterações no HTML antes da hidratação do React; a confirmação na borda depende de nova publicação.

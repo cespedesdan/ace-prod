@@ -8,6 +8,7 @@ import { adminCookieName } from '../src/lib/admin-request'
 import { generateToken } from '../src/lib/auth'
 import { parseTournamentInput, slugifyTournamentName, tournamentPrizeBreakdown, tournamentPrizeLabel, tournamentPublicPath, tournamentStatusLabel } from '../src/lib/tournaments'
 
+assert.equal(process.env.ACE_ISOLATED_TESTS, 'true', 'Use npm run test:tournament-management para testar em ambiente isolado.')
 assert.equal(slugifyTournamentName('Copa ÁCE 11'), 'copa-ace-11')
 assert.equal(tournamentPublicPath('copa-ace-10'), '/copa-ace-10')
 assert.equal(tournamentPublicPath('copa-ace-11'), '/campeonatos/copa-ace-11')

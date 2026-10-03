@@ -66,7 +66,7 @@ export default async function CopaAce10Page() {
   const slots = Array.from({ length: TOTAL_TEAMS }, (_, index) => teams[index] ?? null)
 
   return (
-    <main className="tournament-page copa-ace-10-page">
+    <div className="tournament-page copa-ace-10-page">
       <section className="tournament-hero copa10-hero">
         <div className="copa10-hero-glow" aria-hidden="true" />
         <div className="tournament-container relative py-8 lg:py-14">
@@ -137,7 +137,7 @@ export default async function CopaAce10Page() {
             </div>
           </div>
 
-          <nav className="tournament-tabs">
+          <nav className="tournament-tabs" aria-label="Seções da Copa Ace 10">
             <a href="#resumo" aria-current="true">Resumo</a>
             <a href="#equipes">Times</a>
             <a href="#formato">Formato</a>
@@ -164,7 +164,7 @@ export default async function CopaAce10Page() {
                 <span className="text-2xl font-black text-[#ffd276]">{item.value}</span>
               </div>
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">{item.label}</p>
-              <h3 className="mt-1 text-sm uppercase">{item.detail}</h3>
+              <p className="mt-1 text-sm uppercase">{item.detail}</p>
             </article>
           ))}
         </section>
@@ -241,6 +241,6 @@ export default async function CopaAce10Page() {
           </section>
         )}
       </div>
-    </main>
+    </div>
   )
 }

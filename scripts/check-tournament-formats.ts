@@ -11,6 +11,7 @@ import { buildFaceitSwissStandings, type FaceitChampionshipSnapshot } from '../s
 import { buildSwissRounds } from '../src/components/CopaAce10Swiss'
 import { buildPlayoffRounds } from '../src/components/CopaAce10Faceit'
 import { organizeSchedule } from '../src/components/ScheduleList'
+import { Footer } from '../src/components/Footer'
 import { faceitBracketRounds, faceitDoubleElimination } from '../src/lib/faceit-public'
 import { buildDoubleEliminationBracket } from '../src/lib/double-elimination-bracket'
 import { tournamentStageLabel } from '../src/lib/tournaments'
@@ -186,9 +187,14 @@ const schedule = organizeSchedule([
   { ...swissMatches[0], matchId: 'upcoming-early', round: 5, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-23T19:00:00-03:00') },
   { ...swissMatches[0], matchId: 'finished-old', round: 1, status: 'FINISHED', scheduledAt: Date.parse('2026-08-20T19:00:00-03:00') },
   { ...swissMatches[0], matchId: 'finished-new', round: 5, status: 'FINISHED', scheduledAt: Date.parse('2026-08-21T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'finished-undated', round: 1, status: 'FINISHED', scheduledAt: null },
+  { ...swissMatches[0], matchId: 'cancelled-undated', round: 1, status: 'CANCELLED', scheduledAt: null },
 ], Date.parse('2026-08-22T12:00:00-03:00'))
 assert.deepEqual(schedule.today.map(({ matchId }) => matchId), ['today-early', 'today-late'])
 assert.deepEqual(schedule.upcoming.map(({ matchId }) => matchId), ['upcoming-early', 'upcoming-late'])
-assert.deepEqual(schedule.finished.map(({ matchId }) => matchId), ['finished-new', 'finished-old'])
+assert.deepEqual(schedule.finished.map(({ matchId }) => matchId), ['finished-new', 'finished-old', 'finished-undated', 'cancelled-undated'])
 
+const footer = renderToStaticMarkup(React.createElement(Footer))
+assert.ok(footer.includes('<!--email_off--><a href="mailto:faleconosco@aceprodutora.com.br"'))
+assert.ok(footer.includes('<!--/email_off-->'))
 console.log('Tournament format checks passed.')

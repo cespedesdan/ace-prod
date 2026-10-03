@@ -74,7 +74,7 @@ export function MatchCard({ match }: { match: ArchiveMatch }) {
 
 function TournamentShell({ data, tabs, children }: { data: TournamentArchive; tabs: Array<{ href: string; label: string }>; children: ReactNode }) {
   return (
-    <main className="tournament-page">
+    <div className="tournament-page">
       <section className="tournament-hero">
         <div className="tournament-container py-6">
           <IntentLink href="/hall-of-fame" className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">
@@ -103,14 +103,14 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
             </div>
           </div>
 
-          <nav className="tournament-tabs">
+          <nav className="tournament-tabs" aria-label={`Seções de ${data.title}`}>
             {tabs.map((tab, index) => <a key={tab.href} href={tab.href} className={`${index === 0 ? 'text-white ' : ''}hover:text-orange-400`}>{tab.label}</a>)}
           </nav>
         </div>
       </section>
 
       <div className="tournament-container space-y-8 py-8">{children}</div>
-    </main>
+    </div>
   )
 }
 
@@ -217,7 +217,7 @@ export function GroupRoundRobinTournamentPage({ data }: { data: GroupRoundRobinA
           {data.groups.map((group) => (
             <article key={group.name} className="tournament-panel">
               <header className="tournament-panel-header flex items-center justify-between px-4 py-3"><h3 className="font-black uppercase tracking-wide">{group.name}</h3><span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Classificação final</span></header>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`Classificação ${group.name}, tabela com rolagem horizontal`}>
                 <table className="w-full min-w-[520px] text-sm">
                   <thead className="border-b border-slate-200 bg-slate-100 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500"><tr><th className="w-12 px-3 py-2 text-center">#</th><th className="px-3 py-2 text-left">Equipe</th><th className="px-3 py-2 text-center">Campanha</th><th className="px-3 py-2 text-center">Vit.</th><th className="px-3 py-2 text-center">Saldo</th><th className="px-3 py-2 text-center">Rounds</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">
@@ -226,7 +226,7 @@ export function GroupRoundRobinTournamentPage({ data }: { data: GroupRoundRobinA
                         <td className="relative px-3 py-3 text-center font-black text-slate-500">{standing.qualified && <span className="absolute inset-y-0 left-0 w-1 bg-orange-500" />}{standing.position}</td>
                         <td className="px-3 py-3"><div className="flex items-center gap-3"><TeamLogo team={standing.team} size={30} deferred /><span className="font-bold text-slate-800">{standing.team.name}</span>{standing.qualified && <span className="ml-auto text-[9px] font-black uppercase text-orange-600">Classificado</span>}</div></td>
                         <td className="px-3 py-3 text-center font-bold tabular-nums text-slate-700">{standing.record}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.wins}</td>
-                        <td className={`px-3 py-3 text-center font-bold tabular-nums ${standing.roundDiff > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{standing.roundDiff > 0 ? '+' : ''}{standing.roundDiff}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.rounds ?? '—'}</td>
+                        <td className={`px-3 py-3 text-center font-bold tabular-nums ${standing.roundDiff > 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{standing.roundDiff > 0 ? '+' : ''}{standing.roundDiff}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.rounds ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -259,7 +259,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
               </header>
               <div className="space-y-5 bg-slate-100 p-4 sm:p-5">
                 <div>
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">Chave superior</p>
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">Chave superior</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {group.upperRounds.map((round) => (
                       <div key={round.name}>
@@ -270,7 +270,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
                   </div>
                 </div>
                 <div className="border-t border-slate-300 pt-5">
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-rose-700">Chave inferior</p>
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-rose-300">Chave inferior</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {group.lowerRounds.map((round) => (
                       <div key={round.name}>

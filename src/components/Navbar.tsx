@@ -1,14 +1,14 @@
 import { IntentLink } from './IntentLink'
 import { Logotipo } from './Logotipo'
 import { NavigationLinks } from './NavigationLinks'
-import { getOpenRegistrationTournament } from '@/lib/registration-status'
+import { getFeaturedTournament } from '@/lib/registration-status'
 import { tournamentPublicPath } from '@/lib/tournaments'
 
 export async function Navbar() {
-  const registrationTournament = await getOpenRegistrationTournament()
+  const tournament = await getFeaturedTournament()
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-ace-cyan/20 bg-smoke md:bg-smoke/95 md:backdrop-blur-xl">
+    <nav aria-label="Navegação principal" className="sticky top-0 z-50 border-b border-ace-cyan/20 bg-smoke md:bg-smoke/95 md:backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
@@ -17,11 +17,12 @@ export async function Navbar() {
           </IntentLink>
 
           <NavigationLinks
-            registrationTournament={registrationTournament ? {
-              name: registrationTournament.name,
-              href: tournamentPublicPath(registrationTournament.slug),
-              edition: registrationTournament.slug === 'copa-ace-10',
-              clutch: registrationTournament.slug.startsWith('ace-clutch'),
+            featuredTournament={tournament ? {
+              name: tournament.name,
+              href: tournamentPublicPath(tournament.slug),
+              edition: tournament.slug === 'copa-ace-10',
+              clutch: tournament.slug.startsWith('ace-clutch'),
+              registrationOpen: tournament.registrationOpen && tournament.status !== 'COMPLETED',
             } : null}
           />
         </div>

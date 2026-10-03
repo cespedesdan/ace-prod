@@ -1,6 +1,13 @@
+import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import './news.css'
 import { NewsList } from '@/components/NewsList'
+
+export const metadata: Metadata = {
+  title: 'Notícias | Ace Produtora',
+  description: 'Novidades dos campeonatos e da comunidade ACE Produtora.',
+  alternates: { canonical: '/news' },
+}
 
 async function getNews() {
   try {

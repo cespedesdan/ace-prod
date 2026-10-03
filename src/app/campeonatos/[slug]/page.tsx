@@ -8,7 +8,7 @@ import { adminCookieName } from '@/lib/admin-request'
 import { verifyToken } from '@/lib/auth'
 import { faceitBracketRounds, storedFaceitMatches } from '@/lib/faceit-public'
 import { prisma } from '@/lib/prisma'
-import { tournamentFormatLabels, tournamentPrizeBreakdown, tournamentPrizeLabel, tournamentStageLabel } from '@/lib/tournaments'
+import { tournamentFormatLabels, tournamentPrizeBreakdown, tournamentPrizeLabel, tournamentStageLabel, tournamentPublicPath } from '@/lib/tournaments'
 import { BracketLane } from '@/components/TournamentFormatPage'
 import { FaceitDoubleEliminationBracket } from '@/components/FaceitDoubleEliminationBracket'
 
@@ -29,9 +29,14 @@ async function getTournament(slug: string, preview = false) {
 }
 
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
-  const tournament = await getTournament((await params).slug, await canPreview(searchParams))
+  const preview = await canPreview(searchParams)
+  const tournament = await getTournament((await params).slug, preview)
   return tournament
-    ? { title: `${tournament.name} | Ace Produtora`, description: tournament.description }
+    ? {
+        title: `${tournament.name} | Ace Produtora`, description: tournament.description,
+        alternates: { canonical: tournamentPublicPath(tournament.slug) },
+        ...(preview ? { robots: { index: false, follow: false } } : {}),
+      }
     : { title: 'Campeonato não encontrado | Ace Produtora' }
 }
 
@@ -62,7 +67,7 @@ export default async function TournamentPage({ params, searchParams }: PageProps
   }))
 
   return (
-    <main className={`tournament-page min-h-screen bg-gray-950 text-white ${isClutch ? 'clutch-page' : ''}`}>
+    <div className={`tournament-page min-h-screen bg-gray-950 text-white ${isClutch ? 'clutch-page' : ''}`}>
       {preview && !tournament.published && <div className="border-b border-amber-400/30 bg-amber-400/10 px-4 py-3 text-center text-xs font-black uppercase tracking-wider text-amber-300">Pré-visualização administrativa · página ainda não publicada</div>}
       <section className="border-b border-white/10 bg-gray-900">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_260px] lg:px-8">
@@ -130,6 +135,6 @@ export default async function TournamentPage({ params, searchParams }: PageProps
 
         <Link href="/hall-of-fame" className="inline-flex text-sm font-bold text-cyan-300 hover:underline">Ver histórico de campeonatos</Link>
       </div>
-    </main>
+    </div>
   )
 }

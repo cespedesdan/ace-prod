@@ -1,4 +1,11 @@
+import type { Metadata } from 'next'
 import { HallOfFameList } from '@/components/HallOfFameList'
+
+export const metadata: Metadata = {
+  title: 'Hall da Fama | Ace Produtora',
+  description: 'História, campeões e resultados dos campeonatos da Ace Produtora.',
+  alternates: { canonical: '/hall-of-fame' },
+}
 
 export default function HallOfFamePage() {
   return (

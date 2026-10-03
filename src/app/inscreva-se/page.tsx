@@ -8,9 +8,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return tournament ? {
     title: `Inscreva-se — ${tournament.name} | Ace Produtora`,
     description: `Inscrição oficial de equipes para ${tournament.name}.`,
+    alternates: { canonical: '/inscreva-se' },
   } : {
     title: 'Inscrições encerradas | Ace Produtora',
     description: 'No momento não há campeonatos com inscrições abertas.',
+    alternates: { canonical: '/inscreva-se' },
   }
 }
 
@@ -18,6 +20,7 @@ export default async function RegistrationPage() {
   const tournament = await getOpenRegistrationTournament()
   if (!tournament) return <RegistrationClosed />
   return <RegistrationForm tournament={{
+    id: tournament.id,
     name: tournament.name,
     logoUrl: tournament.logoUrl,
     teamLimit: tournament.teamLimit,

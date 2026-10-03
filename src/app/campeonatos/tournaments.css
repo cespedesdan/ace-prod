@@ -2,3 +2,4 @@
 @import "tailwindcss/utilities" source(none);
 @source "./";
 @source "../../components/TournamentFormatPage.tsx";
+@source "../../components/FaceitDoubleEliminationBracket.tsx";

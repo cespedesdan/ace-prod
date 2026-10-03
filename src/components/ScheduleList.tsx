@@ -61,7 +61,10 @@ export function organizeSchedule<T extends FaceitMatch>(matches: T[], now = Date
   const date = (match: T) => match.scheduledAt ?? Number.MAX_SAFE_INTEGER
   organized.today.sort((a, b) => date(a) - date(b))
   organized.upcoming.sort((a, b) => date(a) - date(b))
-  organized.finished.sort((a, b) => date(b) - date(a))
+  organized.finished.sort((a, b) =>
+    a.scheduledAt === null ? (b.scheduledAt === null ? 0 : 1)
+      : b.scheduledAt === null ? -1 : b.scheduledAt - a.scheduledAt,
+  )
   return organized
 }
 
@@ -144,7 +147,7 @@ export function ScheduleList({ championships, tournamentName, format, showFirstR
     : showFirstRoundPlaceholders ? firstRoundMatches.map(() => ({ bucket: 'upcoming' as const, round: 1, stage: 'SWISS' as const })) : []
 
   return (
-    <section id="jogos" className="tournament-panel overflow-hidden">
+    <section id="jogos" data-schedule-root className="tournament-panel overflow-hidden">
       <header className="tournament-panel-header flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center">
         <div><p className="tournament-kicker">{tournamentName}</p><h2 className="mt-1 text-xl font-black uppercase">Agenda de partidas</h2></div>
         <div className="text-left sm:text-right">
@@ -161,7 +164,7 @@ export function ScheduleList({ championships, tournamentName, format, showFirstR
         const Icon = section.icon
         const sectionMatches = organized[key]
         return (
-          <section key={key} data-schedule-section={key} className="deferred-render border-b border-cyan-400/15 bg-[#100a15]/60 p-4 last:border-b-0 sm:p-5" aria-labelledby={`schedule-${key}`}>
+          <section key={key} hidden={!sectionMatches.length && !(key === 'upcoming' && showFirstRoundPlaceholders && !swiss?.matches.length)} data-schedule-section={key} className="deferred-render border-b border-cyan-400/15 bg-[#100a15]/60 p-4 last:border-b-0 sm:p-5" aria-labelledby={`schedule-${key}`}>
             <header className="mb-4 flex items-end justify-between gap-3">
               <div><p className="tournament-section-eyebrow inline-flex items-center gap-2"><Icon size={14} /> {section.eyebrow}</p><h3 id={`schedule-${key}`} className="mt-1 text-lg font-black uppercase text-white">{section.title}</h3></div>
               <span data-schedule-count={key} className="text-xs font-black text-copa-cyan">{sectionMatches.length}</span>

@@ -56,7 +56,7 @@ export async function HallOfFameList() {
 
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <h3 className="text-2xl font-bold text-white">{edition.title}</h3>
+              <h2 className="text-2xl font-bold text-white">{edition.title}</h2>
               {edition.status === 'ongoing' && (
                 <span className="inline-flex items-center gap-1 bg-copa-cyan/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-copa-cyan">
                   <Radio size={11} /> {edition.statusLabel || 'Em progresso'}

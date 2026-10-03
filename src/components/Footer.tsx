@@ -29,7 +29,10 @@ export function Footer() {
             <p className="brand-kicker mb-4">Contato</p>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>
-                <a href="mailto:faleconosco@aceprodutora.com.br" className="inline-flex items-center gap-2 transition hover:text-copa-cyan"><Mail size={15} /> faleconosco@aceprodutora.com.br</a>
+                <span className="inline-flex items-center gap-2"><Mail size={15} aria-hidden="true" />
+                  {/* Static HTML only: preserve Cloudflare's email_off comments without introducing client-side rendering. */}
+                  <span dangerouslySetInnerHTML={{ __html: '<!--email_off--><a href="mailto:faleconosco@aceprodutora.com.br" class="transition hover:text-copa-cyan">faleconosco@aceprodutora.com.br</a><!--/email_off-->' }} />
+                </span>
               </li>
               <li>
                 <a href="https://instagram.com/AceProdutora" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 transition hover:text-copa-cyan"><Instagram size={15} /> @AceProdutora</a>
@@ -38,7 +41,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-ace-cyan/15 pt-7 text-center text-xs text-gray-500">
+        <div className="mt-10 border-t border-ace-cyan/15 pt-7 text-center text-xs text-gray-400">
           © 2026 Ace Produtora. Todos os direitos reservados.
         </div>
       </div>
