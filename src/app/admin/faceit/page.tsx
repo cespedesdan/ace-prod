@@ -48,6 +48,9 @@ type Championship = {
   lastAutoSyncFailureAt: string | null
   lastAutoSyncError: string | null
   consecutiveAutoSyncFailures: number
+  lastWebhookReceivedAt: string | null
+  lastWebhookEvent: string | null
+  webhookConfigured: boolean
   teams: FaceitTeam[]
   matches: FaceitMatch[]
   results: Array<{
@@ -271,10 +274,11 @@ export default function FaceitChampionshipAdminPage() {
                     {championship.autoSyncEnabled ? 'Desativar atualização automática' : 'Ativar atualização automática'}
                   </button>
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div><span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Última automática</span><strong className="mt-1 block text-sm text-slate-200">{syncDate(championship.lastAutoSyncAt)}</strong></div>
                   <div><span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Última tentativa</span><strong className="mt-1 block text-sm text-slate-200">{syncDate(championship.lastAutoSyncAttemptAt)}</strong></div>
                   <div><span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Próxima automática</span><strong className="mt-1 block text-sm text-slate-200">{championship.autoSyncEnabled ? syncDate(championship.nextAutoSyncAt) : 'Desativada'}</strong></div>
+                  <div><span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Último webhook</span><strong className="mt-1 block text-sm text-slate-200">{syncDate(championship.lastWebhookReceivedAt)}</strong><span className="mt-1 block text-xs text-slate-300">{championship.webhookConfigured ? 'Receptor configurado; confirme a assinatura na FACEIT.' : 'Segredo do webhook não configurado no servidor.'}</span>{championship.lastWebhookEvent && <span className="mt-1 block break-all text-[10px] text-slate-500">{championship.lastWebhookEvent}</span>}</div>
                 </div>
                 {championship.lastAutoSyncFailureAt && (
                   <div className={`mt-4 border p-3 text-xs ${championship.consecutiveAutoSyncFailures > 0 ? 'border-red-500/30 bg-red-500/10 text-red-200' : 'border-amber-500/20 bg-amber-500/5 text-amber-200'}`}>

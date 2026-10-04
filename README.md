@@ -20,6 +20,7 @@ Na versão 1.2.0, a Navbar e a home destacam primeiro o campeonato com inscriç�
 - Sincronização manual do elenco FACEIT pelo painel administrativo.
 - Gerenciamento de campeonatos FACEIT com vínculos, snapshots e sincronização automática independente por edição.
 - Histórico da última sincronização automática e da última falha no painel administrativo.
+- Webhook autenticado da FACEIT como acelerador da sincronização, com reconciliação agendada como proteção contra eventos perdidos.
 - Classificação suíça baseada somente em partidas finalizadas na FACEIT; partidas canceladas não alteram campanhas ou resultados.
 - Publicação automática do snapshot em páginas integradas, atualmente na Copa ACE 10.
 - Publicação automática das equipes aprovadas na página da Copa ACE 10.
@@ -42,10 +43,9 @@ Na versão 1.2.0, a Navbar e a home destacam primeiro o campeonato com inscriç�
 
 Estas propostas estão em pull requests e ainda não fazem parte da versão atual:
 
-- [#19 — sincronização acionada por webhook da FACEIT](https://github.com/cespedesdan/ace-prod/pull/19): rascunho que mantém a reconciliação agendada como segurança; aguarda validação com um evento real da FACEIT e correção da auditoria Lighthouse.
 - [#11 — confirmação do líder do time pela FACEIT](https://github.com/cespedesdan/ace-prod/pull/11): fluxo OAuth que ainda precisa ser atualizado contra a `main`, ter os conflitos resolvidos e ser integrado à interface antes da reabertura das inscrições.
 
-Não configure webhooks ou credenciais OAuth em produção antes de essas propostas serem aprovadas e integradas.
+Não configure credenciais OAuth em produção antes de essa proposta ser aprovada e integrada. O webhook está implementado e possui testes isolados; a ativação exige configurar o segredo e a assinatura na FACEIT, conforme [DEPLOYMENT.md](DEPLOYMENT.md#configurar-os-webhooks-da-faceit), e confirmar uma entrega real.
 
 ## Rotas
 
@@ -63,6 +63,7 @@ Não configure webhooks ou credenciais OAuth em produção antes de essas propos
 | `/admin/inscricoes` | Aprovação e rejeição de inscrições |
 | `/admin/campeonatos` | Criação, pré-visualização, publicação e encerramento de edições |
 | `/admin/faceit` | Vínculo, sincronização e desvinculação de campeonatos FACEIT |
+| `/api/webhooks/faceit` | Callback autenticado para eventos da FACEIT |
 | `/admin/noticias` | Criação, edição e exclusão de notícias |
 | `/api/security/csp-report` | Coletor interno de relatórios da política de segurança |
 
@@ -84,7 +85,7 @@ O servidor de desenvolvimento escuta em todas as interfaces na porta `8001`:
 
 Em desenvolvimento, `TRUST_PROXY` deve permanecer `false`.
 
-Defina `FACEIT_API_KEY` no `.env.local` para habilitar a consulta de times. A chave é usada somente pelo servidor: não use prefixo `NEXT_PUBLIC_` e nunca a envie ao Git.
+Defina `FACEIT_API_KEY` no `.env.local` para habilitar a consulta de times. Para receber eventos, defina também `FACEIT_WEBHOOK_SECRET` com pelo menos 32 caracteres e configure o mesmo valor como cabeçalho `X-Faceit-Webhook-Secret` no App Studio da FACEIT. As chaves são usadas somente pelo servidor: não use prefixo `NEXT_PUBLIC_` e nunca as envie ao Git.
 
 As inscrições são abertas e encerradas em `/admin/campeonatos`; a mesma configuração controla a Navbar, o formulário e o campeonato associado a cada envio.
 
@@ -128,6 +129,7 @@ Os campeonatos criados no painel também ficam somente no banco do ambiente atua
 | `npm run check` | Executa lint, TypeScript e todos os testes locais |
 | `npm run test:security` | Testa rate limit e consultas parametrizadas em banco temporário |
 | `npm run test:faceit-sync` | Testa sincronização manual/automática, falhas e agendamento FACEIT |
+| `npm run test:faceit-webhook` | Testa autenticação, validação e acionamento seguro por webhook |
 | `npm run test:tournaments` | Verifica formatos e regras MD1/MD3 das páginas históricas |
 | `npm run test:tournament-management` | Verifica publicação, formatos, premiação e upload de logos dos campeonatos |
 | `npm run test:public-regressions` | Verifica troca de campeonato durante inscrição, renomeação sem duplicatas, destaque e sitemap em banco temporário |

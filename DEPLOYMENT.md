@@ -43,10 +43,11 @@ JWT_SECRET=CHAVE_ALEATORIA_COM_PELO_MENOS_32_CARACTERES
 ADMIN_EMAIL=EMAIL_PRIVADO_DO_ADMINISTRADOR
 ADMIN_PASSWORD=
 FACEIT_API_KEY=CHAVE_PRIVADA_DA_FACEIT
+FACEIT_WEBHOOK_SECRET=SEGREDO_ALEATORIO_COM_PELO_MENOS_32_CARACTERES
 TRUST_PROXY=true
 ```
 
-`TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. A chave FACEIT nunca deve usar o prefixo `NEXT_PUBLIC_`.
+Gere `FACEIT_WEBHOOK_SECRET` com `openssl rand -hex 32`. `TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. As chaves FACEIT nunca devem usar o prefixo `NEXT_PUBLIC_`.
 
 As inscrições são controladas em `/admin/campeonatos`. A API aceita inscrições apenas para o único campeonato publicado e marcado como **Inscrições abertas**.
 
@@ -132,7 +133,50 @@ journalctl -u ace-prod-faceit-sync.service -n 100 --no-pager
 
 A execução manual do serviço processa apenas campeonatos pendentes. Para solicitar uma atualização imediata de uma edição específica, preserve a opção **Sincronizar** em `/admin/faceit`.
 
-O painel administrativo mostra a última atualização do snapshot, a última sincronização automática, a última tentativa, a próxima execução e a última falha automática. Em uma falha da FACEIT, o site preserva o último snapshot válido e tenta novamente com espera progressiva.
+O painel administrativo mostra a última atualização do snapshot, a última sincronização automática, a última tentativa, a próxima execução, o último webhook aceito e a última falha automática. Em uma falha da FACEIT, o site preserva o último snapshot válido e tenta novamente com espera progressiva.
+
+### Configurar os webhooks da FACEIT
+
+O callback não é ativado apenas pela presença de `FACEIT_API_KEY`. Depois que a aplicação com `FACEIT_WEBHOOK_SECRET` estiver publicada, entre no App Studio da FACEIT e crie uma assinatura do tipo **Organizer** limitada ao organizador da Ace.
+
+Configure:
+
+```text
+Callback URL: https://aceprodutora.com.br/api/webhooks/faceit
+Header name: X-Faceit-Webhook-Secret
+Header value: o mesmo FACEIT_WEBHOOK_SECRET da producao
+```
+
+Assine somente estes eventos:
+
+```text
+match_object_created
+match_status_configuring
+match_status_ready
+match_status_finished
+match_status_aborted
+match_status_cancelled
+tournament_object_updated
+tournament_status_started
+tournament_status_finished
+tournament_status_cancelled
+```
+
+O endpoint valida o segredo (32–256 bytes), limita o corpo a 64 KiB e aceita até 120 requisições autenticadas por minuto. Repetições idênticas são agrupadas durante dez minutos. O evento apenas antecipa `nextAutoSyncAt`: não grava times, placares ou resultados e não consulta a FACEIT durante a resposta HTTP. Cada vínculo e estágio é atualizado independentemente pelo worker existente, que executa a cada minuto. A reconciliação de segurança ocorre em até 15 minutos, ou cinco minutos durante partidas; após o encerramento, continua a cada seis horas por 48 horas. Um evento identificado também pode solicitar uma atualização posterior dessa edição.
+
+O formato completo dos payloads não é especificado nessa documentação pública da FACEIT. Se um evento permitido não contém o identificador esperado, o receptor agenda a consulta oficial dos vínculos ativos (até 50), sem modificar o snapshot recebido e sem reabrir arquivos encerrados. Por isso, limite a assinatura ao organizador da Ace. Eventos identificados de campeonatos não vinculados e eventos não permitidos retornam `204`.
+
+Antes de considerar a integração ativa, confirme uma entrega real com HTTP `202`, confira **Último webhook** em `/admin/faceit` e a sincronização seguinte no journal do worker. O painel diferencia receptor configurado de segredo ausente, mas não consegue confirmar a assinatura externa. Respostas: `401` segredo incorreto; `503` segredo ausente/inválido; `400` JSON inválido; `413` corpo excessivo; `415` tipo incorreto; `429` limite excedido (respeite `Retry-After`); `500` falha persistente, que requer nova entrega. Não exponha o segredo nos logs ou URLs.
+
+Para gerar o segredo na EC2, sem trocar outros valores da configuração:
+
+```bash
+cd /srv/ace-prod
+openssl rand -hex 32
+nano .env.local
+```
+
+Adicione `FACEIT_WEBHOOK_SECRET=VALOR_GERADO` ao `.env.local` já usado pelos serviços, mantenha-o privado (`chmod 600 .env.local`) e reinicie `sudo systemctl restart ace-prod`. Use o mesmo valor no App Studio; ele não é a chave `FACEIT_API_KEY`. Confirme `systemctl is-active ace-prod-faceit-sync.timer`. Essa configuração externa não é feita automaticamente pelo deploy.
 
 ## 7. Ativar Caddy e HTTPS
 
@@ -158,6 +202,7 @@ curl -I https://www.aceprodutora.com.br
 
 - Prisma sem SQL bruto nas rotas de inscrição e administração.
 - Chave FACEIT utilizada somente no servidor.
+- Webhook FACEIT autenticado por segredo de cabeçalho; o payload funciona somente como sinal para o worker e nunca como fonte do snapshot.
 - Consultas públicas à FACEIT limitadas por IP em produção.
 - Elencos e campeonatos armazenados como snapshots, com sincronização automática e opção manual.
 - Falhas automáticas preservam o último snapshot válido e ficam visíveis somente no painel autenticado e no journal do serviço.

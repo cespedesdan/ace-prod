@@ -14,6 +14,7 @@ import { prisma } from '@/lib/prisma'
 import { privateJson } from '@/lib/private-response'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 import { tournamentPublicPath } from '@/lib/tournaments'
+import { isFaceitWebhookSecretValid } from '@/lib/faceit-webhook'
 
 export const runtime = 'nodejs'
 
@@ -45,6 +46,8 @@ function responseData(championship: {
   lastAutoSyncFailureAt: Date | null
   lastAutoSyncError: string | null
   consecutiveAutoSyncFailures: number
+  lastWebhookReceivedAt: Date | null
+  lastWebhookEvent: string | null
 }) {
   return {
     tournament: championship.tournament,
@@ -69,6 +72,9 @@ function responseData(championship: {
     lastAutoSyncFailureAt: championship.lastAutoSyncFailureAt,
     lastAutoSyncError: championship.lastAutoSyncError,
     consecutiveAutoSyncFailures: championship.consecutiveAutoSyncFailures,
+    lastWebhookReceivedAt: championship.lastWebhookReceivedAt,
+    lastWebhookEvent: championship.lastWebhookEvent,
+    webhookConfigured: isFaceitWebhookSecretValid(process.env.FACEIT_WEBHOOK_SECRET, process.env.FACEIT_WEBHOOK_SECRET),
   }
 }
 
