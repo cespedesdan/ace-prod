@@ -3,9 +3,10 @@ import {
   FACEIT_WEBHOOK_MAX_BODY_BYTES,
   isFaceitWebhookSecretValid,
   parseFaceitWebhookWakeSignal,
-  wakeFaceitChampionshipForWebhook,
+  wakeFaceitChampionshipsFromSignal,
 } from '@/lib/faceit-webhook'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
+import { consumeRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -29,18 +30,15 @@ export async function POST(request: NextRequest) {
   if (contentType !== 'application/json') return emptyResponse(415)
 
   try {
+    const limit = await consumeRateLimit({ scope: 'faceit-webhook', identifier: 'authenticated', limit: 120, windowMs: 60_000, blockMs: 60_000 })
+    if (!limit.allowed) return new NextResponse(null, {
+      status: 429,
+      headers: { ...RESPONSE_HEADERS, 'Retry-After': String(limit.retryAfterSeconds) },
+    })
     const payload = await readJsonWithLimit<unknown>(request, FACEIT_WEBHOOK_MAX_BODY_BYTES)
     const signal = parseFaceitWebhookWakeSignal(payload)
     if (!signal) return emptyResponse(204)
-    if (!signal.entityId) {
-      console.warn('FACEIT webhook ignored: no championship identifier', { event: signal.event })
-      return emptyResponse(204)
-    }
-
-    const wake = await wakeFaceitChampionshipForWebhook({
-      championshipId: signal.entityId,
-      event: signal.event,
-    })
+    const wake = await wakeFaceitChampionshipsFromSignal(signal, payload)
     return emptyResponse(wake.matched ? 202 : 204)
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) return emptyResponse(413)

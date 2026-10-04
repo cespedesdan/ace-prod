@@ -1,12 +1,20 @@
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { FaceitDoubleEliminationBracket } from '../src/components/FaceitDoubleEliminationBracket'
 import { copaAce8Teams } from '../src/data/copaAce8'
 import { copaAce7Teams } from '../src/data/copaAce7'
 import { hallOfFameEditions } from '../src/data/hallOfFame'
 import { tournamentArchives } from '../src/data/tournamentArchives'
 import { buildFaceitSwissStandings, type FaceitChampionshipSnapshot } from '../src/lib/faceit'
 import { buildSwissRounds } from '../src/components/CopaAce10Swiss'
+import { buildPlayoffRounds } from '../src/components/CopaAce10Faceit'
 import { organizeSchedule } from '../src/components/ScheduleList'
+import { Footer } from '../src/components/Footer'
+import { faceitBracketRounds, faceitDoubleElimination } from '../src/lib/faceit-public'
+import { buildDoubleEliminationBracket } from '../src/lib/double-elimination-bracket'
+import { tournamentStageLabel } from '../src/lib/tournaments'
 
 const copa9 = tournamentArchives['copa-ace-9']
 const copa8 = tournamentArchives['copa-ace-8']
@@ -67,6 +75,72 @@ const swissMatches = [{
     { faction: 'faction2', teamId: 'b', name: 'Bravo', avatarUrl: null },
   ],
 }] as FaceitChampionshipSnapshot['matches']
+const bracketRounds = faceitBracketRounds([{ ...swissMatches[0], round: 2 }, swissMatches[0]])
+assert.deepEqual(bracketRounds.map((round) => round.name), ['Rodada 1', 'Rodada 2'])
+assert.equal(bracketRounds[0].matches[0].scoreA, 1)
+assert.equal(bracketRounds[0].matches[0].teamA.name, 'Alpha')
+const upperMatch = { ...swissMatches[0], matchId: 'upper', group: 1, round: 2 }
+const lowerMatch = { ...swissMatches[0], matchId: 'lower', group: 2, round: 2, winner: 'faction2' }
+const finalMatch = { ...swissMatches[0], matchId: 'final', group: 3, winner: null, status: 'SCHEDULED', scores: {}, bestOf: 3 }
+const doubleLanes = faceitDoubleElimination([finalMatch, lowerMatch, upperMatch])
+assert.deepEqual(doubleLanes.map((lane) => [lane.title, lane.matches.map((match) => match.matchId)]), [
+  ['Chave superior', ['upper']], ['Chave inferior', ['lower']], ['Grande final', ['final']],
+])
+const pendingFinal = faceitDoubleElimination([upperMatch, { ...lowerMatch, winner: null }, finalMatch])
+assert.equal(pendingFinal[2].matches.length, 0)
+assert.equal(pendingFinal[3].matches[0].matchId, 'final')
+const finalInUpper = faceitDoubleElimination([upperMatch, lowerMatch, { ...finalMatch, group: 1, round: 3 }])
+assert.equal(finalInUpper[0].matches.length, 1)
+assert.equal(finalInUpper[2].matches[0].matchId, 'final')
+assert.equal(faceitDoubleElimination([]).length, 3)
+assert.equal(faceitDoubleElimination([{ ...upperMatch, round: 1 }, { ...lowerMatch, round: 1 }, finalMatch])[2].matches.length, 0)
+const connected = buildDoubleEliminationBracket([upperMatch, lowerMatch, finalMatch])
+assert.deepEqual(connected.columns.filter((column) => column.lane === 'upper').map((column) => column.nodes.length), [2, 1])
+assert.deepEqual(connected.columns.filter((column) => column.lane === 'lower').map((column) => column.nodes.length), [1, 1])
+assert.equal(connected.unplaced.length, 0)
+assert.equal(connected.edges.filter((edge) => !edge.pending && edge.outcome === 'winner' && edge.to.startsWith('final')).length, 2)
+assert.deepEqual(buildDoubleEliminationBracket([finalMatch, lowerMatch, upperMatch]), connected)
+const eightTeamOpening = Array.from({ length: 4 }, (_, index) => ({
+  ...swissMatches[0], matchId: `opening-${index}`, group: 1, round: 1,
+  teams: swissMatches[0].teams.map((team, faction) => ({ ...team, teamId: `team-${index * 2 + faction}` })),
+}))
+const eightTeamBracket = buildDoubleEliminationBracket(eightTeamOpening)
+// The standalone tsx runner uses classic JSX; Next compiles automatic JSX.
+Object.assign(globalThis, { React })
+const renderedDoubleBracket = renderToStaticMarkup(React.createElement(FaceitDoubleEliminationBracket, { matches: eightTeamOpening }))
+assert.match(renderedDoubleBracket, /Chave superior/)
+assert.match(renderedDoubleBracket, /Chave inferior/)
+assert.match(renderedDoubleBracket, /Grande final/)
+assert.match(renderedDoubleBracket, /repeat\(3, minmax\(260px, 1fr\)\)/)
+assert.match(renderedDoubleBracket, /repeat\(4, minmax\(260px, 1fr\)\)/)
+assert.equal((renderedDoubleBracket.match(/<article/g) || []).length, 14)
+assert.equal((renderedDoubleBracket.match(/role="region"/g) || []).length, 2)
+assert.doesNotMatch(renderedDoubleBracket, /double-bracket-board|<svg/)
+assert.equal(eightTeamBracket.size, 8)
+assert.deepEqual(eightTeamBracket.columns.filter((column) => column.lane === 'upper').map((column) => column.nodes.length), [4, 2, 1])
+assert.deepEqual(eightTeamBracket.columns.filter((column) => column.lane === 'lower').map((column) => column.nodes.length), [2, 2, 1, 1])
+assert.equal(eightTeamBracket.columns.at(-1)?.nodes[0].match, undefined)
+assert.equal(eightTeamBracket.unplaced.length, 0)
+const fourTeamMatches = [
+  ['u1a', 1, 1, 'a', 'b', 'faction1'], ['u1b', 1, 1, 'c', 'd', 'faction1'],
+  ['u2', 1, 2, 'a', 'c', 'faction1'], ['l1', 2, 1, 'b', 'd', 'faction1'],
+  ['l2', 2, 2, 'c', 'b', 'faction2'], ['gf', 3, 1, 'a', 'b', null],
+].map(([matchId, group, round, a, b, winner]) => ({
+  ...swissMatches[0], matchId: String(matchId), group: Number(group), round: Number(round), winner: winner as string | null,
+  status: winner ? 'FINISHED' : 'SCHEDULED', teams: [
+    { faction: 'faction1', teamId: String(a), name: String(a), avatarUrl: null },
+    { faction: 'faction2', teamId: String(b), name: String(b), avatarUrl: null },
+  ],
+}))
+const fourTeamConnected = buildDoubleEliminationBracket(fourTeamMatches)
+assert.equal(fourTeamConnected.unplaced.length, 0)
+assert.equal(fourTeamConnected.edges.filter((edge) => !edge.pending && edge.outcome === 'loser').length, 3)
+assert.equal(fourTeamConnected.edges.filter((edge) => !edge.pending && edge.outcome === 'winner').length, 5)
+assert.equal(fourTeamConnected.columns.at(-1)?.nodes[0].match?.matchId, 'gf')
+const reversedTeams = faceitBracketRounds([{ ...upperMatch, teams: [...upperMatch.teams].reverse() }])
+assert.equal(reversedTeams[0].matches[0].teamA.name, 'Alpha')
+assert.equal(reversedTeams[0].matches[0].scoreA, 1)
+assert.equal(tournamentStageLabel('DOUBLE_ELIMINATION', 'PLAYOFFS'), 'Chaveamento')
 const swissStandings = buildFaceitSwissStandings(swissTeams, swissMatches)
 assert.deepEqual(swissStandings.map(({ name, wins, losses, scoreBalance }) => ({ name, wins, losses, scoreBalance })), [
   { name: 'Alpha', wins: 1, losses: 0, scoreBalance: 1 },
@@ -84,13 +158,43 @@ assert.deepEqual(swissStage.rounds.map(({ groups }) => groups.map(({ record }) =
 assert.equal(swissStage.rounds[0].groups[0].matches.length, 1)
 assert.deepEqual(swissStage.campaigns.get('a'), { wins: 1, losses: 0 })
 
-const schedule = organizeSchedule([
-  { ...swissMatches[0], matchId: 'today', winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-22T19:00:00-03:00') },
-  { ...swissMatches[0], matchId: 'upcoming', winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-23T19:00:00-03:00') },
-  { ...swissMatches[0], matchId: 'finished', status: 'FINISHED', scheduledAt: Date.parse('2026-08-21T19:00:00-03:00') },
-], Date.parse('2026-08-22T12:00:00-03:00'))
-assert.deepEqual(schedule.today.map(({ matchId }) => matchId), ['today'])
-assert.deepEqual(schedule.upcoming.map(({ matchId }) => matchId), ['upcoming'])
-assert.deepEqual(schedule.finished.map(({ matchId }) => matchId), ['finished'])
+const playoffStage = buildPlayoffRounds([{ ...swissMatches[0], winner: null, status: 'SCHEDULED', scores: {}, bestOf: 3 }])
+assert.deepEqual(playoffStage.map((round) => round.name), ['Quartas de final', 'Semifinais', 'Grande final'])
+assert.deepEqual(playoffStage.map((round) => round.matches.length), [4, 2, 1])
+assert.deepEqual(playoffStage[0].matches[0].scoreA, null)
+assert.deepEqual(playoffStage[0].matches[0].scoreB, null)
+assert.equal(playoffStage[0].matches[0].bestOf, 3)
 
+const terminalMatches = [1, 2, 3].map((round) => ({ ...swissMatches[0], matchId: String(round), round }))
+const cancelledTerminalMatch = {
+  ...swissMatches[0], matchId: 'cancelled', round: 4, status: 'CANCELLED', scores: { faction1: 0, faction2: 0 },
+}
+const terminalMatchesWithCancellation = [...terminalMatches, cancelledTerminalMatch]
+const terminalStandings = buildFaceitSwissStandings(swissTeams, terminalMatchesWithCancellation)
+assert.deepEqual(terminalStandings.map(({ name, wins, losses }) => ({ name, wins, losses })), [
+  { name: 'Alpha', wins: 3, losses: 0 },
+  { name: 'Bravo', wins: 0, losses: 3 },
+])
+const terminalStage = buildSwissRounds(terminalMatchesWithCancellation, swissTeams)
+assert.deepEqual(terminalStage.campaigns.get('a'), { wins: 3, losses: 0 })
+assert.deepEqual(terminalStage.campaigns.get('b'), { wins: 0, losses: 3 })
+assert.equal(terminalStage.rounds.flatMap(({ groups }) => groups.flatMap(({ matches }) => matches)).some(({ matchId }) => matchId === 'cancelled'), false)
+
+const schedule = organizeSchedule([
+  { ...swissMatches[0], matchId: 'today-late', round: 1, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-22T21:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'today-early', round: 5, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-22T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'upcoming-late', round: 1, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-24T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'upcoming-early', round: 5, winner: null, status: 'SCHEDULED', scheduledAt: Date.parse('2026-08-23T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'finished-old', round: 1, status: 'FINISHED', scheduledAt: Date.parse('2026-08-20T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'finished-new', round: 5, status: 'FINISHED', scheduledAt: Date.parse('2026-08-21T19:00:00-03:00') },
+  { ...swissMatches[0], matchId: 'finished-undated', round: 1, status: 'FINISHED', scheduledAt: null },
+  { ...swissMatches[0], matchId: 'cancelled-undated', round: 1, status: 'CANCELLED', scheduledAt: null },
+], Date.parse('2026-08-22T12:00:00-03:00'))
+assert.deepEqual(schedule.today.map(({ matchId }) => matchId), ['today-early', 'today-late'])
+assert.deepEqual(schedule.upcoming.map(({ matchId }) => matchId), ['upcoming-early', 'upcoming-late'])
+assert.deepEqual(schedule.finished.map(({ matchId }) => matchId), ['finished-new', 'finished-old', 'finished-undated', 'cancelled-undated'])
+
+const footer = renderToStaticMarkup(React.createElement(Footer))
+assert.ok(footer.includes('<!--email_off--><a href="mailto:faleconosco@aceprodutora.com.br"'))
+assert.ok(footer.includes('<!--/email_off-->'))
 console.log('Tournament format checks passed.')

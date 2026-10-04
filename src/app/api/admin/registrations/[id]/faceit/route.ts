@@ -21,8 +21,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   }
 
   const { id } = await context.params
-  const registration = await prisma.registration.findFirst({
-    where: { id, tournament: 'Copa Ace 10' },
+  const registration = await prisma.registration.findUnique({
+    where: { id },
     select: {
       id: true,
       status: true,

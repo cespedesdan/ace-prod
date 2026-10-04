@@ -70,6 +70,14 @@ export default function AdminDashboard() {
           </div>
 
           <div className="brand-card p-6">
+            <h3 className="text-xl font-semibold text-white mb-4">Campeonatos</h3>
+            <p className="text-gray-400 mb-4">Crie novas edições, publique páginas e encerre torneios</p>
+            <Link href="/admin/campeonatos" className="brand-button-primary">
+              Gerenciar campeonatos
+            </Link>
+          </div>
+
+          <div className="brand-card p-6">
             <h3 className="text-xl font-semibold text-white mb-4">Campeonatos FACEIT</h3>
             <p className="text-gray-400 mb-4">Vincule cada edição e sincronize times, partidas, horários e chaveamento</p>
             <Link href="/admin/faceit" className="brand-button-primary">

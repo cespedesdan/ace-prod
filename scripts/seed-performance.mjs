@@ -187,6 +187,7 @@ async function seedChampionship() {
   const { matches, finalists } = fixtureMatches()
   const championship = {
     tournament,
+    stage: 'SWISS',
     championshipId: '00000000-0000-4000-8000-000000000999',
     faceitUrl: 'https://www.faceit.com/pt/championship/00000000-0000-4000-8000-000000000999/copa-ace-10',
     name: 'Copa ACE 10 — Benchmark',
@@ -214,7 +215,7 @@ async function seedChampionship() {
     syncedAt: now,
   }
   await prisma.faceitChampionship.upsert({
-    where: { tournament: championship.tournament },
+    where: { tournament_stage: { tournament: championship.tournament, stage: championship.stage } },
     update: championship,
     create: championship,
   })

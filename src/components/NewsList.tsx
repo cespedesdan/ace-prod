@@ -15,12 +15,12 @@ interface NewsListProps {
 
 export function NewsList({ news }: NewsListProps) {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       {news.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="brand-card px-6 py-12 text-center">
           <NewspaperIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-400 mb-2">Nenhuma notícia encontrada</h3>
-          <p className="text-gray-500">Não há notícias publicadas no momento.</p>
+          <h2 className="text-xl font-semibold text-gray-400 mb-2">Nenhuma notícia encontrada</h2>
+          <p className="text-gray-400">Novidades da ACE Produtora serão publicadas aqui.</p>
         </div>
       ) : (
         news.map((article) => (
@@ -43,10 +43,13 @@ export function NewsList({ news }: NewsListProps) {
             </div>
 
             {article.content.length > 200 ? (
-              <details className="group">
-                <summary className="cursor-pointer text-cyan-400 transition hover:text-cyan-300">Ler notícia completa</summary>
-                <p className="mt-4 whitespace-pre-line text-gray-300 leading-relaxed">{article.content}</p>
-              </details>
+              <>
+                <p className="mb-4 text-gray-300 leading-relaxed">{article.content.slice(0, 200).replace(/\s+\S*$/, '')}…</p>
+                <details className="group">
+                  <summary className="cursor-pointer text-cyan-400 transition hover:text-cyan-300">Ler notícia completa</summary>
+                  <p className="mt-4 whitespace-pre-line text-gray-300 leading-relaxed">{article.content}</p>
+                </details>
+              </>
             ) : (
               <p className="whitespace-pre-line text-gray-300 leading-relaxed">{article.content}</p>
             )}

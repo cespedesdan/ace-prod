@@ -43,9 +43,9 @@ function TeamLogo({ team, size = 34, deferred = false }: { team: ArchiveTeam; si
   )
 }
 
-function MatchCard({ match }: { match: ArchiveMatch }) {
-  const aWon = match.scoreA > match.scoreB
-  const bWon = match.scoreB > match.scoreA
+export function MatchCard({ match }: { match: ArchiveMatch }) {
+  const aWon = match.scoreA !== null && match.scoreB !== null && match.scoreA > match.scoreB
+  const bWon = match.scoreA !== null && match.scoreB !== null && match.scoreB > match.scoreA
   const card = (
     <article className="overflow-hidden border border-slate-300 bg-white shadow-sm">
       {(match.label || match.bestOf) && (
@@ -56,13 +56,13 @@ function MatchCard({ match }: { match: ArchiveMatch }) {
       )}
       <div className={`flex items-center gap-2 px-3 py-2.5 ${aWon ? 'bg-orange-50' : ''}`}>
         <TeamLogo team={match.teamA} size={25} deferred />
-        <span className={`min-w-0 flex-1 truncate text-sm ${aWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamA.name}</span>
-        <span className={`text-base font-black tabular-nums ${aWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreA}</span>
+        <span title={match.teamA.name} className={`min-w-0 flex-1 truncate text-sm ${aWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamA.name}</span>
+        <span className={`text-base font-black tabular-nums ${aWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreA ?? '—'}</span>
       </div>
       <div className={`flex items-center gap-2 border-t border-slate-100 px-3 py-2.5 ${bWon ? 'bg-orange-50' : ''}`}>
         <TeamLogo team={match.teamB} size={25} deferred />
-        <span className={`min-w-0 flex-1 truncate text-sm ${bWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamB.name}</span>
-        <span className={`text-base font-black tabular-nums ${bWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreB}</span>
+        <span title={match.teamB.name} className={`min-w-0 flex-1 truncate text-sm ${bWon ? 'font-black text-slate-950' : 'font-semibold text-slate-600'}`}>{match.teamB.name}</span>
+        <span className={`text-base font-black tabular-nums ${bWon ? 'text-orange-600' : 'text-slate-400'}`}>{match.scoreB ?? '—'}</span>
       </div>
     </article>
   )
@@ -74,7 +74,7 @@ function MatchCard({ match }: { match: ArchiveMatch }) {
 
 function TournamentShell({ data, tabs, children }: { data: TournamentArchive; tabs: Array<{ href: string; label: string }>; children: ReactNode }) {
   return (
-    <main className="tournament-page">
+    <div className="tournament-page">
       <section className="tournament-hero">
         <div className="tournament-container py-6">
           <IntentLink href="/hall-of-fame" className="mb-6 inline-flex items-center gap-1 text-sm font-bold text-slate-300 transition hover:text-white">
@@ -103,14 +103,14 @@ function TournamentShell({ data, tabs, children }: { data: TournamentArchive; ta
             </div>
           </div>
 
-          <nav className="tournament-tabs">
+          <nav className="tournament-tabs" aria-label={`Seções de ${data.title}`}>
             {tabs.map((tab, index) => <a key={tab.href} href={tab.href} className={`${index === 0 ? 'text-white ' : ''}hover:text-orange-400`}>{tab.label}</a>)}
           </nav>
         </div>
       </section>
 
       <div className="tournament-container space-y-8 py-8">{children}</div>
-    </main>
+    </div>
   )
 }
 
@@ -184,16 +184,16 @@ function ResultFooter({ data }: { data: TournamentArchive }) {
   )
 }
 
-function BracketLane({ title, eyebrow, subtitle, rounds, footer }: { title: string; eyebrow: string; subtitle: string; rounds: ArchiveRound[]; footer?: ReactNode }) {
-  const columns = rounds.length >= 4 ? 'min-w-[1240px] grid-cols-4' : rounds.length === 3 ? 'min-w-[920px] grid-cols-3' : 'min-w-[620px] grid-cols-2'
+export function BracketLane({ title, eyebrow, subtitle, rounds, footer }: { title: string; eyebrow: string; subtitle: string; rounds: ArchiveRound[]; footer?: ReactNode }) {
+  const minimumWidth = Math.max(420, rounds.length * 260 + (rounds.length - 1) * 40)
   return (
     <section className="deferred-render tournament-panel">
       <header className="tournament-panel-header flex flex-col justify-between gap-2 px-5 py-4 sm:flex-row sm:items-center">
         <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-400">{eyebrow}</p><h2 className="mt-1 text-xl font-black uppercase">{title}</h2></div>
         <span className="text-xs font-bold text-slate-400">{subtitle}</span>
       </header>
-      <div className="overflow-x-auto bg-slate-100 p-5 sm:p-7">
-        <div className={`grid gap-10 ${columns}`}>
+      <div className="overflow-x-auto bg-slate-100 p-5 sm:p-7" tabIndex={0} role="region" aria-label={`${title}, rodadas com rolagem horizontal`}>
+        <div className="grid gap-10" style={{ gridTemplateColumns: `repeat(${rounds.length}, minmax(260px, 1fr))`, minWidth: minimumWidth }}>
           {rounds.map((round, roundIndex) => (
             <div key={round.name} className="flex flex-col">
               <div className="mb-4 flex items-center gap-2"><span className="grid h-6 w-6 place-items-center bg-orange-500 text-xs font-black text-white">{roundIndex + 1}</span><h3 className="text-xs font-black uppercase tracking-[0.12em] text-slate-600">{round.name}</h3></div>
@@ -217,7 +217,7 @@ export function GroupRoundRobinTournamentPage({ data }: { data: GroupRoundRobinA
           {data.groups.map((group) => (
             <article key={group.name} className="tournament-panel">
               <header className="tournament-panel-header flex items-center justify-between px-4 py-3"><h3 className="font-black uppercase tracking-wide">{group.name}</h3><span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Classificação final</span></header>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`Classificação ${group.name}, tabela com rolagem horizontal`}>
                 <table className="w-full min-w-[520px] text-sm">
                   <thead className="border-b border-slate-200 bg-slate-100 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500"><tr><th className="w-12 px-3 py-2 text-center">#</th><th className="px-3 py-2 text-left">Equipe</th><th className="px-3 py-2 text-center">Campanha</th><th className="px-3 py-2 text-center">Vit.</th><th className="px-3 py-2 text-center">Saldo</th><th className="px-3 py-2 text-center">Rounds</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">
@@ -226,7 +226,7 @@ export function GroupRoundRobinTournamentPage({ data }: { data: GroupRoundRobinA
                         <td className="relative px-3 py-3 text-center font-black text-slate-500">{standing.qualified && <span className="absolute inset-y-0 left-0 w-1 bg-orange-500" />}{standing.position}</td>
                         <td className="px-3 py-3"><div className="flex items-center gap-3"><TeamLogo team={standing.team} size={30} deferred /><span className="font-bold text-slate-800">{standing.team.name}</span>{standing.qualified && <span className="ml-auto text-[9px] font-black uppercase text-orange-600">Classificado</span>}</div></td>
                         <td className="px-3 py-3 text-center font-bold tabular-nums text-slate-700">{standing.record}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.wins}</td>
-                        <td className={`px-3 py-3 text-center font-bold tabular-nums ${standing.roundDiff > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{standing.roundDiff > 0 ? '+' : ''}{standing.roundDiff}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.rounds ?? '—'}</td>
+                        <td className={`px-3 py-3 text-center font-bold tabular-nums ${standing.roundDiff > 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{standing.roundDiff > 0 ? '+' : ''}{standing.roundDiff}</td><td className="px-3 py-3 text-center tabular-nums text-slate-500">{standing.rounds ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -259,7 +259,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
               </header>
               <div className="space-y-5 bg-slate-100 p-4 sm:p-5">
                 <div>
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">Chave superior</p>
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">Chave superior</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {group.upperRounds.map((round) => (
                       <div key={round.name}>
@@ -270,7 +270,7 @@ export function GroupDoubleEliminationTournamentPage({ data }: { data: GroupDoub
                   </div>
                 </div>
                 <div className="border-t border-slate-300 pt-5">
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-rose-700">Chave inferior</p>
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-rose-300">Chave inferior</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {group.lowerRounds.map((round) => (
                       <div key={round.name}>

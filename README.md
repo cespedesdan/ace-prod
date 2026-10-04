@@ -1,10 +1,12 @@
-# Ace Produtora 1.1.0
+# Ace Produtora 1.2.0
 
 Site oficial da Ace Produtora e da Copa ACE 10, desenvolvido com Next.js 15, React 19, TypeScript, Tailwind CSS, Prisma e SQLite.
 
-**Versão atual: 1.1.0 — Integração FACEIT com snapshots.**
+**Versão atual: 1.2.0 — Gestão de campeonatos e inscrições por edição.**
 
 O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snapshot do elenco. Campeonatos vinculados mantêm snapshots de times, partidas, horários e resultados por sincronização automática, com atualização manual disponível no painel administrativo.
+
+Na versão 1.2.0, a Navbar e a home destacam primeiro o campeonato com inscrições abertas, depois um campeonato em progresso e, na ausência destes, o publicado mais recente. Fechar inscrições não remove o acesso ao torneio. A página `/inscreva-se` atende somente ao campeonato aberto; o formulário envia seu ID e o servidor confirma o vínculo novamente antes de gravar. O painel permite criar, copiar, editar, pré-visualizar, publicar, encerrar e reabrir edições sem alterar o código das páginas genéricas.
 
 ## Funcionalidades
 
@@ -14,32 +16,56 @@ O formulário consulta o time na FACEIT, preenche o nome oficial e salva um snap
 - Inscrição de equipes com PIX, logo e comprovante de pagamento privado.
 - Consulta do time na FACEIT, preenchimento automático do nome e snapshot do elenco.
 - Painel administrativo para notícias e aprovação de inscrições.
+- Gestão administrativa de campeonatos, logos, publicação, pré-visualização e ciclo de vida.
 - Sincronização manual do elenco FACEIT pelo painel administrativo.
 - Gerenciamento de campeonatos FACEIT com vínculos, snapshots e sincronização automática independente por edição.
 - Histórico da última sincronização automática e da última falha no painel administrativo.
 - Webhook autenticado da FACEIT como acelerador da sincronização, com reconciliação agendada como proteção contra eventos perdidos.
+- Classificação suíça baseada somente em partidas finalizadas na FACEIT; partidas canceladas não alteram campanhas ou resultados.
 - Publicação automática do snapshot em páginas integradas, atualmente na Copa ACE 10.
 - Publicação automática das equipes aprovadas na página da Copa ACE 10.
+- Carregamento público otimizado com imagens responsivas, CSS por rota, React Compiler, renderização adiada e cache com revalidação.
 - Autenticação administrativa com bcrypt e JWT em cookie `httpOnly`.
-- Rate limit persistente por e-mail e, atrás do proxy confiável, também por IP.
-- Validação de campos, arquivos, assinaturas binárias e caminhos de armazenamento.
+
+## Segurança e integridade
+
+- A auditoria bloqueia vulnerabilidades altas/críticas. Há uma [exceção temporária e específica para `braces` no lint](docs/excecao-auditoria-braces.md), autorizada até 02/11/2026 às 00:00 UTC; não abrange dependências de produção. Execute `npm run audit:security` para reproduzir a política do CI.
+
+- A API de inscrição aceita envios somente para o único campeonato publicado e marcado como “Inscrições abertas” no painel administrativo.
+- Inscrições ativas reservam separadamente o ID FACEIT e o nome normalizado da equipe; uma rejeição libera as duas reservas para um novo envio corrigido.
+- Renomear um campeonato atualiza as reservas de unicidade na mesma transação, sem alterar a ordem das inscrições.
+- Campos públicos possuem limites no servidor. Imagens são decodificadas, limitadas a 25 milhões de pixels e reprocessadas sem metadados ou conteúdo excedente antes do armazenamento; imagens animadas são rejeitadas.
+- Alterações administrativas exigem origem válida, usam sessão `__Host-` em produção e respostas privadas não podem ser armazenadas em cache.
+- Login administrativo possui limites persistentes por origem, combinação de e-mail/origem e conta. Inscrições são limitadas por e-mail e, quando o proxy é confiável, também por IP.
+- A Política de Segurança de Conteúdo opera em modo de relatório. O coletor aceita somente relatórios CSP limitados, higienizados e enviados pela mesma origem.
+
+## Funcionalidades em avaliação
+
+Estas propostas estão em pull requests e ainda não fazem parte da versão atual:
+
+- [#11 — confirmação do líder do time pela FACEIT](https://github.com/cespedesdan/ace-prod/pull/11): fluxo OAuth que ainda precisa ser atualizado contra a `main`, ter os conflitos resolvidos e ser integrado à interface antes da reabertura das inscrições.
+
+Não configure credenciais OAuth em produção antes de essa proposta ser aprovada e integrada. O webhook está implementado e possui testes isolados; a ativação exige configurar o segredo e a assinatura na FACEIT, conforme [DEPLOYMENT.md](DEPLOYMENT.md#configurar-os-webhooks-da-faceit), e confirmar uma entrega real.
 
 ## Rotas
 
 | Rota | Finalidade |
 | --- | --- |
-| `/` | Home e prévia da classificação |
+| `/` | Home, transmissão ativa e próximo campeonato |
 | `/copa-ace-10` | Página oficial da Copa ACE 10 |
+| `/campeonatos/[slug]` | Página pública das novas edições |
 | `/inscreva-se` | Formulário de inscrição |
-| `/schedule` | Agenda da primeira rodada |
+| `/schedule` | Agenda organizada por rodada e situação das partidas |
 | `/news` | Notícias publicadas |
 | `/hall-of-fame` | Histórico dos campeonatos |
 | `/admin/login` | Login administrativo |
 | `/admin` | Painel administrativo |
 | `/admin/inscricoes` | Aprovação e rejeição de inscrições |
+| `/admin/campeonatos` | Criação, pré-visualização, publicação e encerramento de edições |
 | `/admin/faceit` | Vínculo, sincronização e desvinculação de campeonatos FACEIT |
 | `/api/webhooks/faceit` | Callback autenticado para eventos da FACEIT |
 | `/admin/noticias` | Criação, edição e exclusão de notícias |
+| `/api/security/csp-report` | Coletor interno de relatórios da política de segurança |
 
 ## Desenvolvimento local
 
@@ -61,6 +87,10 @@ Em desenvolvimento, `TRUST_PROXY` deve permanecer `false`.
 
 Defina `FACEIT_API_KEY` no `.env.local` para habilitar a consulta de times. Para receber eventos, defina também `FACEIT_WEBHOOK_SECRET` com pelo menos 32 caracteres e configure o mesmo valor como cabeçalho `X-Faceit-Webhook-Secret` no App Studio da FACEIT. As chaves são usadas somente pelo servidor: não use prefixo `NEXT_PUBLIC_` e nunca as envie ao Git.
 
+As inscrições são abertas e encerradas em `/admin/campeonatos`; a mesma configuração controla a Navbar, o formulário e o campeonato associado a cada envio.
+
+Para publicar uma edição, informe descrição, logo, datas e limite de equipes. Campeonatos salvos sem publicação podem ser conferidos pelo botão **Visualizar prévia**, acessível somente durante uma sessão administrativa.
+
 ## Primeiro administrador
 
 Defina `ADMIN_EMAIL` no `.env.local`. Para criar o administrador ou redefinir sua senha no PowerShell:
@@ -79,23 +109,30 @@ O seed configura somente o administrador. Ele não cria times, partidas, notíci
 
 O banco e os uploads são privados e estão ignorados pelo Git. Os dois precisam entrar no plano de backup.
 
+Os campeonatos criados no painel também ficam somente no banco do ambiente atual. Um campeonato criado em desenvolvimento não é enviado ao Git nem criado automaticamente em produção; depois do deploy, cadastre ou ajuste a edição em `/admin/campeonatos` no ambiente de produção.
+
 ## Scripts
 
 | Comando | Ação |
 | --- | --- |
 | `npm run dev` | Desenvolvimento em `0.0.0.0:8001` |
 | `npm run build` | Build otimizado de produção |
+| `npm run analyze` | Gera o build com análise dos pacotes |
 | `npm run start` | Produção interna em `127.0.0.1:8001` |
+| `npm run perf:seed` | Prepara dados determinísticos quando `PERFORMANCE_FIXTURES=true` |
+| `npm run perf:audit` | Mede as rotas públicas com Lighthouse |
 | `npm run db:generate` | Gera o Prisma Client |
 | `npm run db:migrate` | Aplica migrations pendentes |
 | `npm run db:migrate:status` | Verifica o estado das migrations |
 | `npm run db:seed` | Cria ou atualiza somente o administrador |
 | `npm run lint` | Executa ESLint |
 | `npm run check` | Executa lint, TypeScript e todos os testes locais |
-| `npm run test:security` | Testa rate limit e consultas parametrizadas |
+| `npm run test:security` | Testa rate limit e consultas parametrizadas em banco temporário |
 | `npm run test:faceit-sync` | Testa sincronização manual/automática, falhas e agendamento FACEIT |
 | `npm run test:faceit-webhook` | Testa autenticação, validação e acionamento seguro por webhook |
 | `npm run test:tournaments` | Verifica formatos e regras MD1/MD3 das páginas históricas |
+| `npm run test:tournament-management` | Verifica publicação, formatos, premiação e upload de logos dos campeonatos |
+| `npm run test:public-regressions` | Verifica troca de campeonato durante inscrição, renomeação sem duplicatas, destaque e sitemap em banco temporário |
 | `npm run sync:faceit` | Sincroniza campeonatos FACEIT cuja atualização está pendente |
 
 ## Produção HTTPS
@@ -115,8 +152,16 @@ O repositório também inclui CI e deploy automático pela GitHub Actions, com b
 
 ```powershell
 npm run check
-npm audit
+npm run audit:security
 npm run build
 ```
 
 As consultas da aplicação usam Prisma e são parametrizadas. Não introduza `$queryRawUnsafe` ou `$executeRawUnsafe`.
+
+Os testes que gravam dados usam SQLite temporário em `.performance-reports/ace-check-*`, criado a partir das migrations e removido ao final. As respostas FACEIT dos testes são simuladas. Execute os comandos `npm run test:*`, não os arquivos TypeScript diretamente: os testes com escrita exigem o sinalizador de isolamento. O banco normal da aplicação permanece `prisma/dev.db`; a substituição de conexão é exclusiva desse ambiente de teste.
+
+As correções e pendências da revisão pública estão em [auditoria pública e de arquitetura](docs/auditoria-publica-arquitetura-2026-10-03.md). O contato do rodapé inclui os marcadores HTML `email_off` documentados pelo Cloudflare, para evitar alterações no HTML antes da hidratação do React; a confirmação na borda depende de nova publicação.
+
+Os testes que gravam dados usam SQLite temporário em `.performance-reports/ace-check-*`, criado a partir das migrations e removido ao final. As respostas FACEIT dos testes são simuladas. Execute os comandos `npm run test:*`, não os arquivos TypeScript diretamente: os testes com escrita exigem o sinalizador de isolamento. O banco normal da aplicação permanece `prisma/dev.db`; a substituição de conexão é exclusiva desse ambiente de teste.
+
+As correções e pendências da revisão pública estão em [auditoria pública e de arquitetura](docs/auditoria-publica-arquitetura-2026-10-03.md). O contato do rodapé inclui os marcadores HTML `email_off` documentados pelo Cloudflare, para evitar alterações no HTML antes da hidratação do React; a confirmação na borda depende de nova publicação.

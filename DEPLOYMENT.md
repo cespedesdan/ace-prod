@@ -1,4 +1,4 @@
-# Publicação da Ace Produtora 1.1.0
+# Publicação da Ace Produtora 1.2.0
 
 Guia da produção atual em uma instância AWS EC2 com Ubuntu, Caddy, Next.js e SQLite. Os domínios usados são `aceprodutora.com.br` e `www.aceprodutora.com.br`.
 
@@ -45,12 +45,11 @@ ADMIN_PASSWORD=
 FACEIT_API_KEY=CHAVE_PRIVADA_DA_FACEIT
 FACEIT_WEBHOOK_SECRET=SEGREDO_ALEATORIO_COM_PELO_MENOS_32_CARACTERES
 TRUST_PROXY=true
-REGISTRATIONS_OPEN=false
 ```
 
 Gere `FACEIT_WEBHOOK_SECRET` com `openssl rand -hex 32`. `TRUST_PROXY=true` é seguro nesta arquitetura porque o Next.js escuta apenas em `127.0.0.1` e o Caddy normaliza os cabeçalhos de IP. As chaves FACEIT nunca devem usar o prefixo `NEXT_PUBLIC_`.
 
-`REGISTRATIONS_OPEN` controla a aceitação no servidor. Mantenha `false` fora da janela de inscrições e reinicie o serviço depois de alterar o valor. Ocultar o formulário no frontend não substitui este bloqueio.
+As inscrições são controladas em `/admin/campeonatos`. A API aceita inscrições apenas para o único campeonato publicado e marcado como **Inscrições abertas**.
 
 ## 2. Instalar e preparar o banco
 
@@ -84,15 +83,27 @@ unset ADMIN_PASSWORD
 
 O seed cria ou atualiza somente o administrador. A senha é armazenada como hash bcrypt com custo 12 e não deve permanecer no `.env.local`.
 
-## 4. Validar e construir
+## 4. Configurar os campeonatos deste ambiente
+
+Os registros criados no painel ficam no SQLite e não acompanham o código pelo Git. Depois de uma instalação nova ou de um deploy que introduza a gestão de campeonatos:
+
+1. Acesse `/admin/campeonatos` em produção.
+2. Crie ou edite a edição com nome, endereço público, descrição, logo, formato, datas e limite de equipes.
+3. Salve sem publicar e use **Visualizar prévia** para conferir a página autenticada.
+4. Marque **Publicar página** quando os dados estiverem corretos.
+5. Selecione **Inscrições abertas** somente na edição que receberá inscrições.
+
+Somente um campeonato publicado pode receber inscrições por vez. A edição ativa passa a controlar a Navbar, a home, `/inscreva-se` e o vínculo das novas inscrições. O deploy automático preserva o banco de produção, mas não copia campeonatos cadastrados no banco de desenvolvimento.
+
+## 5. Validar e construir
 
 ```bash
 npm run check
-npm audit
+npm run audit:security
 npm run build
 ```
 
-## 5. Instalar os serviços
+## 6. Instalar os serviços
 
 Os arquivos em `deploy/` assumem o usuário `ubuntu` e o projeto em `/srv/ace-prod`. O serviço principal executa o Next.js. O timer acorda o worker FACEIT a cada minuto; o worker consulta somente campeonatos cuja próxima sincronização está pendente.
 
@@ -151,11 +162,23 @@ tournament_status_finished
 tournament_status_cancelled
 ```
 
-O endpoint valida o segredo e o identificador do campeonato, limita o corpo da requisição e usa o evento somente para antecipar `nextAutoSyncAt`. Ele não grava times, placares ou resultados recebidos no webhook e não consulta a FACEIT durante a resposta HTTP. O worker continua buscando o snapshot oficial com a API e a reconciliação diária cobre eventos perdidos.
+O endpoint valida o segredo (32–256 bytes), limita o corpo a 64 KiB e aceita até 120 requisições autenticadas por minuto. Repetições idênticas são agrupadas durante dez minutos. O evento apenas antecipa `nextAutoSyncAt`: não grava times, placares ou resultados e não consulta a FACEIT durante a resposta HTTP. Cada vínculo e estágio é atualizado independentemente pelo worker existente, que executa a cada minuto. A reconciliação de segurança ocorre em até 15 minutos, ou cinco minutos durante partidas; após o encerramento, continua a cada seis horas por 48 horas. Um evento identificado também pode solicitar uma atualização posterior dessa edição.
 
-O formato completo dos payloads não é documentado pela FACEIT. Antes de considerar a integração ativa, capture e preserve como fixture um evento de teste redigido, confirme uma resposta HTTP `202`, confira **Último webhook** em `/admin/faceit` e verifique a sincronização seguinte no journal do worker. Uma resposta `204` com `FACEIT webhook ignored` no journal indica que o identificador não pôde ser relacionado com segurança. Nesse caso, desative a assinatura; se apenas eventos de torneio forem incompatíveis, mantenha somente os eventos de partida depois de validar um payload real.
+O formato completo dos payloads não é especificado nessa documentação pública da FACEIT. Se um evento permitido não contém o identificador esperado, o receptor agenda a consulta oficial dos vínculos ativos (até 50), sem modificar o snapshot recebido e sem reabrir arquivos encerrados. Por isso, limite a assinatura ao organizador da Ace. Eventos identificados de campeonatos não vinculados e eventos não permitidos retornam `204`.
 
-## 6. Ativar Caddy e HTTPS
+Antes de considerar a integração ativa, confirme uma entrega real com HTTP `202`, confira **Último webhook** em `/admin/faceit` e a sincronização seguinte no journal do worker. O painel diferencia receptor configurado de segredo ausente, mas não consegue confirmar a assinatura externa. Respostas: `401` segredo incorreto; `503` segredo ausente/inválido; `400` JSON inválido; `413` corpo excessivo; `415` tipo incorreto; `429` limite excedido (respeite `Retry-After`); `500` falha persistente, que requer nova entrega. Não exponha o segredo nos logs ou URLs.
+
+Para gerar o segredo na EC2, sem trocar outros valores da configuração:
+
+```bash
+cd /srv/ace-prod
+openssl rand -hex 32
+nano .env
+```
+
+Adicione `FACEIT_WEBHOOK_SECRET=VALOR_GERADO` ao arquivo já usado pelo serviço (normalmente `.env`), mantenha-o privado e reinicie `sudo systemctl restart ace-prod`. Use o mesmo valor no App Studio; ele não é a chave `FACEIT_API_KEY`. Confirme `systemctl is-active ace-prod-faceit-sync.timer`. Essa configuração externa não é feita automaticamente pelo deploy.
+
+## 7. Ativar Caddy e HTTPS
 
 ```bash
 sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
@@ -213,7 +236,7 @@ npm ci
 npm run db:generate
 npm run db:migrate
 npm run check
-npm audit
+npm run audit:security
 npm run build
 sudo systemctl start ace-prod
 sudo systemctl start ace-prod-faceit-sync.service
@@ -226,13 +249,26 @@ O Caddy pode permanecer ativo durante a atualização e poderá responder `502` 
 
 ## Deploy automático com GitHub Actions
 
-O workflow `.github/workflows/ci-deploy.yml` executa as validações em todo pull request para `main`. Depois do merge, ele publica o commit exato na EC2. Antes de alterar o código, `scripts/deploy-production.sh` para o serviço e copia o banco e os uploads para:
+O workflow `.github/workflows/ci-deploy.yml` executa as validações em todo pull request para `main`. Depois do merge, ele publica o commit exato na EC2. Antes de parar os serviços, `scripts/deploy-production.sh` confere o espaço livre em `/`, na aplicação e no destino do backup. O deploy exige ao menos 1 GiB livre em `/` e na aplicação, além de espaço para duas cópias do banco e uploads e 512 MiB de margem no volume de backup. Depois de copiar o banco e os uploads, valida checksums, executa `PRAGMA integrity_check` e ensaia a cópia de restauração antes de atualizar o código. O backup fica em:
 
 ```text
-/home/ubuntu/backups/ace-prod/AAAAMMDDTHHMMSSZ-COMMIT/
+/srv/backups/ace-prod/AAAAMMDDTHHMMSSZ-COMMIT/
 ```
 
 Se migration, instalação, build, teste de saúde ou instalação do timer falhar, o script restaura o commit, os dados e as unidades systemd anteriores automaticamente.
+
+Cada backup contém `manifest.txt`, `CHECKSUMS.sha256`, `dev.db`, o WAL quando existir, os comprovantes/logos e as unidades systemd. O `dev.db-shm` é um índice temporário reconstruído pelo SQLite: não é copiado da produção nem incluído nos checksums, pois a verificação de integridade pode recriá-lo ou modificá-lo. Para inspecionar um backup sem mexer na produção:
+
+```bash
+cd /srv/backups/ace-prod/AAAAMMDDTHHMMSSZ-COMMIT
+sha256sum --check CHECKSUMS.sha256
+node --disable-warning=ExperimentalWarning -e 'const {DatabaseSync}=require("node:sqlite"); const db=new DatabaseSync("dev.db",{readOnly:true}); console.log(db.prepare("PRAGMA integrity_check").get()); db.close()'
+cat manifest.txt
+```
+
+O script faz esse ensaio antes de cada atualização. Se a implantação passar pelo teste de saúde e depois surgir um problema, preserve o log e o diretório do backup; a restauração manual deve reverter juntos o commit, o banco e `registrations/` para manter o esquema e os dados na mesma versão.
+
+Para validar as proteções em desenvolvimento, sem acessar o servidor, execute `node --disable-warning=ExperimentalWarning scripts/check-deploy-backup.mjs` (Node 24 e Bash; no Windows, utiliza o Bash do Git). O teste usa um banco temporário isolado, incluindo WAL, validação repetida, arquivo corrompido e recusa por falta de espaço. Não executa deploy nem operações systemd.
 
 ### 1. Criar uma chave exclusiva para o deploy
 
@@ -324,6 +360,12 @@ Em **Settings > Rules > Rulesets**, proteja a `main`: exija pull request, o stat
 3. Faça o merge.
 4. A atualização da `main` inicia **Publicar na AWS**.
 5. Acompanhe em **Actions > CI e deploy**.
+
+Antes de reexecutar um deploy que falhou por falta de espaço, confira as partições da aplicação e do sistema:
+
+```bash
+df -h / /srv
+```
 
 Também é possível iniciar manualmente em **Actions > CI e deploy > Run workflow**, escolhendo `main`.
 

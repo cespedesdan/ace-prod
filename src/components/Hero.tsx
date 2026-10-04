@@ -2,7 +2,9 @@ import { ArrowRight, CalendarDays } from 'lucide-react'
 import { IntentLink } from './IntentLink'
 import { Logo } from './Logo'
 
-export function Hero() {
+type HeroTournament = { name: string; href: string; clutch: boolean }
+
+export function Hero({ tournament }: { tournament: HeroTournament | null }) {
   return (
     <section className="brand-gradient brand-grid relative overflow-hidden border-b border-copa-cyan/30">
       <div className="absolute -right-24 -top-40 h-96 w-96 rotate-45 border-[72px] border-white/5" />
@@ -16,9 +18,9 @@ export function Hero() {
             Campeonatos de Counter-Strike 2 com produção profissional, experiência acessível e a energia da comunidade.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <IntentLink href="/copa-ace-10" className="brand-button-primary">
-              Conhecer a Copa Ace 10 <ArrowRight size={17} />
-            </IntentLink>
+            {tournament && <IntentLink href={tournament.href} className={`brand-button-primary ${tournament.clutch ? 'clutch-button' : ''}`}>
+              Conhecer {tournament.name} <ArrowRight size={17} />
+            </IntentLink>}
             <IntentLink href="/schedule" className="brand-button-secondary border-white/45 bg-white/5 text-white hover:border-white hover:bg-white/10">
               <CalendarDays size={17} /> Ver agenda
             </IntentLink>

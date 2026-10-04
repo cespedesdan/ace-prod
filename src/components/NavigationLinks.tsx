@@ -4,14 +4,7 @@ import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
-const navigation: Array<{ name: string; href: string; edition?: boolean; highlight?: boolean }> = [
-  { name: 'Home', href: '/' },
-  { name: 'Copa Ace 10', href: '/copa-ace-10', edition: true },
-  { name: 'Agenda', href: '/schedule' },
-  { name: 'Notícias', href: '/news' },
-  { name: 'Hall da Fama', href: '/hall-of-fame' },
-  //{ name: 'Inscreva-se', href: '/inscreva-se', highlight: true },
-]
+type NavigationItem = { name: string; href: string; edition?: boolean; clutch?: boolean; highlight?: boolean }
 
 const intentSelector = 'a[data-intent-prefetch][href]'
 
@@ -19,23 +12,36 @@ function isCurrentRoute(pathname: string, href: string) {
   return pathname === href || (href === '/hall-of-fame' && pathname.startsWith('/hall-of-fame/'))
 }
 
-function navigationClass(item: (typeof navigation)[number], mobile = false) {
+function navigationClass(item: NavigationItem, mobile = false) {
   const base = mobile
     ? 'block rounded-md px-3 py-2.5 text-sm font-semibold transition-colors'
     : 'px-3 py-2 rounded-md text-sm font-medium transition-colors'
   const variant = item.edition
     ? 'copa10-nav-button'
+    : item.clutch && item.highlight
+      ? 'clutch-button'
+    : item.clutch
+      ? 'clutch-nav-link'
     : item.highlight
       ? mobile ? 'bg-copa-cyan text-smoke' : 'bg-copa-cyan text-smoke hover:bg-cyan-300'
       : 'text-gray-300 hover:bg-copa-cyan/5 hover:text-copa-cyan'
-  const slug = item.href === '/' ? 'home' : item.href.slice(1)
+  const slug = item.href === '/' ? 'home' : item.href.slice(1).replace(/[^a-z0-9]+/gi, '-')
   return `${base} nav-link nav-link-${slug} ${variant}`
 }
 
-export function NavigationLinks() {
+export function NavigationLinks({ featuredTournament }: { featuredTournament: (NavigationItem & { registrationOpen: boolean }) | null }) {
   const pathname = usePathname()
   const router = useRouter()
   const mobileMenu = useRef<HTMLDetailsElement>(null)
+  const tournament = featuredTournament
+  const navigation: NavigationItem[] = [
+    { name: 'Home', href: '/' },
+    ...(tournament ? [tournament] : []),
+    { name: 'Agenda', href: '/schedule' },
+    { name: 'Notícias', href: '/news' },
+    { name: 'Hall da Fama', href: '/hall-of-fame' },
+    ...(tournament?.registrationOpen ? [{ name: 'Inscreva-se', href: '/inscreva-se', clutch: tournament.clutch, highlight: true }] : []),
+  ]
 
   useEffect(() => {
     mobileMenu.current?.removeAttribute('open')
@@ -101,7 +107,7 @@ export function NavigationLinks() {
       </div>
 
       <details ref={mobileMenu} className="mobile-navigation">
-        <summary className="cursor-pointer list-none text-gray-300 hover:text-copa-cyan focus:outline-none">
+        <summary className="grid h-11 w-11 cursor-pointer list-none place-items-center text-gray-300 hover:text-copa-cyan">
           <span className="sr-only">Abrir menu principal</span>
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

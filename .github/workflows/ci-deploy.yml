@@ -41,8 +41,11 @@ jobs:
       - name: Validar codigo
         run: npm run check
 
+      - name: Validar protecoes de backup
+        run: node --disable-warning=ExperimentalWarning scripts/check-deploy-backup.mjs
+
       - name: Auditar dependencias
-        run: npm audit --audit-level=high
+        run: npm run audit:security
 
       - name: Gerar build
         run: npm run build

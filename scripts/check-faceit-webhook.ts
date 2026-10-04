@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server'
 import { POST as receiveFaceitWebhook } from '../src/app/api/webhooks/faceit/route'
 import {
   FACEIT_AUTO_SYNC_FINAL_RECONCILIATION_MS,
+  FACEIT_AUTO_SYNC_TERMINAL_WINDOW_MS,
   FACEIT_AUTO_SYNC_IMMINENT_AFTER_MS,
   FACEIT_AUTO_SYNC_LIVE_INTERVAL_MS,
   FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS,
@@ -18,6 +19,9 @@ import {
   wakeFaceitChampionshipForWebhook,
 } from '../src/lib/faceit-webhook'
 import { prisma } from '../src/lib/prisma'
+import { resetRateLimit } from '../src/lib/rate-limit'
+
+assert.equal(process.env.ACE_ISOLATED_TESTS, 'true', 'Use npm run test:faceit-webhook para testar em banco temporário.')
 
 const testRun = randomUUID()
 const tournamentPrefix = `Faceit webhook check ${testRun}`
@@ -195,6 +199,8 @@ async function createChampionship({
 
 async function checkWakeUpIsSafeAndIdempotent() {
   const enabled = await createChampionship({ suffix: 'enabled' })
+  const playoffs = await createChampionship({ suffix: 'playoffs' })
+  await prisma.faceitChampionship.update({ where: { id: playoffs.id }, data: { tournament: enabled.tournament, stage: 'PLAYOFFS' } })
   const earlierDue = new Date(now.getTime() - minute)
   const earlier = await createChampionship({
     suffix: 'earlier',
@@ -244,6 +250,9 @@ async function checkWakeUpIsSafeAndIdempotent() {
   assertTime(afterReorderedReceipts.lastWebhookReceivedAt, newerReceiptAt)
   assert.equal(afterReorderedReceipts.lastWebhookEvent, 'match_status_finished')
   assert.equal(afterReorderedReceipts.webhookGeneration, 4)
+  const untouchedPlayoffs = await prisma.faceitChampionship.findUniqueOrThrow({ where: { id: playoffs.id } })
+  assert.equal(untouchedPlayoffs.webhookGeneration, 0)
+  assertTime(untouchedPlayoffs.nextAutoSyncAt, playoffs.nextAutoSyncAt as Date)
 
   await wakeFaceitChampionshipForWebhook({
     championshipId: earlier.championshipId,
@@ -275,7 +284,7 @@ async function checkWakeUpIsSafeAndIdempotent() {
     now,
   })
   const terminalAfter = await prisma.faceitChampionship.findUniqueOrThrow({ where: { id: terminal.id } })
-  assert.equal(terminalAfter.nextAutoSyncAt, null)
+  assertTime(terminalAfter.nextAutoSyncAt, now)
   assertTime(terminalAfter.lastWebhookReceivedAt, now)
   assert.equal(terminalAfter.lastWebhookEvent, 'tournament_status_finished')
   assert.equal(terminalAfter.webhookGeneration, 1)
@@ -352,7 +361,8 @@ async function checkWebhookRoute() {
       where: { id: linked.id },
     })
     assert.ok(linkedAfter.nextAutoSyncAt)
-    assert.ok(linkedAfter.nextAutoSyncAt.getTime() >= acceptedAfter)
+    assert.equal(linkedAfter.nextAutoSyncAt.getTime(), Math.min((linkedBefore.nextAutoSyncAt as Date).getTime(), linkedAfter.lastWebhookReceivedAt!.getTime()))
+    assert.ok(linkedAfter.lastWebhookReceivedAt!.getTime() >= acceptedAfter)
     assert.ok(linkedAfter.nextAutoSyncAt.getTime() <= acceptedBefore)
     assert.equal(linkedAfter.name, linkedBefore.name)
     assert.equal(linkedAfter.status, linkedBefore.status)
@@ -362,6 +372,9 @@ async function checkWebhookRoute() {
     assertTime(linkedAfter.syncedAt, linkedBefore.syncedAt)
     assert.ok(linkedAfter.lastWebhookReceivedAt)
     assert.equal(linkedAfter.lastWebhookEvent, 'match_status_ready')
+    assert.equal((await receiveFaceitWebhook(webhookRequest(event))).status, 202)
+    const duplicate = await prisma.faceitChampionship.findUniqueOrThrow({ where: { id: linked.id } })
+    assert.equal(duplicate.webhookGeneration, linkedAfter.webhookGeneration)
 
     const unrelatedAfter = await prisma.faceitChampionship.findUniqueOrThrow({
       where: { id: unrelated.id },
@@ -382,8 +395,29 @@ async function checkWebhookRoute() {
 
     assert.equal((await receiveFaceitWebhook(webhookRequest(eventFor(terminal.championshipId)))).status, 202)
     const terminalAfter = await prisma.faceitChampionship.findUniqueOrThrow({ where: { id: terminal.id } })
-    assert.equal(terminalAfter.nextAutoSyncAt, null)
+    assert.ok(terminalAfter.nextAutoSyncAt)
     assert.ok(terminalAfter.lastWebhookReceivedAt)
+
+    const fallbackEvent = JSON.stringify({ event: 'match_status_finished', payload: { id: randomUUID() } })
+    assert.equal((await receiveFaceitWebhook(webhookRequest(fallbackEvent))).status, 202)
+    const fallback = await prisma.faceitChampionship.findUniqueOrThrow({ where: { id: unrelated.id } })
+    assert.ok(fallback.lastWebhookReceivedAt)
+    assert.equal(fallback.matchesJson, unrelatedBefore.matchesJson)
+    assert.equal(fallback.status, unrelatedBefore.status)
+    const terminalBeforeFallback = await prisma.faceitChampionship.findUniqueOrThrow({ where: { id: terminal.id } })
+    assert.equal((await receiveFaceitWebhook(webhookRequest(fallbackEvent))).status, 202)
+    const terminalAfterFallback = await prisma.faceitChampionship.findUniqueOrThrow({ where: { id: terminal.id } })
+    assert.equal(terminalAfterFallback.webhookGeneration, terminalBeforeFallback.webhookGeneration)
+    const disabledAfterFallback = await prisma.faceitChampionship.findUniqueOrThrow({ where: { id: disabled.id } })
+    assert.equal(disabledAfterFallback.webhookGeneration, disabledAfter.webhookGeneration)
+
+    await resetRateLimit('faceit-webhook', 'authenticated')
+    for (let index = 0; index < 120; index += 1) {
+      assert.equal((await receiveFaceitWebhook(webhookRequest('{}'))).status, 204)
+    }
+    const limited = await receiveFaceitWebhook(webhookRequest(event))
+    assert.equal(limited.status, 429)
+    assert.ok(Number(limited.headers.get('retry-after')) > 0)
   } finally {
     global.fetch = originalFetch
     if (originalSecret === undefined) delete process.env.FACEIT_WEBHOOK_SECRET
@@ -397,21 +431,21 @@ function checkAdaptiveSchedule() {
     matches: [],
   })
   assertTime(watchdog.nextAutoSyncAt, now.getTime() + FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS)
-  assert.equal(FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS, day)
+  assert.equal(FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS, 15 * minute)
 
   const distantStart = now.getTime() + 10 * day
   const distant = automaticSyncSchedule('scheduled', now, null, {
     startsAt: distantStart,
     matches: [],
   })
-  assertTime(distant.nextAutoSyncAt, now.getTime() + day)
+  assertTime(distant.nextAutoSyncAt, now.getTime() + FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS)
 
   const tournamentStart = now.getTime() + 8 * hour
   const beforeTournament = automaticSyncSchedule('scheduled', now, null, {
     startsAt: tournamentStart,
     matches: [],
   })
-  assertTime(beforeTournament.nextAutoSyncAt, tournamentStart - FACEIT_AUTO_SYNC_WAKE_AHEAD_MS)
+  assertTime(beforeTournament.nextAutoSyncAt, now.getTime() + FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS)
   assert.equal(FACEIT_AUTO_SYNC_WAKE_AHEAD_MS, 30 * minute)
 
   const matchStart = now.getTime() + 4 * hour
@@ -419,7 +453,7 @@ function checkAdaptiveSchedule() {
     startsAt: now.getTime() - day,
     matches: matches({ status: 'scheduled', scheduledAt: matchStart }),
   })
-  assertTime(beforeMatch.nextAutoSyncAt, matchStart - FACEIT_AUTO_SYNC_WAKE_AHEAD_MS)
+  assertTime(beforeMatch.nextAutoSyncAt, now.getTime() + FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS)
 
   const live = automaticSyncSchedule('ongoing', now, null, {
     startsAt: now.getTime() - day,
@@ -462,11 +496,11 @@ function checkAdaptiveSchedule() {
   })
   assertTime(firstTerminal.nextAutoSyncAt, now.getTime() + FACEIT_AUTO_SYNC_FINAL_RECONCILIATION_MS)
   assertTime(firstTerminal.terminalStatusObservedAt, now)
-  assert.equal(FACEIT_AUTO_SYNC_FINAL_RECONCILIATION_MS, hour)
+  assert.equal(FACEIT_AUTO_SYNC_FINAL_RECONCILIATION_MS, 6 * hour)
 
   const reconciled = automaticSyncSchedule(
     'finished',
-    new Date(now.getTime() + FACEIT_AUTO_SYNC_FINAL_RECONCILIATION_MS),
+    new Date(now.getTime() + FACEIT_AUTO_SYNC_TERMINAL_WINDOW_MS),
     now,
     { startsAt: null, matches: [] }
   )

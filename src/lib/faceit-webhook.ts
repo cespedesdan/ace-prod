@@ -58,17 +58,15 @@ export function parseFaceitWebhookWakeSignal(value: unknown) {
   return { event, entityId }
 }
 
-function isTerminalStatus(status: string | null) {
-  return TERMINAL_STATUSES.has(status?.trim().toLowerCase() || '')
-}
-
 export async function wakeFaceitChampionshipForWebhook({
   championshipId: id,
   event,
+  digest,
   now = new Date(),
 }: {
   championshipId: string
   event?: string
+  digest?: string
   now?: Date
 }) {
   if (!CHAMPIONSHIP_ID_PATTERN.test(id)) return { matched: false, queued: false }
@@ -79,7 +77,12 @@ export async function wakeFaceitChampionshipForWebhook({
     })
     if (!current) return { matched: false, queued: false }
 
-    const queued = current.autoSyncEnabled && !isTerminalStatus(current.status)
+    // Coalesce retransmissions, but allow a fresh signal after ten minutes.
+    if (digest && current.lastWebhookDigest === digest && current.lastWebhookReceivedAt
+      && now.getTime() - current.lastWebhookReceivedAt.getTime() < 10 * 60 * 1000) {
+      return { matched: true, queued: false }
+    }
+    const queued = current.autoSyncEnabled
     const nextAutoSyncAt = queued
       ? current.nextAutoSyncAt && current.nextAutoSyncAt < now
         ? current.nextAutoSyncAt
@@ -99,10 +102,32 @@ export async function wakeFaceitChampionshipForWebhook({
         webhookGeneration: { increment: 1 },
         lastWebhookReceivedAt: preserveNewerReceipt ? current.lastWebhookReceivedAt : now,
         ...(!preserveNewerReceipt && event ? { lastWebhookEvent: event } : {}),
+        ...(!preserveNewerReceipt && digest ? { lastWebhookDigest: digest } : {}),
       },
     })
     if (updated.count) return { matched: true, queued }
   }
 
   throw new Error('Could not record FACEIT webhook wake-up after concurrent updates.')
+}
+
+export async function wakeFaceitChampionshipsFromSignal(signal: { event: string; entityId: string | null }, payload: unknown) {
+  const digest = createHash('sha256').update(JSON.stringify(payload)).digest('hex')
+  if (signal.entityId) {
+    return wakeFaceitChampionshipForWebhook({ championshipId: signal.entityId, event: signal.event, digest })
+  }
+
+  // An authenticated event without an entity ID only requests official snapshots;
+  // its scores, names and dates are never trusted. Finished archives are excluded.
+  const candidates = await prisma.faceitChampionship.findMany({
+    where: { autoSyncEnabled: true, OR: [{ status: null }, { status: { notIn: [...TERMINAL_STATUSES] } }] },
+    select: { championshipId: true },
+    take: 51,
+  })
+  // ponytail: bounded fallback; require an explicit provider ID above 50 active links.
+  if (candidates.length > 50) throw new Error('Too many active FACEIT links for fallback wake-up.')
+  for (const candidate of candidates) {
+    await wakeFaceitChampionshipForWebhook({ championshipId: candidate.championshipId, event: signal.event, digest })
+  }
+  return { matched: candidates.length > 0, queued: candidates.length > 0 }
 }

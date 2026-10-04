@@ -22,6 +22,7 @@ type UnknownRecord = Record<string, unknown>
 const KNOWN_DOCUMENT_PATHS = new Set([
   '/',
   '/admin',
+  '/admin/campeonatos',
   '/admin/faceit',
   '/admin/inscricoes',
   '/admin/live',
@@ -58,6 +59,7 @@ function documentPath(value: string, expectedOrigin: string) {
     const url = new URL(value)
     if (url.origin !== expectedOrigin) return null
     if (KNOWN_DOCUMENT_PATHS.has(url.pathname)) return url.pathname
+    if (/^\/campeonatos\/[^/]+\/?$/.test(url.pathname)) return '/campeonatos/:slug'
     if (/^\/hall-of-fame\/[^/]+\/?$/.test(url.pathname)) return '/hall-of-fame/:slug'
     return '/other'
   } catch {

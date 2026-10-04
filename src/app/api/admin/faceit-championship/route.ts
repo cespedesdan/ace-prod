@@ -6,12 +6,15 @@ import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { FaceitApiError } from '@/lib/faceit'
 import {
   FaceitSyncInProgressError,
+  isFaceitStage,
   setFaceitAutoSync,
   syncFaceitChampionship,
 } from '@/lib/faceit-championship-sync'
 import { prisma } from '@/lib/prisma'
 import { privateJson } from '@/lib/private-response'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
+import { tournamentPublicPath } from '@/lib/tournaments'
+import { isFaceitWebhookSecretValid } from '@/lib/faceit-webhook'
 
 export const runtime = 'nodejs'
 
@@ -22,6 +25,7 @@ function isAdmin(request: NextRequest) {
 
 function responseData(championship: {
   tournament: string
+  stage: string
   championshipId: string
   faceitUrl: string
   name: string
@@ -47,6 +51,7 @@ function responseData(championship: {
 }) {
   return {
     tournament: championship.tournament,
+    stage: championship.stage,
     championshipId: championship.championshipId,
     faceitUrl: championship.faceitUrl,
     name: championship.name,
@@ -69,6 +74,7 @@ function responseData(championship: {
     consecutiveAutoSyncFailures: championship.consecutiveAutoSyncFailures,
     lastWebhookReceivedAt: championship.lastWebhookReceivedAt,
     lastWebhookEvent: championship.lastWebhookEvent,
+    webhookConfigured: isFaceitWebhookSecretValid(process.env.FACEIT_WEBHOOK_SECRET, process.env.FACEIT_WEBHOOK_SECRET),
   }
 }
 
@@ -78,17 +84,18 @@ function tournamentName(value: unknown) {
     : ''
 }
 
-function revalidateTournament(tournament: string) {
-  if (tournament === 'Copa Ace 10') {
-    revalidatePath('/')
-    revalidatePath('/copa-ace-10')
-    revalidatePath('/schedule')
-  }
+async function revalidateTournament(name: string) {
+  const tournament = await prisma.tournament.findUnique({ where: { name }, select: { slug: true } })
+  revalidatePath('/', 'layout')
+  revalidatePath('/schedule')
+  revalidatePath('/hall-of-fame')
+  revalidatePath('/sitemap.xml')
+  if (tournament) revalidatePath(tournamentPublicPath(tournament.slug))
 }
 
 export async function GET(request: NextRequest) {
   if (!isAdmin(request)) return privateJson({ error: 'Acesso negado' }, { status: 401 })
-  const championships = await prisma.faceitChampionship.findMany({ orderBy: { tournament: 'asc' } })
+  const championships = await prisma.faceitChampionship.findMany({ orderBy: [{ tournament: 'asc' }, { stage: 'asc' }] })
   return privateJson({ championships: championships.map(responseData) })
 }
 
@@ -98,7 +105,7 @@ export async function POST(request: NextRequest) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
 
   try {
-    const body = await readJsonWithLimit<{ tournament?: unknown; faceitUrl?: unknown }>(request, 1024)
+    const body = await readJsonWithLimit<{ tournament?: unknown; stage?: unknown; faceitUrl?: unknown }>(request, 1024)
     const tournament = tournamentName(body.tournament)
     if (tournament.length < 3 || tournament.length > 100) {
       return NextResponse.json({ error: 'Informe o nome do campeonato no site.' }, { status: 400 })
@@ -106,14 +113,18 @@ export async function POST(request: NextRequest) {
     if (typeof body.faceitUrl !== 'string' || body.faceitUrl.length > 500) {
       return NextResponse.json({ error: 'Informe o link do campeonato na FACEIT.' }, { status: 400 })
     }
+    if (!isFaceitStage(body.stage)) {
+      return NextResponse.json({ error: 'Informe o estágio do campeonato.' }, { status: 400 })
+    }
 
     const championship = await syncFaceitChampionship({
       tournament,
+      stage: body.stage,
       faceitUrl: body.faceitUrl,
       trigger: 'manual',
     })
 
-    revalidateTournament(tournament)
+    await revalidateTournament(tournament)
     return NextResponse.json({ success: true, championship: responseData(championship) })
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
@@ -142,13 +153,13 @@ export async function PATCH(request: NextRequest) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
 
   try {
-    const body = await readJsonWithLimit<{ tournament?: unknown; autoSyncEnabled?: unknown }>(request, 1024)
+    const body = await readJsonWithLimit<{ tournament?: unknown; stage?: unknown; autoSyncEnabled?: unknown }>(request, 1024)
     const tournament = tournamentName(body.tournament)
-    if (!tournament || typeof body.autoSyncEnabled !== 'boolean') {
+    if (!tournament || !isFaceitStage(body.stage) || typeof body.autoSyncEnabled !== 'boolean') {
       return NextResponse.json({ error: 'Configuração de sincronização inválida.' }, { status: 400 })
     }
 
-    const championship = await setFaceitAutoSync(tournament, body.autoSyncEnabled)
+    const championship = await setFaceitAutoSync(tournament, body.stage, body.autoSyncEnabled)
     return NextResponse.json({ success: true, championship: responseData(championship) })
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
@@ -171,14 +182,14 @@ export async function DELETE(request: NextRequest) {
   if (!isAdmin(request)) return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
 
   try {
-    const body = await readJsonWithLimit<{ tournament?: unknown }>(request, 1024)
+    const body = await readJsonWithLimit<{ tournament?: unknown; stage?: unknown }>(request, 1024)
     const tournament = tournamentName(body.tournament)
-    if (!tournament) return NextResponse.json({ error: 'Informe o campeonato.' }, { status: 400 })
+    if (!tournament || !isFaceitStage(body.stage)) return NextResponse.json({ error: 'Informe o campeonato e o estágio.' }, { status: 400 })
 
-    const deleted = await prisma.faceitChampionship.deleteMany({ where: { tournament } })
+    const deleted = await prisma.faceitChampionship.deleteMany({ where: { tournament, stage: body.stage } })
     if (!deleted.count) return NextResponse.json({ error: 'Vínculo não encontrado.' }, { status: 404 })
 
-    revalidateTournament(tournament)
+    await revalidateTournament(tournament)
     return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {

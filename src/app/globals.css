@@ -19,6 +19,7 @@
   --ace-border: #493552;
   --ace-white: #ffffff;
   --ace-pink: #ff1476;
+  --ace-light-pink: rgba(255, 20, 118, 0.733);
   --ace-blue: #008de0;
   --ace-orange: #ff7d00;
   --background: var(--ace-night);
@@ -111,6 +112,27 @@ textarea {
 :focus-visible {
   outline: 2px solid var(--ace-copa);
   outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  background: var(--ace-copa);
+  color: var(--ace-night);
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+#conteudo-principal,
+.tournament-page [id] {
+  scroll-margin-top: 6rem;
 }
 
 .brand-logo-neutral img {
@@ -437,16 +459,12 @@ a[data-navigation-pending] {
   }
 }
 
-body:has(.home-page) .nav-link-home,
-body:has(.schedule-page) .nav-link-schedule,
-body:has(.news-page) .nav-link-news,
-body:has(.hall-of-fame-page) .nav-link-hall-of-fame,
-body:has(.tournament-page:not(.copa-ace-10-page):not(.schedule-page)) .nav-link-hall-of-fame {
+.nav-link[aria-current="page"]:not(.copa10-nav-button):not(.clutch-nav-link):not(.clutch-button) {
   background: rgb(0 255 190 / 10%);
   color: var(--ace-copa);
 }
 
-body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
+.copa10-nav-button[aria-current="page"] {
   background: linear-gradient(135deg, #ffe0a0, #edb64d);
   box-shadow: 0 0 24px rgb(217 154 40 / 30%);
 }
@@ -469,4 +487,73 @@ body:has(.copa-ace-10-page) .nav-link-copa-ace-10 {
   background: linear-gradient(135deg, #ffe0a0, #edb64d);
   box-shadow: 0 0 24px rgb(217 154 40 / 30%);
   transform: translateY(-1px);
+}
+
+.clutch-button {
+  border-color: #bd1159 !important;
+  background: #bd1159 !important;
+  color: #fff !important;
+  box-shadow: 0 8px 24px rgb(189 17 89 / 18%);
+}
+
+.clutch-button:hover {
+  border-color: #e52a78 !important;
+  background: #d61d6b !important;
+  box-shadow: 0 0 24px rgb(189 17 89 / 30%);
+  transform: translateY(-1px);
+}
+
+.clutch-nav-link {
+  border: 1px solid rgb(189 17 89 / 55%);
+  color: #ff9ac5 !important;
+}
+
+.clutch-nav-link:hover,
+.clutch-nav-link[aria-current='page'] {
+  border-color: #bd1159;
+  background: rgb(189 17 89 / 12%);
+  color: white !important;
+}
+
+/* Ace Clutch — one scoped theme for every generic championship page. */
+.clutch-page {
+  --tournament-accent: #bd1159;
+  --tournament-accent-dark: #700a35;
+  --color-orange-50: rgb(189 17 89 / 9%);
+  --color-orange-400: #ff9ac5;
+  --color-orange-500: #bd1159;
+  --color-orange-600: #bd1159;
+  background:
+    radial-gradient(circle at 90% 8%, rgb(189 17 89 / 16%), transparent 30rem),
+    var(--ace-night);
+}
+
+.clutch-page .brand-kicker,
+.clutch-page .text-cyan-400,
+.clutch-page .text-cyan-300 {
+  color: #ff9ac5;
+}
+
+.clutch-page .brand-card {
+  border-color: rgb(189 17 89 / 28%);
+}
+
+.clutch-page .brand-button-primary {
+  background: #bd1159;
+  color: white;
+}
+
+.clutch-page .brand-button-primary:hover {
+  background: #d61d6b;
+}
+
+.clutch-page :focus-visible {
+  outline-color: #ff6fae;
+}
+
+/* Live double elimination uses the same lanes/cards as the tournament archive. */
+.faceit-double-bracket .text-orange-600 { color: var(--color-orange-400); }
+.faceit-double-bracket [role='region']:focus-visible { outline: 2px solid var(--tournament-accent); outline-offset: -2px; }
+@media (min-width: 640px) {
+  .faceit-double-bracket .tournament-panel > .overflow-x-auto { padding: 1.5rem; }
 }

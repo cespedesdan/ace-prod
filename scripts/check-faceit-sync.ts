@@ -15,11 +15,14 @@ import {
 import { wakeFaceitChampionshipForWebhook } from '../src/lib/faceit-webhook'
 import { prisma } from '../src/lib/prisma'
 
+assert.equal(process.env.ACE_ISOLATED_TESTS, 'true', 'Use npm run test:faceit-sync para testar em banco temporário.')
 const championshipId = randomUUID()
+const playoffsChampionshipId = randomUUID()
 const teamId = randomUUID()
 const matchId = randomUUID()
 const tournament = `Faceit sync check ${randomUUID()}`
 const faceitUrl = `https://www.faceit.com/pt/championship/${championshipId}/sync-check`
+const playoffsFaceitUrl = `https://www.faceit.com/pt/championship/${playoffsChampionshipId}/sync-check`
 const originalFetch = global.fetch
 const originalApiKey = process.env.FACEIT_API_KEY
 const faceitStatus = 'ongoing'
@@ -27,6 +30,7 @@ let matchScore = 13
 let paginatedMatches = false
 let replaceLeaseDuringFetch = false
 let webhookDuringFetchAt: Date | null = null
+const detailsNotFoundIds = new Set<string>()
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -38,11 +42,14 @@ function jsonResponse(body: unknown, status = 200) {
 function installSuccessfulFaceit() {
   global.fetch = async (input) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
-    if (url.pathname.endsWith(`/championships/${championshipId}`)) {
+    const requestedChampionshipId = [championshipId, playoffsChampionshipId]
+      .find((id) => url.pathname.endsWith(`/championships/${id}`))
+    if (requestedChampionshipId) {
+      if (detailsNotFoundIds.has(requestedChampionshipId)) return jsonResponse({}, 404)
       if (replaceLeaseDuringFetch) {
         replaceLeaseDuringFetch = false
-        await prisma.faceitChampionship.update({
-          where: { tournament },
+        await prisma.faceitChampionship.updateMany({
+          where: { tournament, stage: 'SWISS' },
           data: {
             autoSyncLeaseToken: 'newer-sync-owner',
             autoSyncLeaseUntil: new Date('2026-08-29T20:00:00.000Z'),
@@ -59,7 +66,7 @@ function installSuccessfulFaceit() {
         })
       }
       return jsonResponse({
-        championship_id: championshipId,
+        championship_id: requestedChampionshipId,
         name: 'Copa Ace Sync Check',
         status: faceitStatus,
         game_id: 'cs2',
@@ -67,7 +74,7 @@ function installSuccessfulFaceit() {
         seeding_strategy: 'swiss',
         total_rounds: 5,
         championship_start: 1_800_000_000,
-        faceit_url: `https://www.faceit.com/pt/championship/${championshipId}`,
+        faceit_url: `https://www.faceit.com/pt/championship/${requestedChampionshipId}`,
       })
     }
     if (url.pathname.endsWith('/subscriptions')) {
@@ -135,6 +142,13 @@ async function main() {
   assert.equal(manual.nextAutoSyncAt?.getTime(), manualAt.getTime() + FACEIT_AUTO_SYNC_WATCHDOG_INTERVAL_MS)
   assert.equal(JSON.parse(manual.matchesJson)[0].scores.faction1, 13)
 
+  detailsNotFoundIds.add(playoffsChampionshipId)
+  const playoffs = await syncFaceitChampionship({ tournament, stage: 'PLAYOFFS', faceitUrl: playoffsFaceitUrl, trigger: 'manual', now: manualAt })
+  assert.equal(playoffs.stage, 'PLAYOFFS')
+  assert.equal(playoffs.name, 'sync-check')
+  assert.equal(await prisma.faceitChampionship.count({ where: { tournament } }), 2)
+  await setFaceitAutoSync(tournament, 'PLAYOFFS', false, manualAt)
+
   matchScore = 14
   const automaticAt = new Date('2026-08-29T18:02:00.000Z')
   const automatic = await syncFaceitChampionship({ tournament, faceitUrl, trigger: 'automatic', now: automaticAt })
@@ -149,7 +163,7 @@ async function main() {
     syncFaceitChampionship({ tournament, faceitUrl, trigger: 'automatic', now: failureAt }),
     FaceitApiError,
   )
-  const failed = await prisma.faceitChampionship.findUniqueOrThrow({ where: { tournament } })
+  const failed = await prisma.faceitChampionship.findFirstOrThrow({ where: { tournament, stage: 'SWISS' } })
   assert.equal(failed.syncedAt.getTime(), automaticAt.getTime())
   assert.equal(failed.lastAutoSyncAt?.getTime(), automaticAt.getTime())
   assert.equal(failed.lastAutoSyncFailureAt?.getTime(), failureAt.getTime())
@@ -184,8 +198,8 @@ async function main() {
   assert.equal(afterConcurrentWebhook.lastWebhookReceivedAt?.getTime(), concurrentWebhookAt.getTime())
   assert.equal(afterConcurrentWebhook.nextAutoSyncAt?.getTime(), concurrentSyncAt.getTime())
 
-  await prisma.faceitChampionship.update({
-    where: { tournament },
+  await prisma.faceitChampionship.updateMany({
+    where: { tournament, stage: 'SWISS' },
     data: { autoSyncLeaseUntil: new Date('2026-08-29T19:00:00.000Z') },
   })
   await assert.rejects(
@@ -197,27 +211,27 @@ async function main() {
     }),
     FaceitSyncInProgressError,
   )
-  await prisma.faceitChampionship.update({
-    where: { tournament },
+  await prisma.faceitChampionship.updateMany({
+    where: { tournament, stage: 'SWISS' },
     data: { autoSyncLeaseUntil: null },
   })
 
-  const disabled = await setFaceitAutoSync(tournament, false, new Date('2026-08-29T18:08:00.000Z'))
+  const disabled = await setFaceitAutoSync(tournament, 'SWISS', false, new Date('2026-08-29T18:08:00.000Z'))
   assert.equal(disabled.autoSyncEnabled, false)
   assert.equal(disabled.nextAutoSyncAt, null)
   const enabledAt = new Date('2026-08-29T18:09:00.000Z')
-  const enabled = await setFaceitAutoSync(tournament, true, enabledAt)
+  const enabled = await setFaceitAutoSync(tournament, 'SWISS', true, enabledAt)
   assert.equal(enabled.autoSyncEnabled, true)
   assert.equal(enabled.nextAutoSyncAt?.getTime(), enabledAt.getTime())
-  const dueResults = await runDueFaceitChampionshipSyncs(enabledAt)
+  const dueResults = await runDueFaceitChampionshipSyncs(enabledAt, tournament)
   assert.deepEqual(dueResults, [{ tournament, status: 'synced' }])
 
   replaceLeaseDuringFetch = true
-  await prisma.faceitChampionship.update({
-    where: { tournament },
+  await prisma.faceitChampionship.updateMany({
+    where: { tournament, stage: 'SWISS' },
     data: { autoSyncLeaseToken: null, autoSyncLeaseUntil: null },
   })
-  const snapshotBeforeLostLease = await prisma.faceitChampionship.findUniqueOrThrow({ where: { tournament } })
+  const snapshotBeforeLostLease = await prisma.faceitChampionship.findFirstOrThrow({ where: { tournament, stage: 'SWISS' } })
   await assert.rejects(
     syncFaceitChampionship({
       tournament,
@@ -227,7 +241,7 @@ async function main() {
     }),
     FaceitSyncInProgressError,
   )
-  const lostLease = await prisma.faceitChampionship.findUniqueOrThrow({ where: { tournament } })
+  const lostLease = await prisma.faceitChampionship.findFirstOrThrow({ where: { tournament, stage: 'SWISS' } })
   assert.equal(lostLease.autoSyncLeaseToken, 'newer-sync-owner')
   assert.equal(lostLease.syncedAt.getTime(), snapshotBeforeLostLease.syncedAt.getTime())
 

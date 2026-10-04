@@ -5,6 +5,7 @@ import { verifyToken } from '@/lib/auth'
 import { adminCookieName, requireSameOrigin } from '@/lib/admin-request'
 import { prisma } from '@/lib/prisma'
 import { registrationClaimKeys } from '@/lib/registration-claim'
+import { tournamentPublicPath } from '@/lib/tournaments'
 
 const allowedStatuses = ['PENDING', 'APPROVED', 'REJECTED'] as const
 type AllowedStatus = (typeof allowedStatuses)[number]
@@ -30,11 +31,11 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   }
 
   const status = body.status as AllowedStatus
-  let updated
+  let result
   try {
-    updated = await prisma.$transaction(async (tx) => {
-      const registration = await tx.registration.findFirst({
-        where: { id, tournament: 'Copa Ace 10' },
+    result = await prisma.$transaction(async (tx) => {
+      const registration = await tx.registration.findUnique({
+        where: { id },
         select: {
           id: true,
           status: true,
@@ -44,12 +45,17 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         },
       })
       if (!registration) return null
+      const tournament = await tx.tournament.findUnique({
+        where: { name: registration.tournament },
+        select: { name: true, slug: true, teamLimit: true },
+      })
+      const teamLimit = tournament?.teamLimit || 16
 
       if (status === 'APPROVED' && registration.status !== 'APPROVED') {
         const approvedCount = await tx.registration.count({
-          where: { tournament: 'Copa Ace 10', status: 'APPROVED' },
+          where: { tournament: registration.tournament, status: 'APPROVED' },
         })
-        if (approvedCount >= 16) return 'full' as const
+        if (approvedCount >= teamLimit) return { full: true as const, tournament: registration.tournament, teamLimit }
       }
 
       const activeClaims = status === 'REJECTED'
@@ -60,7 +66,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
             registration.teamNameNormalized,
           )
 
-      return tx.registration.update({
+      const updated = await tx.registration.update({
         where: { id },
         data: {
           status,
@@ -68,6 +74,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         },
         select: { id: true, status: true, updatedAt: true },
       })
+      return { full: false as const, registration: updated, slug: tournament?.slug }
     })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -76,15 +83,15 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     throw error
   }
 
-  if (!updated) {
+  if (!result) {
     return NextResponse.json({ error: 'Inscrição não encontrada' }, { status: 404 })
   }
-  if (updated === 'full') {
-    return NextResponse.json({ error: 'As 16 vagas da Copa Ace 10 já estão preenchidas.' }, { status: 409 })
+  if (result.full) {
+    return NextResponse.json({ error: `As ${result.teamLimit} vagas de ${result.tournament} já estão preenchidas.` }, { status: 409 })
   }
 
-  revalidatePath('/copa-ace-10')
-  revalidatePath('/hall-of-fame/copa-ace-10')
+  if (result.slug) revalidatePath(tournamentPublicPath(result.slug))
+  revalidatePath('/hall-of-fame')
 
-  return NextResponse.json({ success: true, registration: updated })
+  return NextResponse.json({ success: true, registration: result.registration })
 }
