@@ -173,10 +173,10 @@ Para gerar o segredo na EC2, sem trocar outros valores da configuração:
 ```bash
 cd /srv/ace-prod
 openssl rand -hex 32
-nano .env
+nano .env.local
 ```
 
-Adicione `FACEIT_WEBHOOK_SECRET=VALOR_GERADO` ao arquivo já usado pelo serviço (normalmente `.env`), mantenha-o privado e reinicie `sudo systemctl restart ace-prod`. Use o mesmo valor no App Studio; ele não é a chave `FACEIT_API_KEY`. Confirme `systemctl is-active ace-prod-faceit-sync.timer`. Essa configuração externa não é feita automaticamente pelo deploy.
+Adicione `FACEIT_WEBHOOK_SECRET=VALOR_GERADO` ao `.env.local` já usado pelos serviços, mantenha-o privado (`chmod 600 .env.local`) e reinicie `sudo systemctl restart ace-prod`. Use o mesmo valor no App Studio; ele não é a chave `FACEIT_API_KEY`. Confirme `systemctl is-active ace-prod-faceit-sync.timer`. Essa configuração externa não é feita automaticamente pelo deploy.
 
 ## 7. Ativar Caddy e HTTPS
 
