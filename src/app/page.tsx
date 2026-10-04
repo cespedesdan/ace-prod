@@ -6,12 +6,13 @@ import { Hero } from '@/components/Hero'
 import { YouTubeLivePlayer } from '@/components/YouTubeLivePlayer'
 import { prisma } from '@/lib/prisma'
 import { publicLiveStreamId } from '@/lib/public-content'
-import { getOpenRegistrationTournament } from '@/lib/registration-status'
+import { getFeaturedTournament } from '@/lib/registration-status'
 import { tournamentFormatLabels, tournamentPrizeBreakdown, tournamentPrizeLabel, tournamentPublicPath } from '@/lib/tournaments'
 
 export const revalidate = 60
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/' },
   title: 'Home | Ace Produtora',
   description: 'Página inicial da Ace Produtora.',
 }
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const [liveStream, tournament] = await Promise.all([
     prisma.liveStream.findUnique({ where: { id: publicLiveStreamId } }),
-    getOpenRegistrationTournament(),
+    getFeaturedTournament(),
   ])
   const isClutch = tournament?.slug.startsWith('ace-clutch') ?? false
   const accentCard = isClutch ? 'border-[#bd1159]/20 bg-[#bd1159]/5' : 'border-copa-cyan/20 bg-copa-cyan/5'
@@ -50,7 +51,7 @@ export default async function HomePage() {
               <img src={tournament.logoUrl || '/copa_ace_logo_clean.png'} alt={`Logo ${tournament.name}`} className="h-40 w-40 object-contain" />
             </div>
             <div className="p-6 sm:p-8">
-              <p className="brand-kicker">Próximo campeonato</p>
+              <p className="brand-kicker">Campeonato em destaque</p>
               <h2 id="next-tournament-title" className="mt-2 text-3xl font-black uppercase text-white">{tournament.name}</h2>
               {tournament.description && <p className="mt-3 line-clamp-3 max-w-3xl text-sm leading-6 text-slate-400">{tournament.description}</p>}
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -58,9 +59,9 @@ export default async function HomePage() {
                 <article className={`border p-4 ${accentCard}`}><UsersRound className={accentText} size={19} /><p className="mt-3 text-[10px] font-black uppercase tracking-wider text-slate-500">Vagas</p><strong className="mt-1 block text-sm text-white">{tournament.teamLimit} equipes</strong></article>
                 <article className={`border p-4 ${accentCard}`}><Trophy className={accentText} size={19} /><p className="mt-3 text-[10px] font-black uppercase tracking-wider text-slate-500">Premiação</p><strong className="mt-1 block text-sm text-white">{tournamentPrizeLabel(tournament.slug, tournament.prizePoolCents)}</strong>{tournamentPrizeBreakdown(tournament.slug) && <span className="mt-1 block text-[10px] leading-4 text-slate-400">{tournamentPrizeBreakdown(tournament.slug)}</span>}</article>
               </div>
-              <p className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-slate-400"><Shield className={accentText} size={15} /> {tournamentFormatLabels[tournament.format as keyof typeof tournamentFormatLabels] || tournament.format}{isClutch && ' · Inscrição R$ 25,00'}</p>
+              <p className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-slate-400"><Shield className={accentText} size={15} /> {tournamentFormatLabels[tournament.format as keyof typeof tournamentFormatLabels] || tournament.format}{isClutch && tournament.registrationOpen && ' · Inscrição R$ 25,00'}</p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="/inscreva-se" className={`brand-button-primary ${isClutch ? 'clutch-button' : ''}`}>Inscreva-se <ArrowRight size={17} /></Link>
+                {tournament.registrationOpen && tournament.status !== 'COMPLETED' && <Link href="/inscreva-se" className={`brand-button-primary ${isClutch ? 'clutch-button' : ''}`}>Inscreva-se <ArrowRight size={17} /></Link>}
                 <Link href={tournamentPublicPath(tournament.slug)} className="brand-button-secondary">Ver campeonato</Link>
               </div>
             </div>

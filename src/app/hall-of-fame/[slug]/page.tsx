@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { hallOfFameEditions } from '@/data/hallOfFame'
@@ -15,6 +16,16 @@ export function generateStaticParams() {
 
 interface EditionPageProps {
   params: Promise<{ slug: string }>
+}
+
+export async function generateMetadata({ params }: EditionPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const edition = hallOfFameEditions.find((item) => item.slug === slug)
+  return edition ? {
+    title: `${edition.title} | Hall da Fama | Ace Produtora`,
+    description: edition.description,
+    alternates: { canonical: edition.href || `/hall-of-fame/${slug}` },
+  } : { title: 'Campeonato não encontrado | Ace Produtora', robots: { index: false } }
 }
 
 export default async function HallOfFameEditionPage({ params }: EditionPageProps) {

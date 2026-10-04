@@ -26,6 +26,7 @@ import {
   registrationTextLimits,
 } from '../src/lib/registration-input'
 
+assert.equal(process.env.ACE_ISOLATED_TESTS, 'true', 'Use npm run test:security para não alterar seu banco de desenvolvimento.')
 const identifier = randomUUID()
 const adminLoginProbeEmail = `missing-${identifier}@example.com`
 const claimTestIds: string[] = []

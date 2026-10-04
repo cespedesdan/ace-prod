@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { privateJson } from '@/lib/private-response'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 import { parseTournamentInput } from '@/lib/tournaments'
+import { renameTournamentRegistrations } from '@/lib/registration-claim'
 
 function adminPayload(request: NextRequest) {
   const token = request.cookies.get(adminCookieName())?.value
@@ -17,6 +18,7 @@ function adminPayload(request: NextRequest) {
 function revalidateTournament(slug: string) {
   revalidatePath('/', 'layout')
   revalidatePath('/hall-of-fame')
+  revalidatePath('/sitemap.xml')
   revalidatePath(`/campeonatos/${slug}`)
 }
 
@@ -161,7 +163,7 @@ export async function PATCH(request: NextRequest) {
         await tx.tournament.updateMany({ where: { id: { not: id } }, data: { registrationOpen: false } })
       }
       if (existing.name !== parsed.data.name) {
-        await tx.registration.updateMany({ where: { tournament: existing.name }, data: { tournament: parsed.data.name } })
+        await renameTournamentRegistrations(tx, existing.name, parsed.data.name)
         await tx.faceitChampionship.updateMany({ where: { tournament: existing.name }, data: { tournament: parsed.data.name } })
       }
       return tx.tournament.update({ where: { id }, data: { ...parsed.data, lastActionBy: admin.email } })

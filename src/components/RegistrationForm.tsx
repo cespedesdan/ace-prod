@@ -9,7 +9,7 @@ const PIX = '00020126580014BR.GOV.BCB.PIX0136f0f1c3b8-8afe-495c-9ea3-1302b970d58
 const inputClass = 'mt-2 w-full border border-[#bd1159]/50 bg-[#12040a] px-3.5 py-3 text-base text-white outline-none transition placeholder:text-[#bda7b1] focus:border-[#ff6fae] focus:ring-2 focus:ring-[#bd1159]/25 sm:text-sm'
 const labelClass = 'text-xs font-bold uppercase tracking-[0.08em] text-slate-300'
 
-type Tournament = { name: string; logoUrl: string | null; teamLimit: number; startDate: string; endDate: string }
+type Tournament = { id: string; name: string; logoUrl: string | null; teamLimit: number; startDate: string; endDate: string }
 type FaceitTeam = {
   teamId: string
   name: string
@@ -109,7 +109,7 @@ export default function RegistrationForm({ tournament }: { tournament: Tournamen
   }
 
   if (protocol) return (
-    <main className="tournament-page clutch-page registration-page min-h-[80vh] px-4 py-16 text-white">
+    <div className="tournament-page clutch-page registration-page min-h-[80vh] px-4 py-16 text-white">
       <div className="registration-form mx-auto max-w-2xl p-7 text-center sm:p-12">
         <span className="mx-auto grid h-20 w-20 place-items-center border border-[#bd1159]/50 bg-[#bd1159]/10 text-[#ff6fae]"><CheckCircle2 size={42} /></span>
         <p className="mt-7 text-xs font-black uppercase tracking-[0.2em] text-[#ff6fae]">Inscrição recebida · {tournament.name}</p>
@@ -117,11 +117,11 @@ export default function RegistrationForm({ tournament }: { tournament: Tournamen
         <p className="mx-auto mt-4 max-w-lg leading-relaxed text-slate-400">A organização analisará os dados e anexos. Guarde seu protocolo.</p>
         <p className="mt-8 break-all border border-slate-700 bg-slate-950 px-4 py-5 font-mono text-xl font-bold text-[#ff6fae]">{protocol}</p>
       </div>
-    </main>
+    </div>
   )
 
   return (
-    <main className="tournament-page clutch-page registration-page min-h-screen text-white">
+    <div className="tournament-page clutch-page registration-page min-h-screen text-white">
       <section className="tournament-hero copa10-hero registration-hero">
         <div className="copa10-hero-glow" aria-hidden="true" />
         <div className="tournament-container relative grid gap-8 py-10 lg:grid-cols-[1fr_380px] lg:py-14">
@@ -153,6 +153,7 @@ export default function RegistrationForm({ tournament }: { tournament: Tournamen
         </div>
 
         <form ref={formRef} onSubmit={submit} encType="multipart/form-data" noValidate className="registration-form p-5 sm:p-8">
+          <input type="hidden" name="tournamentId" value={tournament.id} />
           <section data-step="0" className={step === 0 ? 'block' : 'hidden'}>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-[#ff6fae]">Etapa 1 de 2</p>
             <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">Equipe e representante</h2>
@@ -186,6 +187,6 @@ export default function RegistrationForm({ tournament }: { tournament: Tournamen
           <div className="registration-form-actions mt-8 flex items-center justify-between border-t pt-6"><button type="button" onClick={() => setStep(0)} disabled={step === 0 || submitting} className="copa10-button-secondary disabled:invisible"><ArrowLeft size={17} /> Voltar</button>{step === 0 ? <button type="button" onClick={() => validateStep() && setStep(1)} className="tournament-button-primary">Continuar <ArrowRight size={17} /></button> : <button type="submit" disabled={submitting} className="tournament-button-primary disabled:opacity-70">{submitting ? <><LoaderCircle className="animate-spin" size={17} /> Enviando...</> : <><CheckCircle2 size={17} /> Enviar inscrição</>}</button>}</div>
         </form>
       </div>
-    </main>
+    </div>
   )
 }

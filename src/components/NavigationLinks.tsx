@@ -29,18 +29,18 @@ function navigationClass(item: NavigationItem, mobile = false) {
   return `${base} nav-link nav-link-${slug} ${variant}`
 }
 
-export function NavigationLinks({ registrationTournament }: { registrationTournament: NavigationItem | null }) {
+export function NavigationLinks({ featuredTournament }: { featuredTournament: (NavigationItem & { registrationOpen: boolean }) | null }) {
   const pathname = usePathname()
   const router = useRouter()
   const mobileMenu = useRef<HTMLDetailsElement>(null)
-  const tournament = registrationTournament || { name: 'Copa Ace 10', href: '/copa-ace-10', edition: true }
+  const tournament = featuredTournament
   const navigation: NavigationItem[] = [
     { name: 'Home', href: '/' },
-    tournament,
+    ...(tournament ? [tournament] : []),
     { name: 'Agenda', href: '/schedule' },
     { name: 'Notícias', href: '/news' },
     { name: 'Hall da Fama', href: '/hall-of-fame' },
-    ...(registrationTournament ? [{ name: 'Inscreva-se', href: '/inscreva-se', clutch: tournament.clutch, highlight: true }] : []),
+    ...(tournament?.registrationOpen ? [{ name: 'Inscreva-se', href: '/inscreva-se', clutch: tournament.clutch, highlight: true }] : []),
   ]
 
   useEffect(() => {
@@ -107,7 +107,7 @@ export function NavigationLinks({ registrationTournament }: { registrationTourna
       </div>
 
       <details ref={mobileMenu} className="mobile-navigation">
-        <summary className="cursor-pointer list-none text-gray-300 hover:text-copa-cyan focus:outline-none">
+        <summary className="grid h-11 w-11 cursor-pointer list-none place-items-center text-gray-300 hover:text-copa-cyan">
           <span className="sr-only">Abrir menu principal</span>
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

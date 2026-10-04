@@ -26,7 +26,7 @@
   display: none;
 }
 
-.copa10-hero-glow {
+.registration-page .copa10-hero-glow {
   position: absolute;
   inset: 0;
   background:
@@ -35,7 +35,7 @@
   pointer-events: none;
 }
 
-.copa10-logo-lockup img {
+.registration-page .copa10-logo-lockup img {
   width: auto;
   height: 2.8rem;
   object-fit: contain;
@@ -47,7 +47,7 @@
   text-shadow: 0 0 35px rgb(189 17 89 / 24%);
 }
 
-.copa10-button-secondary {
+.registration-page .copa10-button-secondary {
   display: inline-flex;
   min-height: 3rem;
   align-items: center;
@@ -65,7 +65,7 @@
   transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
 
-.copa10-button-secondary:hover {
+.registration-page .copa10-button-secondary:hover {
   border-color: #ff6fae;
   background: rgb(189 17 89 / 10%);
   transform: translateY(-2px);
@@ -85,8 +85,8 @@
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
 }
 
-.registration-open-badge,
-.registration-form-actions {
+.registration-page .registration-open-badge,
+.registration-page .registration-form-actions {
   border-color: #bd1159 !important;
 }
 
@@ -96,54 +96,54 @@
   box-shadow: 0 24px 60px rgb(0 0 0 / 38%);
 }
 
-.registration-steps {
+.registration-page .registration-steps {
   border: 1px solid rgb(189 17 89 / 28%);
   background: #12040a;
   clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
 }
 
-.registration-step {
-  color: #756b62;
+.registration-page .registration-step {
+  color: #bda7b1;
   font-family: var(--font-nippo), var(--font-poppins), sans-serif;
   letter-spacing: 0.08em;
 }
 
-.registration-step + .registration-step {
+.registration-page .registration-step + .registration-step {
   border-left: 1px solid rgb(189 17 89 / 22%);
 }
 
-.registration-step > span {
+.registration-page .registration-step > span {
   border-color: #bd1159 !important;
   color: #ff6fae;
 }
 
-.registration-step.is-active {
-  background: linear-gradient(135deg, #ff6fae, #bd1159);
+.registration-page .registration-step.is-active {
+  background: #bd1159;
   color: white;
 }
 
-.registration-step.is-active > span {
+.registration-page .registration-step.is-active > span {
   border-color: white !important;
   color: white;
 }
 
-.registration-step.is-complete {
+.registration-page .registration-step.is-complete {
   color: #ff6fae;
 }
 
-.registration-upload {
+.registration-page .registration-upload {
   border-color: rgb(189 17 89 / 38%);
   background: rgb(5 1 4 / 42%);
 }
 
-.registration-upload:hover {
+.registration-page .registration-upload:hover {
   border-color: #ff6fae;
   background: rgb(189 17 89 / 7%);
 }
 
-.registration-form input:not([type="file"]):not([type="checkbox"]),
-.registration-form select,
-.registration-form textarea {
+.registration-page .registration-form input:not([type="file"]):not([type="checkbox"]),
+.registration-page .registration-form select,
+.registration-page .registration-form textarea {
   width: 100%;
   margin-top: 0.5rem;
   border: 1px solid rgb(189 17 89 / 48%);
@@ -153,14 +153,14 @@
   font-size: 1rem;
 }
 
-.registration-form input:not([type="file"]):not([type="checkbox"]):focus,
-.registration-form select:focus,
-.registration-form textarea:focus {
+.registration-page .registration-form input:not([type="file"]):not([type="checkbox"]):focus,
+.registration-page .registration-form select:focus,
+.registration-page .registration-form textarea:focus {
   border-color: #ff6fae;
   outline: 2px solid rgb(189 17 89 / 15%);
 }
 
-.registration-payment-card {
+.registration-page .registration-payment-card {
   background: linear-gradient(145deg, rgb(189 17 89 / 10%), rgb(5 1 4 / 54%));
 }
 
@@ -179,7 +179,7 @@
     text-shadow: none;
   }
 
-  .copa10-logo-lockup img {
+  .registration-page .copa10-logo-lockup img {
     height: 2rem;
   }
 

@@ -20,6 +20,7 @@ export function ScheduleFilters({ matches, format }: { matches: MatchMeta[]; for
   const [round, setRound] = useState('all')
   const [stage, setStage] = useState<'all' | MatchStage>('all')
   const initialized = useRef(false)
+  const controls = useRef<HTMLDivElement>(null)
   const roundOptions = [...new Set(matches.map((match) => match.round).filter((value): value is number => value !== null && value > 0))].sort((a, b) => a - b)
   const stageOptions = [...new Set(matches.map((match) => match.stage))]
   const counts = useMemo(() => {
@@ -36,14 +37,14 @@ export function ScheduleFilters({ matches, format }: { matches: MatchMeta[]; for
   }, [matches, round, stage])
 
   useEffect(() => {
-    const root = document.getElementById('jogos')
+    const root = controls.current?.closest('[data-schedule-root]')
     if (!root) return
     const preserveInitialDeferredState = !initialized.current && filter === 'all' && round === 'all' && stage === 'all'
 
     for (const section of root.querySelectorAll<HTMLElement>('[data-schedule-section]')) {
       const bucket = section.dataset.scheduleSection as ScheduleBucket
       if (!preserveInitialDeferredState) {
-        const visible = filter === 'all' || filter === bucket
+        const visible = filter === 'all' ? counts[bucket] > 0 : filter === bucket
         section.hidden = !visible
         if (visible) section.dataset.renderVisible = 'true'
       }
@@ -70,7 +71,7 @@ export function ScheduleFilters({ matches, format }: { matches: MatchMeta[]; for
   }, [counts, filter, round, stage])
 
   return (
-    <div className="flex flex-col gap-3 border-b border-cyan-400/20 bg-[#170f1e] p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div ref={controls} className="flex flex-col gap-3 border-b border-cyan-400/20 bg-[#170f1e] p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar partidas por período">
         {filters.map((item) => (
           <button key={item.value} type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)} className={`border px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] transition ${filter === item.value ? 'border-copa-cyan bg-copa-cyan text-[#1c1124]' : 'border-slate-500 text-slate-200 hover:border-copa-cyan hover:text-white'}`}>
@@ -94,6 +95,7 @@ export function ScheduleFilters({ matches, format }: { matches: MatchMeta[]; for
           </select>
         </label>
       </div>
+      {filter === 'all' && counts.all === 0 && <p role="status" className="text-sm text-slate-300">Nenhuma partida corresponde aos filtros selecionados.</p>}
     </div>
   )
 }

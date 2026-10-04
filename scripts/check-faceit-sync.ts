@@ -14,6 +14,7 @@ import {
 } from '../src/lib/faceit-championship-sync'
 import { prisma } from '../src/lib/prisma'
 
+assert.equal(process.env.ACE_ISOLATED_TESTS, 'true', 'Use npm run test:faceit-sync para testar em banco temporário.')
 const championshipId = randomUUID()
 const playoffsChampionshipId = randomUUID()
 const teamId = randomUUID()

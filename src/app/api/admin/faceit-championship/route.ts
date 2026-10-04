@@ -13,6 +13,7 @@ import {
 import { prisma } from '@/lib/prisma'
 import { privateJson } from '@/lib/private-response'
 import { readJsonWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
+import { tournamentPublicPath } from '@/lib/tournaments'
 
 export const runtime = 'nodejs'
 
@@ -77,12 +78,13 @@ function tournamentName(value: unknown) {
     : ''
 }
 
-function revalidateTournament(tournament: string) {
-  if (tournament === 'Copa Ace 10') {
-    revalidatePath('/')
-    revalidatePath('/copa-ace-10')
-    revalidatePath('/schedule')
-  }
+async function revalidateTournament(name: string) {
+  const tournament = await prisma.tournament.findUnique({ where: { name }, select: { slug: true } })
+  revalidatePath('/', 'layout')
+  revalidatePath('/schedule')
+  revalidatePath('/hall-of-fame')
+  revalidatePath('/sitemap.xml')
+  if (tournament) revalidatePath(tournamentPublicPath(tournament.slug))
 }
 
 export async function GET(request: NextRequest) {
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
       trigger: 'manual',
     })
 
-    revalidateTournament(tournament)
+    await revalidateTournament(tournament)
     return NextResponse.json({ success: true, championship: responseData(championship) })
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
@@ -181,7 +183,7 @@ export async function DELETE(request: NextRequest) {
     const deleted = await prisma.faceitChampionship.deleteMany({ where: { tournament, stage: body.stage } })
     if (!deleted.count) return NextResponse.json({ error: 'Vínculo não encontrado.' }, { status: 404 })
 
-    revalidateTournament(tournament)
+    await revalidateTournament(tournament)
     return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {

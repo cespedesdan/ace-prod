@@ -31,6 +31,7 @@ const nextConfig = {
     reactCompiler: true,
   },
   images: {
+    qualities: [60, 70, 75],
     imageSizes: [16, 32, 48, 64, 96, 128, 192, 256, 384],
     minimumCacheTTL: 86400,
     remotePatterns: [
